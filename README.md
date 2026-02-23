@@ -6,7 +6,7 @@ It's defining additional folder structure (docs, context engineering, configs) a
 ## How to work with this?
 
 1. Create a new repository for your project
-2. Copy the content of this template repository into your new project repository
+2. Download the content of this template repository and paste it into your new project repository
     * Adjust README.md and briefly explain your project
 3. Connect Lovable to Github – it will create another new repository
 4. Download code files of the Lovable repo and paste it into your project repo
