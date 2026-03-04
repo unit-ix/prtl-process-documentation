@@ -1,6 +1,6 @@
 # Code-Apps Projekt-Template
 
-This repo contains a tempate structure for upcoming PowerApps code apps projects.
+This repo contains a template structure for upcoming PowerApps code apps projects.
 It's defining additional folder structure (docs, context engineering, configs) and template files which are always needed and are not being provided by Lovable.
 
 ## How to work with this?
