@@ -1,0 +1,35 @@
+{
+    // --- Formatting ---
+    "editor.formatOnSave": true,
+    "editor.formatOnType": false,
+    "editor.formatOnPaste": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+    // --- Prettier ---
+    "prettier.singleQuote": true,
+    "prettier.semi": true,
+    "prettier.trailingComma": "all",
+    "prettier.bracketSpacing": true,
+    "prettier.objectWrap": "preserve",
+    "prettier.tabWidth": 4,
+    "prettier.printWidth": 120,
+    "prettier.jsxSingleQuote": true,
+
+    // --- Per-language formatters ---
+    "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[javascriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+    "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+    // --- React / JS DX ---
+    "emmet.includeLanguages": { "javascript": "javascriptreact" },
+    "editor.snippetSuggestions": "top",
+
+    // --- TailwindCss ---
+    "files.associations": {
+        "*.css": "tailwindcss",
+        "*.scss": "tailwindcss"
+    }
+}
