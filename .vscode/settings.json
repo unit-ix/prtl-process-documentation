@@ -5,16 +5,6 @@
     "editor.formatOnPaste": false,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
 
-    // --- Prettier ---
-    "prettier.singleQuote": true,
-    "prettier.semi": true,
-    "prettier.trailingComma": "all",
-    "prettier.bracketSpacing": true,
-    "prettier.objectWrap": "preserve",
-    "prettier.tabWidth": 4,
-    "prettier.printWidth": 120,
-    "prettier.jsxSingleQuote": true,
-
     // --- Per-language formatters ---
     "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
     "[javascriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
