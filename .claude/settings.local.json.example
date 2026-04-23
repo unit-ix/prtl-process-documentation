@@ -1,0 +1,6 @@
+{
+    "_comment": "Kopiere zu settings.local.json für persönliche Overrides (z.B. zusätzliche Erlaubnisse)",
+    "permissions": {
+        "allow": []
+    }
+}
