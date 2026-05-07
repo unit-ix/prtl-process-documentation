@@ -115,7 +115,7 @@ git add .claude/shared && git commit -m "chore: update shared claude resources"
 
 **Keine Tests standardmäßig.** Tests werden eingeführt, wenn konkreter Bedarf entsteht — nicht vorsorglich. Lovable-Testdateien beim Import aktiv entfernen.
 
-**Hard Rules sind nicht verhandelbar.** `power.config.json`, `src/PowerProvider.tsx` und `src/generated/` werden nie manuell bearbeitet. Kein `localStorage`, kein direktes `fetch()` zu externen APIs, kein SSR. Details: [`docs/code-apps-constraints.md`](docs/code-apps-constraints.md)
+**Hard Rules sind nicht verhandelbar.** `power.config.json` und `src/generated/` werden nie manuell bearbeitet. Kein `localStorage`, kein direktes `fetch()` zu externen APIs, kein SSR. Details: [`docs/code-apps-constraints.md`](docs/code-apps-constraints.md)
 
 ---
 

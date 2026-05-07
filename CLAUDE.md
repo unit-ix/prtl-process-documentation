@@ -20,10 +20,11 @@
 
 → Vollständig in `docs/code-apps-constraints.md`. Knackpunkte:
 
-- `power.config.json`, `src/PowerProvider.tsx`, `src/generated/` **nicht** manuell editieren
+- `power.config.json`, `src/generated/` **nicht** manuell editieren
 - Kein `localStorage`/`sessionStorage` für User-/Org-Daten
 - Kein Next.js / kein SSR / kein Service Worker
-- Externe APIs nur über Connectors (`pac code add-data-source`)
+- Kein direktes `fetch()` zu **authentifizierten** APIs — Secrets/API-Keys landen sonst im Public Bundle
+- Authentifizierte & DLP-relevante APIs ausschließlich über Connectors (`pac code add-data-source`)
 - Keine Secrets/Env-Vars zur Laufzeit — Build ist public
 
 ## Shared Resources
