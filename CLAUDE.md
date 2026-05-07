@@ -26,16 +26,9 @@
 - Externe APIs nur über Connectors (`pac code add-data-source`)
 - Keine Secrets/Env-Vars zur Laufzeit — Build ist public
 
-## Custom Commands
-
-Aktuell keine definiert. Siehe `.claude/commands/` (leer) und `.claude/shared/commands/` (leer, Submodul).
-
 ## Shared Resources
 
-- `@.claude/shared/docs/naming-conventions.md`
-- `@.claude/shared/docs/power-apps-sdk.md`
-- `@.claude/shared/docs/code-apps-constraints.md`
-- `@.claude/shared/docs/react-patterns.md`
+- `@.claude/*`
 
 ## Workflow-Regeln
 
@@ -52,4 +45,4 @@ Aktuell keine definiert. Siehe `.claude/commands/` (leer) und `.claude/shared/co
 | Architektur              | `docs/architecture.md`          |
 | Code-Apps-Constraints    | `docs/code-apps-constraints.md` |
 | CI-Pipeline              | `.github/workflows/ci.yml`      |
-| Shared Claude-Ressourcen | `.claude/shared/` (Submodul)    |
+| Shared Claude-Ressourcen | `.claude/*` (Submodul)          |
