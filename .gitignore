@@ -24,3 +24,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Env & secrets
+.env*
+
+# pnpm
+.pnpm-store
+
+# Test coverage
+coverage
+
+# Claude Code personal overrides
+.claude/settings.local.json

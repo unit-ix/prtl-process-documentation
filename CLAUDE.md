@@ -1,0 +1,49 @@
+# Claude-Konfiguration — Code Apps Projekt-Template
+
+> Lebendes Dokument. Änderungen via PR-Review.
+
+## Projektkontext
+
+- Power Platform Code App (React + Vite + TypeScript SPA)
+- Lovable-Export als Ausgangspunkt, Migration zu Microsoft Code Apps via PAC CLI
+- Deployment läuft ausschließlich über `pac code push`
+
+## Tech-Stack
+
+- Node 24 LTS (siehe `.nvmrc`)
+- pnpm 10.x (siehe `packageManager` in `package.json`)
+- React 19.2 + TypeScript + Vite
+- Shadcn als UI-Library (UNIT-IX-Standard) mit Tailwind CSS
+- Dev-Server Port **3000** (Power-Platform-Anforderung)
+
+## Hard Rules (NIEMALS!)
+
+→ Vollständig in `docs/code-apps-constraints.md`. Knackpunkte:
+
+- `power.config.json`, `src/generated/` **nicht** manuell editieren
+- Kein `localStorage`/`sessionStorage` für User-/Org-Daten
+- Kein Next.js / kein SSR / kein Service Worker
+- Kein direktes `fetch()` zu **authentifizierten** APIs — Secrets/API-Keys landen sonst im Public Bundle
+- Authentifizierte & DLP-relevante APIs ausschließlich über Connectors (`pac code add-data-source`)
+- Keine Secrets/Env-Vars zur Laufzeit — Build ist public
+
+## Shared Resources
+
+- `@.claude/*`
+
+## Workflow-Regeln
+
+- Ein Schritt → Prüfung → nächster Schritt. Keine autonomen Ketten.
+- Lovable liefert das Grundgerüst, Claude iteriert — Build muss nach jedem Schritt grün bleiben.
+- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm tsc --noEmit && pnpm build`).
+
+## Referenzen
+
+| Thema                    | Datei                           |
+| ------------------------ | ------------------------------- |
+| PRD                      | `docs/prd.md`                   |
+| Datenmodell              | `docs/datamodel.mmd`            |
+| Architektur              | `docs/architecture.md`          |
+| Code-Apps-Constraints    | `docs/code-apps-constraints.md` |
+| CI-Pipeline              | `.github/workflows/ci.yml`      |
+| Shared Claude-Ressourcen | `.claude/*` (Submodul)          |
