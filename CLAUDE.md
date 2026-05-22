@@ -1,35 +1,12 @@
-# Claude-Konfiguration — Code Apps Projekt-Template
+# Projekt-Konfiguration
 
-> Lebendes Dokument. Änderungen via PR-Review.
+> Projektspezifische Claude-Konfiguration für DIESES Repo.
+> Geteilte UNIT-IX-Standards inkl. Pflicht-Lektüre: [`.claude/CLAUDE.md`](.claude/CLAUDE.md) (wird automatisch zusätzlich geladen).
 
 ## Projektkontext
 
-- Power Platform Code App (React + Vite + TypeScript SPA)
-- Lovable-Export als Ausgangspunkt, Migration zu Microsoft Code Apps via PAC CLI
-- Deployment läuft ausschließlich über `pac code push`
-
-## Tech-Stack
-
-- Node 24 LTS (siehe `.nvmrc`)
-- pnpm 10.x (siehe `packageManager` in `package.json`)
-- React 19.2 + TypeScript + Vite
-- Shadcn als UI-Library (UNIT-IX-Standard) mit Tailwind CSS
-- Dev-Server Port **3000** (Power-Platform-Anforderung)
-
-## Hard Rules (NIEMALS!)
-
-→ Vollständig in `docs/code-apps-constraints.md`. Knackpunkte:
-
-- `power.config.json`, `src/generated/` **nicht** manuell editieren
-- Kein `localStorage`/`sessionStorage` für User-/Org-Daten
-- Kein Next.js / kein SSR / kein Service Worker
-- Kein direktes `fetch()` zu **authentifizierten** APIs — Secrets/API-Keys landen sonst im Public Bundle
-- Authentifizierte & DLP-relevante APIs ausschließlich über Connectors (`pac code add-data-source`)
-- Keine Secrets/Env-Vars zur Laufzeit — Build ist public
-
-## Shared Resources
-
-- `@.claude/*`
+<!-- Wird im Verlauf des Projekts gefüllt: Kunde, Hauptdomäne, gewählte Connectoren,
+     projektspezifische Abweichungen von den UNIT-IX-Standards. -->
 
 ## Workflow-Regeln
 
@@ -37,13 +14,10 @@
 - Lovable liefert das Grundgerüst, Claude iteriert — Build muss nach jedem Schritt grün bleiben.
 - `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm tsc --noEmit && pnpm build`).
 
-## Referenzen
+## Projekt-Doku
 
-| Thema                    | Datei                           |
-| ------------------------ | ------------------------------- |
-| PRD                      | `docs/prd.md`                   |
-| Datenmodell              | `docs/datamodel.mmd`            |
-| Architektur              | `docs/architecture.md`          |
-| Code-Apps-Constraints    | `docs/code-apps-constraints.md` |
-| CI-Pipeline              | `.github/workflows/ci.yml`      |
-| Shared Claude-Ressourcen | `.claude/*` (Submodul)          |
+| Thema         | Datei                                          |
+| ------------- | ---------------------------------------------- |
+| Anforderungen | [`docs/prd.md`](docs/prd.md)                   |
+| Datenmodell   | [`docs/datamodel.md`](docs/datamodel.md) + [`docs/datamodel.mmd`](docs/datamodel.mmd) |
+| Architektur   | [`docs/architecture.md`](docs/architecture.md) |
