@@ -70,8 +70,8 @@ Claude-Konfiguration: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
 ## Shared-Ressourcen aktualisieren
 
 ```bash
-git submodule update --remote .claude/shared
-git add .claude/shared && git commit -m "chore: update shared claude resources"
+git submodule update --remote .claude
+git add .claude && git commit -m "chore: update shared claude resources"
 ```
 
 ---
@@ -126,8 +126,8 @@ Zwei Prozesse gleichzeitig in separaten Shells:
 # Shell 1 — Vite Dev-Server
 pnpm dev
 
-# Shell 2 — PAC Connections-Server (zeigt Connector-Daten lokal)
-pac code run --appUrl http://localhost:3000
+# Shell 2 — Power Apps Connections-Server (zeigt Connector-Daten lokal)
+npx power-apps run --appUrl http://localhost:3000
 ```
 
 ```bash
@@ -139,5 +139,5 @@ pnpm verify   # lint + typecheck + build (spiegelt CI)
 ## Deployment
 
 ```bash
-pac code push
+npx power-apps push
 ```
