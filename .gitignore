@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 
+# Power Platform Code Apps build artifacts
+.power
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
