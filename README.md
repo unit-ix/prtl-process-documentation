@@ -95,12 +95,18 @@ git add .claude && git commit -m "chore: update shared claude resources"
 
 ## Dev-Loop
 
-1. Feature-Branch anlegen
-2. Änderungen manuell mit Claude als Hilfe umsetzen — **ein Schritt, dann Review, dann nächster Schritt** - Jeder Schritt sollte in mehrerensinnvolle Commits aufgeteilt werden
-3. `pnpm verify` grün kriegen (lint + typecheck + build)
-4. Pushen, PR öffnen, Mensch reviewt, Merge
+UNIT-IX Code Apps nutzen die `/plan → /execute → /commit → /ship` Slash-Command-Kette:
 
-**Regel:** Ein Feature = ein PR mit mehreren Commits. Kein Merge ohne grünes `pnpm verify` und Review.
+1. **`/plan <slug> [<beschreibung>]`** — Implementierungs-Plan nach UNIT-IX-Standard erzeugen (`docs/plans/YYYY-MM-DD-<slug>.md`). In Kundenprojekten zusätzlich `feature/<slug>`-Branch. Pfad ist im Chat-Report klickbar.
+2. **Plan inline reviewen** — du editierst Phasen, Constraints, Steps direkt im VS Code Editor; Inline-Kommentare als `<!-- HUMAN: ... -->` oder `> 💬 DEV-NOTE: ...`.
+3. **`/execute docs/plans/<file>.md`** — genau eine Phase abarbeiten. Stage, hak ab, STOP. Hard Rule: "Ein Schritt → Prüfung → nächster Schritt. Keine autonomen Ketten."
+4. **`/commit`** — `pnpm verify` (lint + typecheck + build, konditional) → Conventional Commit mit Phase-Referenz.
+5. Wiederhole Schritte 3+4 für weitere Phasen.
+6. **`/ship`** — push + Draft-PR (Body aus Plan-Inhalt) + `gh pr merge --auto --squash --delete-branch` → zurück auf main. Bei UNIT-IX kein klassisches Code-Review-Gate — Phase 7 Testphase mit Kunde (via Asana) ist das Safety-Net.
+
+**Regel:** Ein Plan = ein Feature = ein PR. Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
+
+Details der Skills + Plan-Template: [`.claude/commands/README.md`](.claude/commands/README.md) und [`.claude/docs/plan-template.md`](.claude/docs/plan-template.md). Plan-Workflow-Übersicht: [`docs/plans/README.md`](docs/plans/README.md).
 
 ---
 

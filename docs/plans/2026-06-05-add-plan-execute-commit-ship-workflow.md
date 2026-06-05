@@ -130,10 +130,10 @@ Verify:
 
 ### Phase 6: Docs-Polish
 
-- [ ] `.claude/commands/README.md` erweitern um konkrete `/plan`-, `/execute`-, `/commit`-, `/ship`-Sektion mit Mini-Beispiel-Workflow.
-- [ ] `.claude/README.md` ergänzen: Sektion "Workflow-Skills" mit kompakter 4-Skill-Übersicht.
-- [ ] Projekt-Root `CLAUDE.md` (Template) ergänzen: "Für nicht-triviale Änderungen: `/plan <slug>` → review → `/execute` → `/commit` → `/ship`."
-- [ ] Top-Level `README.md` des Template-Repos: in der Workflow-Sektion Bullet ergänzen.
+- [x] (2026-06-05 14:35Z) `.claude/commands/README.md` erweitern um konkrete `/plan`-, `/execute`-, `/commit`-, `/ship`-Sektion mit Mini-Beispiel-Workflow. — Komplett neu geschrieben: 4-Skill-Tabelle, Mini-Beispiel-Workflow als Code-Block, Verweis auf plan-template.md und Plan-Workflow-Doku.
+- [x] (2026-06-05 14:35Z) `.claude/README.md` ergänzen: Sektion "Workflow-Skills" mit kompakter 4-Skill-Übersicht. — Inhalt-Bullets aktualisiert (commands/ nicht mehr leer, plan-template.md erwähnt), neue "Workflow-Skills (4-Kette)"-Sektion vor "Änderungen", "Änderungen"-Sektion aktualisiert: Werkzeug-Repos direkt main ohne PR.
+- [x] (2026-06-05 14:35Z) Projekt-Root `CLAUDE.md` (Template) ergänzen: "Für nicht-triviale Änderungen: `/plan <slug>` → review → `/execute` → `/commit` → `/ship`." — Workflow-Regeln um 4. Bullet erweitert, mit Verweis auf `.claude/CLAUDE.md` Sektion.
+- [x] (2026-06-05 14:35Z) Top-Level `README.md` des Template-Repos: in der Workflow-Sektion Bullet ergänzen. — Komplette Dev-Loop-Sektion auf 4-Skill-Workflow umgeschrieben (6 Schritte vs. 4 vorher), Regel aktualisiert (kein Review-Gate, verify-Gate in /commit), Verweise auf commands/README.md + plan-template.md + docs/plans/README.md.
 
 Files touched: `.claude/commands/README.md`, `.claude/README.md`, `CLAUDE.md`, `README.md`
 
@@ -172,6 +172,7 @@ Append-only. `/execute` schreibt hier nach jeder Phase einen Eintrag. Niemals um
 - 2026-06-05 14:05Z — Phase 4 complete: `.claude/commands/commit.md` (NEW, ~125 Zeilen) angelegt mit Frontmatter, 7-Schritt-Pflicht-Sequenz (Staged-Files-Check, konditionales Verify-Gate, aktiven Plan finden, letzte [x]-Phase extrahieren, Commit, Log, STOPP), Edge Cases (kein aktiver Plan = Bootstrap-Modus, mehrere executing Plans, verify rot, pnpm fehlt), "Was NICHT tut"-Sektion, Verify-Block. File staged im Submodul.
 - 2026-06-05 14:15Z — `/plan` refactored: `code`-CLI Auto-Open-Mechanik entfernt (unzuverlässig: `code` nicht in allen Shell-Kontexten im PATH, Smoke-Test bestätigte das). Ersetzt durch klickbaren Markdown-Pfad im Chat-Report (`[docs/plans/...](docs/plans/...)`-Syntax — Claude Code rendert das als Link, Klick öffnet die Datei im Editor). Robuster, kein Auto-Magic. Submodul-Commit: `97435e1`.
 - 2026-06-05 14:25Z — Phase 5 complete: `.claude/commands/ship.md` (NEW, ~150 Zeilen) angelegt mit Frontmatter, 11-Schritt-Pflicht-Sequenz, dual-mode (Werkzeug-Push vs. Kundenprojekt-PR+merge), PR-Body-Template aus Plan-Goal+Phases+SHAs, Edge Cases (gh fehlt, gh nicht authentifiziert, push fail, merge fail, --auto nicht supported, kein aktiver Plan). "Was NICHT tut"-Sektion. Verify-Block für beide Modi. File staged im Submodul.
+- 2026-06-05 14:35Z — Phase 6 complete: 4 Doku-Files aktualisiert für 4-Skill-Workflow. Submodul: `.claude/commands/README.md` (Tabelle + Mini-Beispiel) + `.claude/README.md` (Workflow-Skills-Sektion). Haupt-Repo: `CLAUDE.md` (Workflow-Regeln-Bullet) + `README.md` (komplett neu geschriebener Dev-Loop). Files staged in beiden Repos.
 
 ## Decisions Made During Execution
 

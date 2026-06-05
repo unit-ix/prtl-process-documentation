@@ -12,7 +12,8 @@
 
 - Ein Schritt → Prüfung → nächster Schritt. Keine autonomen Ketten.
 - Lovable liefert das Grundgerüst, Claude iteriert — Build muss nach jedem Schritt grün bleiben.
-- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm tsc --noEmit && pnpm build`).
+- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm tsc --noEmit && pnpm build`). Das Gate sitzt im `/commit`-Skill.
+- Für nicht-triviale Änderungen: `/plan <slug> [<beschreibung>]` → Plan-File inline editieren → `/execute docs/plans/<file>.md` (eine Phase) → `/commit` → ggf. weitere `/execute` + `/commit` für weitere Phasen → `/ship`. Details: [`.claude/CLAUDE.md`](.claude/CLAUDE.md) Sektion "Workflow-Skills (4-Kette)".
 
 ## Projekt-Doku
 
