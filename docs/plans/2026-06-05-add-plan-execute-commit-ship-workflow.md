@@ -81,11 +81,11 @@ Verify:
 
 ### Phase 3: `/execute`-Command bauen
 
-- [ ] `.claude/commands/execute.md` anlegen mit Frontmatter (`description`, `argument-hint: <docs/plans/file.md>`).
-- [ ] Command-Body — die Pflicht-Sequenz: (1) `$1` Pfad validieren, (2) Plan lesen, alle `<!-- HUMAN: -->` + `> 💬 DEV-NOTE:`-Hinweise verzeichnen, (3) erste `### Phase N` mit ≥ einem `- [ ]` finden — keine offen: STOP "Plan vollständig", (4) Status-Lifecycle: wenn `draft` → auf `executing` setzen + Log-Eintrag, (5) Phase + Steps + `Verify:`-Block dem Dev im Chat anzeigen, (6) optional `Assignee:` prüfen + freundlich warnen wenn ≠ aktueller `git config user.name` (nicht blockieren), (7) Steps ausführen mit Respekt der Inline-Hinweise, (8) `git add` auf veränderte Files (kein commit), (9) `- [ ]` der Phase auf `- [x] (UTC-Timestamp) <step>` setzen, (10) Log-Eintrag append, (11) wenn alle Phasen `[x]`: Status auf `done`, (12) STOP mit Report.
-- [ ] Hard-Rule im Body: "Niemals zwei Phasen in einem Aufruf abarbeiten."
-- [ ] Hard-Rule: "Niemals Goal/Constraints/Out of Scope/Phase-Steps umschreiben."
-- [ ] Hard-Rule: "Niemals committen — das ist /commit's Aufgabe."
+- [x] (2026-06-05 11:42Z) `.claude/commands/execute.md` anlegen mit Frontmatter (`description`, `argument-hint: <docs/plans/file.md>`). — Frontmatter gesetzt mit description (kein verify, kein commit) + argument-hint quoted für yaml.
+- [x] (2026-06-05 11:42Z) Command-Body — die Pflicht-Sequenz: (1) `$1` Pfad validieren, (2) Plan lesen, alle `<!-- HUMAN: -->` + `> 💬 DEV-NOTE:`-Hinweise verzeichnen, (3) erste `### Phase N` mit ≥ einem `- [ ]` finden — keine offen: STOP "Plan vollständig", (4) Status-Lifecycle: wenn `draft` → auf `executing` setzen + Log-Eintrag, (5) Phase + Steps + `Verify:`-Block dem Dev im Chat anzeigen, (6) optional `Assignee:` prüfen + freundlich warnen wenn ≠ aktueller `git config user.name` (nicht blockieren), (7) Steps ausführen mit Respekt der Inline-Hinweise, (8) `git add` auf veränderte Files (kein commit), (9) `- [ ]` der Phase auf `- [x] (UTC-Timestamp) <step>` setzen, (10) Log-Eintrag append, (11) wenn alle Phasen `[x]`: Status auf `done`, (12) STOP mit Report. — Alle 12 Schritte als H3-Subsections im Body. Schritt 3 implementiert [!]-Skip per Decision-Eintrag. Schritt 6 weicht von der Spec ab: KEIN Assignee-Check (Decision-Eintrag erklärt). Mid-Phase-Error in Schritt 6: STOPP ohne stage (Decision-Eintrag).
+- [x] (2026-06-05 11:42Z) Hard-Rule im Body: "Niemals zwei Phasen in einem Aufruf abarbeiten." — Hard Rule 1 unter eigener `## Hard Rules (nicht verhandelbar)`-Sektion.
+- [x] (2026-06-05 11:42Z) Hard-Rule: "Niemals Goal/Constraints/Out of Scope/Phase-Steps umschreiben." — Hard Rule 2, mit expliziter mutable-Liste (Status, Checkboxes, Execution Log, Decisions).
+- [x] (2026-06-05 11:42Z) Hard-Rule: "Niemals committen — das ist /commit's Aufgabe." — Hard Rule 3. Zusätzlich eigene "Was /execute NICHT tut"-Sektion mit erweiterten Verbotenen (kein verify, kein push, kein Assignee-Check, keine Branch-Ops, kein Auto-Rollback).
 
 Files touched: `.claude/commands/execute.md` (NEW)
 
@@ -166,9 +166,13 @@ Append-only. `/execute` schreibt hier nach jeder Phase einen Eintrag. Niemals um
 - 2026-06-05 11:00Z — Phase 1 complete: 3 Files geupdated (`.claude/docs/plan-template.md`, `docs/plans/README.md`, `.claude/CLAUDE.md`), 1 File bewusst unverändert (`.claude/docs/code-app-patterns.md`). Verify-Checks grün: Assignee=3, /commit-or-/ship=15 Mentions. Files staged (3 im Submodul-Index, 4 im Haupt-Repo-Index inkl. Plan + abandoned-Vorgänger).
 - 2026-06-05 11:01Z — Phase 1 committed + pushed: Submodul `12ef0e5` (`feat: phase 1 — foundation files for 4-skill workflow`) auf origin/main; Haupt-Repo `872f1f2` (`feat: phase 1 — introduce plan-execute-commit-ship workflow + bump submodule`) auf origin/main.
 - 2026-06-05 11:08Z — Phase 2 complete: `.claude/commands/plan.md` (NEW, 96 Zeilen) angelegt mit Frontmatter (description, argument-hint), 8-Schritt-Body inkl. Repo-Check + Template-Load + EnterPlanMode + Approval + Slug + Branch-Logik + Speichern + Edge Cases. Verify-Checks grün: Frontmatter sauber, TEMPLATE-BEGIN×2 referenziert, Kundenprojekt/Werkzeug-Modus×6 dokumentiert. File staged im Submodul.
+- 2026-06-05 11:11Z — Phase 2 committed + pushed: Submodul `8f8997c` (`feat: phase 2 — /plan command`), Haupt-Repo `146a17c` (`chore: phase 2 — bump submodule + log /plan command`). Beide auf origin/main.
+- 2026-06-05 11:42Z — Phase 3 complete: `.claude/commands/execute.md` (NEW, ~140 Zeilen) angelegt mit Frontmatter, 12-Schritt-Pflicht-Sequenz, 3 Hard Rules, "Was NICHT tut"-Sektion, Edge Cases, Verify-Block. Verify-Checks grün: Frontmatter, 12 Schritte als H3-Subsections, alle Hard Rules markiert. File staged im Submodul.
 
 ## Decisions Made During Execution
 
 Append-only. Jede Abweichung vom Plan oben wird hier mit Begründung dokumentiert.
 
-- (noch keine)
+- 2026-06-05 — **`/execute` macht keinen Assignee-Check** (Plan-Spec sagte "freundlich warnen"). Interview-Decision am 2026-06-05: Assignee bleibt rein dokumentarisch, /execute liest und prüft das Feld nicht. Konsequenz: plan-template.md und docs/plans/README.md erwähnen aktuell noch eine "freundliche Warnung" — wird in Phase 6 (Docs Polish) abgeglichen. Begründung: minimal-friction-Workflow, Solo-Owner-Realität in vielen UNIT-IX-Projekten, Assignee-Sichtbarkeit auch ohne Tool-Gate gegeben.
+- 2026-06-05 — **`/execute` skipt blockierte Phasen** statt zu stoppen. Plan-Spec war ambivalent zu blockierten Phasen — Interview-Decision: erste `- [ ]` ohne Rücksicht auf vorherige `[!]` bearbeiten. Sicherheitsnetz: wenn ALLE Phasen entweder `[x]` oder `[!]` sind (= keine `[ ]` mehr offen, aber Plan nicht "done"), gibt /execute "Plan hängt — manuelle Intervention nötig" raus.
+- 2026-06-05 — **`/execute` macht keinen partial-stage bei Mid-Phase-Error.** Interview-Decision: bei Step-Fehler mitten in einer Phase wird sofort gestoppt, KEIN `git add`, Plan-File komplett unverändert. Working-Tree-Changes der bisher erfolgreichen Steps bleiben unstaged — Dev rolled manuell zurück (`git checkout -- <pfad>`) oder fixed. Begründung: Konsistenz "Phase = atomare Einheit", kein halber Stage-State der zu Verwirrung führt.
