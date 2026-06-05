@@ -11,6 +11,8 @@ jobs:
         if: github.repository != 'unit-ix/code-apps-template'
         steps:
             - uses: actions/checkout@v6
+              with:
+                  submodules: recursive
 
             - uses: pnpm/action-setup@v5
               with:

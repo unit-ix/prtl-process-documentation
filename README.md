@@ -56,10 +56,9 @@ git add -A && git commit -m "chore: import lovable scaffold + apply UNIT IX code
 ## Repo-Struktur
 
 ```
-.claude/              Claude-Workspace (CLAUDE.md, settings.json, Agents/Commands/Skills)
-  shared/             Gemeinsame Claude-Ressourcen (Git-Submodul)
+.claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, settings.json)
 .github/workflows/    CI — lint + typecheck + build
-docs/                 Projekt-Coding-Docs (PRD, Datenmodell, Architektur, Constraints)
+docs/                 Projekt-Doku (PRD, Datenmodell, Architektur)
 eslint.config.js      Base ESLint-Config mit Code-Apps-Hard-Rules
 ```
 
@@ -71,8 +70,8 @@ Claude-Konfiguration: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
 ## Shared-Ressourcen aktualisieren
 
 ```bash
-git submodule update --remote .claude/shared
-git add .claude/shared && git commit -m "chore: update shared claude resources"
+git submodule update --remote .claude
+git add .claude && git commit -m "chore: update shared claude resources"
 ```
 
 ---
@@ -89,7 +88,7 @@ git add .claude/shared && git commit -m "chore: update shared claude resources"
 | Artefakt                                | Ort             |
 | --------------------------------------- | --------------- |
 | PRD, Angebot, Meetings, Kundendokumente | OneDrive only   |
-| Datenmodell, Architektur, Constraints   | `docs/` im Repo |
+| Datenmodell, Architektur                | `docs/` im Repo |
 | Code, Konfiguration                     | Repo            |
 
 ---
@@ -115,7 +114,7 @@ git add .claude/shared && git commit -m "chore: update shared claude resources"
 
 **Keine Tests standardmäßig.** Tests werden eingeführt, wenn konkreter Bedarf entsteht — nicht vorsorglich. Lovable-Testdateien beim Import aktiv entfernen.
 
-**Hard Rules sind nicht verhandelbar.** `power.config.json` und `src/generated/` werden nie manuell bearbeitet. Kein `localStorage`, kein direktes `fetch()` zu externen APIs, kein SSR. Details: [`docs/code-apps-constraints.md`](docs/code-apps-constraints.md)
+**Hard Rules sind nicht verhandelbar.** `power.config.json` und `src/generated/` werden nie manuell bearbeitet. Kein `localStorage`, kein direktes `fetch()` zu externen APIs, kein SSR. Details: [`.claude/docs/code-app-patterns.md`](.claude/docs/code-app-patterns.md) (Sektion "Hard Rules / Constraints")
 
 ---
 
@@ -127,8 +126,8 @@ Zwei Prozesse gleichzeitig in separaten Shells:
 # Shell 1 — Vite Dev-Server
 pnpm dev
 
-# Shell 2 — PAC Connections-Server (zeigt Connector-Daten lokal)
-pac code run --appUrl http://localhost:3000
+# Shell 2 — Power Apps Connections-Server (zeigt Connector-Daten lokal)
+npx power-apps run --appUrl http://localhost:3000
 ```
 
 ```bash
@@ -140,5 +139,5 @@ pnpm verify   # lint + typecheck + build (spiegelt CI)
 ## Deployment
 
 ```bash
-pac code push
+npx power-apps push
 ```
