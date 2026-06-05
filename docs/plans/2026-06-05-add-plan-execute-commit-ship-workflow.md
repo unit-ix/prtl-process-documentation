@@ -113,11 +113,11 @@ Verify:
 
 ### Phase 5: `/ship`-Command bauen
 
-- [ ] `.claude/commands/ship.md` anlegen mit Frontmatter (`description: push + Draft-PR-Erstellung mit Plan-Body + auto-squash-merge. Endet auf main.`, kein argument).
-- [ ] Command-Body: (1) detektieren ob aktueller Branch = `main` und Remote = GitHub-Werkzeug-Repo → Bootstrap-Modus: nur `git push origin main` + STOP, (2) sonst: `git push -u origin <branch>`, (3) finde aktiven Plan-File, (4) baue PR-Body: `## Goal` aus Plan + `## Phases` (jede `### Phase N: <title>` mit Status [`x`/`[ ]`] + zugehörige Commit-Hash aus `git log --grep="phase N"`) + Link `docs/plans/<file>.md`, (5) `gh pr view` → existiert: `gh pr edit --body-file -`, existiert nicht: `gh pr create --draft --title <plan-title> --body-file -`, (6) `gh pr merge --auto --squash --delete-branch`, (7) `git checkout main && git pull && git branch -d <feature-branch>`, (8) Plan-File-Log: `- <UTC-Z> — Phase X shipped (PR #N, commit <sha> auf main)`, (9) wenn alle Phasen `[x]`: Status auf `done`, (10) STOP mit Report.
-- [ ] Edge-Case: `gh` nicht installiert → klarer Fehler + Anleitung.
-- [ ] Edge-Case: PR-Merge schlägt fehl (CI rot, Branch-Protection) → kein lokales Branch-Löschen, Status loggen, STOP.
-- [ ] Edge-Case: kein aktiver Plan (Bootstrap-Modus) → nur push + STOP, kein PR.
+- [x] (2026-06-05 14:25Z) `.claude/commands/ship.md` anlegen mit Frontmatter (`description: push + Draft-PR-Erstellung mit Plan-Body + auto-squash-merge. Endet auf main.`, kein argument). — Frontmatter mit kompakter description; kein argument-hint.
+- [x] (2026-06-05 14:25Z) Command-Body: 11-Schritt-Sequenz: (1) Werkzeug-vs-Kundenprojekt-Detection via origin-URL, (2) Werkzeug-Push (nur git push origin main + Log + STOP), (3) Pre-Flight-Checks gh + auth + branch≠main, (4) git push -u origin <branch>, (5) aktiven Plan finden (mtime falls mehrere, leer = Bootstrap-PR-Body), (6) PR-Body bauen aus Plan-Goal + Phases-mit-SHAs + Plan-Link (oder minimal-Body für Bootstrap), (7) gh pr view → existiert: edit, nicht: create --draft, (8) gh pr merge --auto --squash --delete-branch, (9) Cleanup: checkout main + pull + branch -d (skip wenn CI noch läuft), (10) Plan-Log + Status (done falls letzte Phase), (11) STOPP mit Report.
+- [x] (2026-06-05 14:25Z) Edge-Case: `gh` nicht installiert → klarer Fehler + Anleitung. — Schritt 3 prüft `command -v gh` + `gh auth status`, beide mit klaren STOP-Messages.
+- [x] (2026-06-05 14:25Z) Edge-Case: PR-Merge schlägt fehl (CI rot, Branch-Protection) → kein lokales Branch-Löschen, Status loggen, STOP. — Schritt 8/9 dokumentiert: bei Merge-Fail STOPP, Cleanup übersprungen, Plan-Log dokumentiert den Fail. Zusätzlich Fallback für Repos ohne --auto-merge-Support.
+- [x] (2026-06-05 14:25Z) Edge-Case: kein aktiver Plan (Bootstrap-Modus) → nur push + STOP, kein PR. — Werkzeug-Modus (Schritt 2) ist der eigentliche Bootstrap-Pfad: nur `git push origin main`, kein PR. Im Kundenprojekt-Modus ohne aktiven Plan: minimaler PR-Body mit letztem Commit-Subject (Hotfix-Szenario).
 
 Files touched: `.claude/commands/ship.md` (NEW)
 
@@ -171,6 +171,7 @@ Append-only. `/execute` schreibt hier nach jeder Phase einen Eintrag. Niemals um
 - 2026-06-05 13:53Z — Phase 2 **REWRITTEN** (Kiro-Style). Original EnterPlanMode-basierter /plan via Submodul-Commit `8aab7db` reverted. Neuer Kiro-Style /plan committed als `6d73957`. Phase 2 bleibt formal [x] aber der Skill-Inhalt ist komplett neu (siehe Decisions). Research-Quelle: zwei parallele Subagent-Researches haben gezeigt dass EnterPlanMode + AskUserQuestion in VS Code Extension nicht die gewünschte WYSIWYG-Inline-Edit-Erfahrung liefern können.
 - 2026-06-05 14:05Z — Phase 4 complete: `.claude/commands/commit.md` (NEW, ~125 Zeilen) angelegt mit Frontmatter, 7-Schritt-Pflicht-Sequenz (Staged-Files-Check, konditionales Verify-Gate, aktiven Plan finden, letzte [x]-Phase extrahieren, Commit, Log, STOPP), Edge Cases (kein aktiver Plan = Bootstrap-Modus, mehrere executing Plans, verify rot, pnpm fehlt), "Was NICHT tut"-Sektion, Verify-Block. File staged im Submodul.
 - 2026-06-05 14:15Z — `/plan` refactored: `code`-CLI Auto-Open-Mechanik entfernt (unzuverlässig: `code` nicht in allen Shell-Kontexten im PATH, Smoke-Test bestätigte das). Ersetzt durch klickbaren Markdown-Pfad im Chat-Report (`[docs/plans/...](docs/plans/...)`-Syntax — Claude Code rendert das als Link, Klick öffnet die Datei im Editor). Robuster, kein Auto-Magic. Submodul-Commit: `97435e1`.
+- 2026-06-05 14:25Z — Phase 5 complete: `.claude/commands/ship.md` (NEW, ~150 Zeilen) angelegt mit Frontmatter, 11-Schritt-Pflicht-Sequenz, dual-mode (Werkzeug-Push vs. Kundenprojekt-PR+merge), PR-Body-Template aus Plan-Goal+Phases+SHAs, Edge Cases (gh fehlt, gh nicht authentifiziert, push fail, merge fail, --auto nicht supported, kein aktiver Plan). "Was NICHT tut"-Sektion. Verify-Block für beide Modi. File staged im Submodul.
 
 ## Decisions Made During Execution
 
