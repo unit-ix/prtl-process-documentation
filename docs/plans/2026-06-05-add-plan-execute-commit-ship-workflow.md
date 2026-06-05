@@ -97,10 +97,10 @@ Verify:
 
 ### Phase 4: `/commit`-Command bauen
 
-- [ ] `.claude/commands/commit.md` anlegen mit Frontmatter (`description: pnpm verify Gate + Conventional-Commit mit Plan-Referenz. Stoppt nach Commit.`, kein argument).
-- [ ] Command-Body: (1) `git diff --cached --quiet` prüfen → keine staged changes: abbrechen mit Hinweis "erst /execute laufen lassen", (2) Detektieren ob `package.json` existiert + `verify`-Script hat — wenn ja: `pnpm verify`, wenn nein: skip + Log-Eintrag im Plan, (3) bei rotem verify: STOP, kein commit, Dev fixt manuell + `/commit` erneut (optional: Phase im Plan als `[!]` markieren — ask user first or skip?), (4) bei grün: finde aktiven Plan-File (neueste `Status: executing` in `docs/plans/`), extrahiere zuletzt abgehakte Phase (höchste Phase-Nummer mit `[x]`), (5) `git commit -m "feat: phase N — <phase-title>\n\nPlan: docs/plans/<file>.md"`, (6) Plan-File-Log: `- <UTC-Z> — Phase N committed (<short-sha>)`, (7) STOP mit Report (commit-SHA, files-count).
-- [ ] Edge-Case: kein aktiver Plan gefunden (Bootstrap-Modus oder Plan komplett done) → trotzdem committen aber ohne Plan-Ref, Message: `feat: <user-defined>` oder Dev nach Subject fragen.
-- [ ] Edge-Case: mehrere "executing" Plans → den mit neuester `--mtime` nehmen, oder Dev fragen.
+- [x] (2026-06-05 14:05Z) `.claude/commands/commit.md` anlegen mit Frontmatter (`description: pnpm verify Gate + Conventional-Commit mit Plan-Referenz. Stoppt nach Commit.`, kein argument). — Frontmatter mit description, kein argument-hint.
+- [x] (2026-06-05 14:05Z) Command-Body: 7-Schritt-Pflicht-Sequenz: (1) Staged-Files-Check, (2) Verify-Gate (konditional auf package.json+verify-Script), (3) Aktiven Plan finden (mehrere → neueste mtime), (4) Letzte abgehakte Phase extrahieren (höchste N mit [x]), (5) Commit mit Plan-Ref im Body, (6) Plan-File-Log, (7) STOPP mit Report. Hard-Constraint: niemals push, kein git add, keine Plan-Status-Mutationen (außer Log).
+- [x] (2026-06-05 14:05Z) Edge-Case: kein aktiver Plan gefunden (Bootstrap-Modus oder Plan komplett done) → trotzdem committen aber ohne Plan-Ref, Message: `feat: <user-defined>` oder Dev nach Subject fragen. — Bootstrap-Modus explizit dokumentiert: fragt Dev plain-text nach Subject, committet ohne Plan-Body-Referenz.
+- [x] (2026-06-05 14:05Z) Edge-Case: mehrere "executing" Plans → den mit neuester `--mtime` nehmen, oder Dev fragen. — Doku in Schritt 3: ls -t docs/plans/*.md | head -1, mit Chat-Hinweis "verwende den neuesten".
 
 Files touched: `.claude/commands/commit.md` (NEW)
 
@@ -169,6 +169,7 @@ Append-only. `/execute` schreibt hier nach jeder Phase einen Eintrag. Niemals um
 - 2026-06-05 11:11Z — Phase 2 committed + pushed: Submodul `8f8997c` (`feat: phase 2 — /plan command`), Haupt-Repo `146a17c` (`chore: phase 2 — bump submodule + log /plan command`). Beide auf origin/main.
 - 2026-06-05 11:42Z — Phase 3 complete: `.claude/commands/execute.md` (NEW, ~140 Zeilen) angelegt mit Frontmatter, 12-Schritt-Pflicht-Sequenz, 3 Hard Rules, "Was NICHT tut"-Sektion, Edge Cases, Verify-Block. Verify-Checks grün: Frontmatter, 12 Schritte als H3-Subsections, alle Hard Rules markiert. File staged im Submodul.
 - 2026-06-05 13:53Z — Phase 2 **REWRITTEN** (Kiro-Style). Original EnterPlanMode-basierter /plan via Submodul-Commit `8aab7db` reverted. Neuer Kiro-Style /plan committed als `6d73957`. Phase 2 bleibt formal [x] aber der Skill-Inhalt ist komplett neu (siehe Decisions). Research-Quelle: zwei parallele Subagent-Researches haben gezeigt dass EnterPlanMode + AskUserQuestion in VS Code Extension nicht die gewünschte WYSIWYG-Inline-Edit-Erfahrung liefern können.
+- 2026-06-05 14:05Z — Phase 4 complete: `.claude/commands/commit.md` (NEW, ~125 Zeilen) angelegt mit Frontmatter, 7-Schritt-Pflicht-Sequenz (Staged-Files-Check, konditionales Verify-Gate, aktiven Plan finden, letzte [x]-Phase extrahieren, Commit, Log, STOPP), Edge Cases (kein aktiver Plan = Bootstrap-Modus, mehrere executing Plans, verify rot, pnpm fehlt), "Was NICHT tut"-Sektion, Verify-Block. File staged im Submodul.
 
 ## Decisions Made During Execution
 
