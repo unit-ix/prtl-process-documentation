@@ -67,10 +67,10 @@ Verify:
 
 ### Phase 2: `/plan`-Command bauen
 
-- [ ] `.claude/commands/plan.md` anlegen mit Frontmatter (`description`, `argument-hint: [slug]`).
-- [ ] Command-Body: (a) Slug aus `$1` lesen oder aus Plan-Mode-Inhalt ableiten + Dev-Bestätigung, (b) Branch-Logik: `git remote -v | grep github.com` → ja: `git checkout -b feature/<slug>`, nein: aktueller Branch, (c) Plan Mode entern mit Template aus `.claude/docs/plan-template.md` (kopiere zwischen TEMPLATE-BEGIN/END-Marker), (d) Platzhalter (`<Title>`, `<git user.name>`, `YYYY-MM-DD`) ersetzen, (e) nach Plan-Mode-Approval Datei nach `docs/plans/$(date +%Y-%m-%d)-<slug>.md` schreiben mit `Status: draft`.
-- [ ] Edge-Case: Datei existiert bereits → Dev fragen ob überschreiben oder Slug anpassen (`<slug>-2`, `<slug>-v2` etc).
-- [ ] Edge-Case: kein Git-Repo → Skill mit klarem Fehler abbrechen (kein Plan ohne Git).
+- [x] (2026-06-05 11:08Z) `.claude/commands/plan.md` anlegen mit Frontmatter (`description`, `argument-hint: [slug]`). — Frontmatter mit description + argument-hint "[slug]" gesetzt.
+- [x] (2026-06-05 11:08Z) Command-Body: (a) Slug aus `$1` lesen oder aus Plan-Mode-Inhalt ableiten + Dev-Bestätigung, (b) Branch-Logik: `git remote -v | grep github.com` → ja: `git checkout -b feature/<slug>`, nein: aktueller Branch, (c) Plan Mode entern mit Template aus `.claude/docs/plan-template.md` (kopiere zwischen TEMPLATE-BEGIN/END-Marker), (d) Platzhalter (`<Title>`, `<git user.name>`, `YYYY-MM-DD`) ersetzen, (e) nach Plan-Mode-Approval Datei nach `docs/plans/$(date +%Y-%m-%d)-<slug>.md` schreiben mit `Status: draft`. — 8-Schritt-Sequenz im Body: Repo-Check, Template laden, Plan Mode entern (via EnterPlanMode-Tool), Approval abwarten, Slug bestätigen, Feature-Branch nur in Kundenprojekt-Modus, Speichern, Edge Cases.
+- [x] (2026-06-05 11:08Z) Edge-Case: Datei existiert bereits → Dev fragen ob überschreiben oder Slug anpassen (`<slug>-2`, `<slug>-v2` etc). — Edge Case dokumentiert mit Prompt-Format `[O]verwrite, [R]ename slug, [A]bort`.
+- [x] (2026-06-05 11:08Z) Edge-Case: kein Git-Repo → Skill mit klarem Fehler abbrechen (kein Plan ohne Git). — Pre-Flight-Check via `git rev-parse --is-inside-work-tree` mit definierter Fehlermeldung.
 
 Files touched: `.claude/commands/plan.md` (NEW)
 
@@ -164,6 +164,8 @@ Append-only. `/execute` schreibt hier nach jeder Phase einen Eintrag. Niemals um
 
 - 2026-06-05 10:55Z — execute started (Phase 1: Foundation-Update auf 4-Skill-Welt, manuell ausgeführt da Skills noch nicht existieren)
 - 2026-06-05 11:00Z — Phase 1 complete: 3 Files geupdated (`.claude/docs/plan-template.md`, `docs/plans/README.md`, `.claude/CLAUDE.md`), 1 File bewusst unverändert (`.claude/docs/code-app-patterns.md`). Verify-Checks grün: Assignee=3, /commit-or-/ship=15 Mentions. Files staged (3 im Submodul-Index, 4 im Haupt-Repo-Index inkl. Plan + abandoned-Vorgänger).
+- 2026-06-05 11:01Z — Phase 1 committed + pushed: Submodul `12ef0e5` (`feat: phase 1 — foundation files for 4-skill workflow`) auf origin/main; Haupt-Repo `872f1f2` (`feat: phase 1 — introduce plan-execute-commit-ship workflow + bump submodule`) auf origin/main.
+- 2026-06-05 11:08Z — Phase 2 complete: `.claude/commands/plan.md` (NEW, 96 Zeilen) angelegt mit Frontmatter (description, argument-hint), 8-Schritt-Body inkl. Repo-Check + Template-Load + EnterPlanMode + Approval + Slug + Branch-Logik + Speichern + Edge Cases. Verify-Checks grün: Frontmatter sauber, TEMPLATE-BEGIN×2 referenziert, Kundenprojekt/Werkzeug-Modus×6 dokumentiert. File staged im Submodul.
 
 ## Decisions Made During Execution
 
