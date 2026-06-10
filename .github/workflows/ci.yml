@@ -8,28 +8,46 @@ on:
 jobs:
     verify:
         runs-on: ubuntu-latest
+        # Das Template-Repo selbst hat keine App (kein src/) — CI läuft nur in abgeleiteten Kundenprojekten.
         if: github.repository != 'unit-ix/code-apps-template'
         steps:
+            # submodules: recursive zieht das PRIVATE code-apps-context (.claude/). Der Default-GITHUB_TOKEN
+            # hat KEINEN Lesezugriff auf andere private Repos → einen PAT/Deploy-Key mit Leserecht auf
+            # unit-ix/code-apps-context als Repo-Secret hinterlegen und unten als `token:` setzen, sonst
+            # schlägt der Submodul-Checkout fehl.
             - uses: actions/checkout@v6
               with:
                   submodules: recursive
+                  # token: ${{ secrets.SUBMODULE_TOKEN }}
 
-            - uses: pnpm/action-setup@v5
+            # Guard: vor dem Lovable-Import gibt es noch keine materialisierte Toolchain
+            # (kein package.json/Lockfile). Dann sauber skippen statt an `--frozen-lockfile` zu sterben.
+            - id: toolchain
+              shell: bash
+              run: |
+                  if [[ -f package.json && -f pnpm-lock.yaml ]]; then
+                      echo "ready=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "ready=false" >> "$GITHUB_OUTPUT"
+                      echo "::notice::Toolchain noch nicht materialisiert (package.json/pnpm-lock.yaml fehlt) — verify übersprungen. Greift nach Lovable-Import + 'pnpm install'."
+                  fi
+
+            - if: steps.toolchain.outputs.ready == 'true'
+              uses: pnpm/action-setup@v5
               with:
                   version: 10
 
-            - uses: actions/setup-node@v6
+            - if: steps.toolchain.outputs.ready == 'true'
+              uses: actions/setup-node@v6
               with:
+                  # 24 = aktuelle Node-LTS-Linie, konsistent mit .nvmrc (24) und package.json engines (>=24).
                   node-version: 24
                   cache: pnpm
 
-            - run: pnpm install --frozen-lockfile
+            - if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm install --frozen-lockfile
 
-            - name: Lint
-              run: pnpm lint --if-present
-
-            - name: Typecheck
-              run: pnpm tsc --noEmit
-
-            - name: Build
-              run: pnpm build
+            # Single Source of Truth: exakt derselbe Lauf wie lokal — pnpm verify = lint && tsc --noEmit && build.
+            # Keine separaten Lint/Typecheck/Build-Steps mehr, damit CI nie von der lokalen Definition abweicht.
+            - if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm verify
