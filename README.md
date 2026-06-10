@@ -97,14 +97,14 @@ git add .claude && git commit -m "chore: update shared claude resources"
 
 UNIT-IX Code Apps nutzen die `/plan → /execute → /commit → /ship` Slash-Command-Kette:
 
-1. **`/plan <slug> [<beschreibung>]`** — Implementierungs-Plan nach UNIT-IX-Standard erzeugen (`docs/plans/YYYY-MM-DD-<slug>.md`). In Kundenprojekten zusätzlich `feature/<slug>`-Branch. Pfad ist im Chat-Report klickbar.
-2. **Plan inline reviewen** — du editierst Phasen, Constraints, Steps direkt im VS Code Editor; Inline-Kommentare als `<!-- HUMAN: ... -->` oder `> 💬 DEV-NOTE: ...`.
-3. **`/execute docs/plans/<file>.md`** — genau eine Phase abarbeiten. Stage, hak ab, STOP. Hard Rule: "Ein Schritt → Prüfung → nächster Schritt. Keine autonomen Ketten."
-4. **`/commit`** — `pnpm verify` (lint + typecheck + build, konditional) → Conventional Commit mit Phase-Referenz.
-5. Wiederhole Schritte 3+4 für weitere Phasen.
-6. **`/ship`** — push + Draft-PR (Body aus Plan-Inhalt) + `gh pr merge --auto --squash --delete-branch` → zurück auf main. Bei UNIT-IX kein klassisches Code-Review-Gate — Phase 7 Testphase mit Kunde (via Asana) ist das Safety-Net.
+1. **`/plan <slug> [<beschreibung>]`** — **interview-first**: lädt Pflicht-Kontext (`patterns.md` + `naming.md` immer, `prd/datamodel/architecture` wenn vorhanden), stellt adaptive Rückfragen (`AskUserQuestion`) und schlägt einen `Autopilot:`-Wert vor. Schreibt den Plan nach `docs/plans/YYYY-MM-DD-<slug>.md`. In Kundenprojekten zusätzlich `feature/<slug>`-Branch. Pfad ist im Chat-Report klickbar.
+2. **Plan inline reviewen** — du editierst Phasen, Constraints, Steps direkt im VS Code Editor; Inline-Kommentare als `<!-- HUMAN: ... -->` oder `> 💬 DEV-NOTE: ...`. Bei Bedarf `Autopilot: true` setzen.
+3. **`/execute docs/plans/<file>.md`** — **gated** (Default): genau eine Phase, stage, hak ab, STOP. Bei `Autopilot: true`: alle offenen Phasen am Stück, `pnpm verify` zwischen jeder, STOP bei rot/Fehler/Ende. **Committet nie** — du kannst danach noch nachjustieren.
+4. **`/commit`** — `pnpm verify` (lint + typecheck + build, konditional) als Gate → erzeugt aus einem Aufruf **mehrere geordnete Phasen-Commits** (`feat: phase N — <title>`) und schreibt pro Commit den SHA ins Execution Log.
+5. Bei gated Plänen: wiederhole Schritte 3+4 für weitere Phasen.
+6. **`/ship`** — push + Draft-PR (Body = Goal + Phasen mit Commit-SHAs aus dem Execution Log) + `gh pr merge --auto --squash --delete-branch` → zurück auf main. Bei UNIT-IX kein klassisches Code-Review-Gate — Phase 7 Testphase mit Kunde (via Asana) ist das Safety-Net.
 
-**Regel:** Ein Plan = ein Feature = ein PR. Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
+**Regel:** Ein Plan = ein Feature = ein PR. **Gated by default**, Autopilot opt-in pro Plan. Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
 
 Details der Skills + Plan-Template: [`.claude/commands/README.md`](.claude/commands/README.md) und [`.claude/docs/plan-template.md`](.claude/docs/plan-template.md). Plan-Workflow-Übersicht: [`docs/plans/README.md`](docs/plans/README.md).
 
