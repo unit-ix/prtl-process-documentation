@@ -1,10 +1,12 @@
 # Implementierungs-Pläne
 
-Standardisierte Plan-Files für die 4-Skill-Kette `/plan → /execute → /commit → /ship` in UNIT-IX Code-Apps-Projekten.
+Standardisierte Plan-Files für die Skill-Kette `/plan → /execute → /commit → /ship` in UNIT-IX Code-Apps-Projekten. Vorgelagert läuft **einmalig** `/bootstrap` nach dem Lovable-Import (Kontext-Import + Standards-Audit → erster Plan hier im Ordner).
+
+> **Kanonische Workflow-Quelle:** [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) Sektion „Workflow-Skills". Diese Datei beschreibt die Plan-File-Konventionen; die Erklär-Prosa der Kette lebt dort.
 
 > **Dieser Ordner ist für Kundenprojekt-Pläne.** In einem neuen Projekt (via GitHub „Use this template") liegen hier eure eigenen Feature-Pläne. Pläne, die das **Tooling selbst** weiterentwickeln (`code-apps-template` / `code-apps-context`), liegen dagegen in `.claude/dev-plans/` — damit sie nicht via „Use this template" in jedes Kundenrepo kopiert werden.
 
-## Workflow (4 Skills, v2)
+## Workflow (4 Skills)
 
 1. **`/plan [slug]`** — **interview-first**: lädt Pflicht-Kontext (`.claude/docs/code-app-patterns.md` + `naming-conventions.md` immer; `prd/datamodel/architecture` wenn nicht-Stub), stellt adaptive Rückfragen (`AskUserQuestion`, nur bei echter Mehrdeutigkeit), schlägt einen `Autopilot:`-Wert vor, rendert das Template aus [`.claude/docs/plan-template.md`](../../.claude/docs/plan-template.md) und speichert nach `YYYY-MM-DD-<slug>.md`. Kundenprojekt: zusätzlich `feature/<slug>`-Branch. Klickbarer Pfad im Chat.
 2. **`/execute docs/plans/<file>.md`** — **gated** (Default): **genau eine** offene Phase, dann STOP. Bei `Autopilot: true` im Plan: **alle** offenen Phasen am Stück, `pnpm verify` zwischen jeder, STOP nur bei rot/Fehler/Ende. Files ändern + `git add`, Status/Checkboxes/Execution-Log. **Committet NIE** (auch im Autopilot) — staged nur, du kannst danach nachjustieren.

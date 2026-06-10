@@ -25,30 +25,27 @@ nvm use   # liest .nvmrc → Node 24
 
 ## Nach dem Lovable-Import
 
+Reihenfolge: **Lovable-Code importieren → `/bootstrap <pm-pfad>` → Plan reviewen → 4-Kette abarbeiten.** `/bootstrap` zieht den fachlichen Kontext (PRD/Datenmodell/Architektur) aus dem PM-Framework-Ordner nach `docs/`, fährt einen deterministischen Standards-Audit ([`.claude/scripts/audit-standards.mjs`](.claude/scripts/audit-standards.mjs)) und schreibt daraus den ersten Konformitäts-Plan (`Autopilot: false`). Das manuelle „Artefakte entfernen / verify-Script ergänzen / normalisieren" von früher ist jetzt **Inhalt dieses Plans** — du machst es nicht mehr per Hand, sondern arbeitest die Phasen mit `/execute → /commit → /ship` ab.
+
 ```bash
 # 1. Lovable-Code in dieses Repo kopieren
 #    Konflikte: Template gewinnt bei .vscode/, .prettierrc, .editorconfig,
 #               .gitignore, .claude/, eslint.config.js, .github/workflows/ci.yml
+#    package.json: NICHT überschreiben — Lovable bringt seine eigene (react + Runtime-Deps).
+#    Die beiden mergen: Template-Scripts/engines/devDeps + Lovable-Runtime-Deps.
 
-# 2. Lovable-Artefakte und Tests entfernen
-rm -f vitest.config.ts vitest.config.js src/setupTests.ts
-rm -f src/**/*.test.tsx src/**/*.test.ts src/**/*.spec.tsx src/**/*.spec.ts
+# 2. Lovable-Lockfiles raus, mit pnpm neu installieren
 rm -f package-lock.json yarn.lock
-
-# 3. Dependencies installieren
 pnpm install
 
-# 4. Code normalisieren (einmalig)
-pnpm lint --fix && pnpm format
+# 3. Bootstrap — Kontext-Import + Standards-Audit + Konformitäts-Plan
+#    /bootstrap <pfad-zum-pm-framework-ordner>
+#    → docs/prd.md … + docs/plans/<datum>-bootstrap-standards.md (draft, Autopilot: false)
 
-# 5. verify-Script in package.json ergänzen
-#    "scripts": { "verify": "pnpm lint && pnpm tsc --noEmit && pnpm build" }
-
-# 6. Build prüfen — muss grün sein
-pnpm verify
-
-# 7. Commit
-git add -A && git commit -m "chore: import lovable scaffold + apply UNIT IX code standards"
+# 4. Plan inline reviewen, dann die 4-Kette pro Phase:
+#    /execute docs/plans/<datum>-bootstrap-standards.md → git diff --cached → /commit → /ship
+#    Jede Plan-Phase (Lovable-Artefakte raus, verify-Script, Folder-Restructure, Naming …)
+#    verifiziert per audit-standards.mjs — der Detektor, der das Problem fand.
 ```
 
 ---
@@ -62,7 +59,7 @@ docs/                 Projekt-Doku (PRD, Datenmodell, Architektur)
 eslint.config.js      Base ESLint-Config mit Code-Apps-Hard-Rules
 ```
 
-Alle Pre-Dev-Artefakte (Angebot, Meetings, Kundendokumente) bleiben in OneDrive.  
+Angebot, Meetings und sonstige Kundendokumente bleiben in OneDrive. **PRD, Datenmodell und Architektur dürfen bewusst ins (private) Repo** — `/bootstrap` kopiert sie aus dem PM-Framework-Ordner nach `docs/`.  
 Claude-Konfiguration: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
 
 ---
@@ -78,24 +75,24 @@ git add .claude && git commit -m "chore: update shared claude resources"
 
 ## Übergabe PM → Dev
 
-1. PRD ist in OneDrive finalisiert
-2. Dev klont das Repo und legt `docs/prd.md` an (Kopie aus OneDrive)
-3. Dev befüllt `docs/datamodel.mmd` und `docs/architecture.md` vor Dev-Start
+1. PRD/Datenmodell/Architektur sind im PM-Framework-Ordner (OneDrive) finalisiert
+2. Dev klont das Repo, importiert den Lovable-Code und ruft `/bootstrap <pm-pfad>` auf — das kopiert PRD/Datenmodell/Architektur nach `docs/` (`.docx`/`.pdf` → KI-markierter Stub mit OneDrive-Referenz)
+3. Kopierte `docs/`-Files bleiben untracked, bis der Dev sie via `/commit` bewusst eincheckt
 4. Ab hier liegt die Verantwortung für `docs/` beim Dev-Team — kein automatischer Sync mit OneDrive
 
 **Was wohin gehört:**
 
-| Artefakt                                | Ort             |
-| --------------------------------------- | --------------- |
-| PRD, Angebot, Meetings, Kundendokumente | OneDrive only   |
-| Datenmodell, Architektur                | `docs/` im Repo |
-| Code, Konfiguration                     | Repo            |
+| Artefakt                                   | Ort                                    |
+| ------------------------------------------ | -------------------------------------- |
+| Angebot, Meetings, sonstige Kundendokumente | OneDrive only                          |
+| PRD, Datenmodell, Architektur              | `docs/` im Repo (Owner-Entscheidung — privates Repo) |
+| Code, Konfiguration                        | Repo                                   |
 
 ---
 
 ## Dev-Loop
 
-UNIT-IX Code Apps nutzen die `/plan → /execute → /commit → /ship` Slash-Command-Kette:
+UNIT-IX Code Apps nutzen die `/bootstrap → /plan → /execute → /commit → /ship` Slash-Command-Kette. `/bootstrap` läuft **einmalig** nach dem Lovable-Import (siehe oben), danach iterieren `/plan → /execute → /commit → /ship` pro Feature:
 
 1. **`/plan <slug> [<beschreibung>]`** — **interview-first**: lädt Pflicht-Kontext (`patterns.md` + `naming.md` immer, `prd/datamodel/architecture` wenn vorhanden), stellt adaptive Rückfragen (`AskUserQuestion`) und schlägt einen `Autopilot:`-Wert vor. Schreibt den Plan nach `docs/plans/YYYY-MM-DD-<slug>.md`. In Kundenprojekten zusätzlich `feature/<slug>`-Branch. Pfad ist im Chat-Report klickbar.
 2. **Plan inline reviewen** — du editierst Phasen, Constraints, Steps direkt im VS Code Editor; Inline-Kommentare als `<!-- HUMAN: ... -->` oder `> 💬 DEV-NOTE: ...`. Bei Bedarf `Autopilot: true` setzen.
@@ -112,7 +109,7 @@ Details der Skills + Plan-Template: [`.claude/commands/README.md`](.claude/comma
 
 ## Entwicklungsprinzipien
 
-**Ein Schritt → Prüfung → nächster Schritt.** Keine autonomen KI-Ketten. Claude ist Helfer, kein Autopilot.
+**Ein Schritt → Prüfung → nächster Schritt — gated by default.** Autonome Phasen-Ketten laufen **nur**, wenn ein Plan explizit `Autopilot: true` trägt (opt-in pro Plan, vom `/plan`-Interview vorgeschlagen, vom Dev bestätigt). Ohne dieses Flag stoppt `/execute` nach jeder Phase. Das Safety-Net ist die Phase-7-Testphase mit dem Kunden, nicht ein Per-Phasen-Zwangsstopp.
 
 **Build bleibt immer grün.** `pnpm verify` (lint + typecheck + build) nach jeder Änderung — das spiegelt CI 1:1.
 
