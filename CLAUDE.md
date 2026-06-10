@@ -10,10 +10,10 @@
 
 ## Workflow-Regeln
 
-- Ein Schritt → Prüfung → nächster Schritt. Keine autonomen Ketten.
+- **Gated by default**: ein Schritt → Prüfung → nächster Schritt. Autopilot ist **opt-in pro Plan** (`Autopilot: true` im Header, vom `/plan`-Interview vorgeschlagen, vom Dev bestätigt) und läuft Phasen am Stück, stoppt nur bei rotem verify oder am Ende. Keine impliziten autonomen Ketten ohne dieses Flag.
 - Lovable liefert das Grundgerüst, Claude iteriert — Build muss nach jedem Schritt grün bleiben.
 - `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm tsc --noEmit && pnpm build`). Das Gate sitzt im `/commit`-Skill.
-- Für nicht-triviale Änderungen: `/plan <slug> [<beschreibung>]` → Plan-File inline editieren → `/execute docs/plans/<file>.md` (eine Phase) → `/commit` → ggf. weitere `/execute` + `/commit` für weitere Phasen → `/ship`. Details: [`.claude/CLAUDE.md`](.claude/CLAUDE.md) Sektion "Workflow-Skills (4-Kette)".
+- Für nicht-triviale Änderungen: `/plan <slug> [<beschreibung>]` (interview-first, lädt Pflicht-Kontext) → Plan-File inline editieren → `/execute docs/plans/<file>.md` (eine Phase gated, oder alle bei Autopilot) → ggf. nachjustieren → `/commit` (erzeugt mehrere geordnete Phasen-Commits) → `/ship`. Details: [`.claude/CLAUDE.md`](.claude/CLAUDE.md) Sektion "Workflow-Skills (4-Kette)".
 
 ## Projekt-Doku
 
