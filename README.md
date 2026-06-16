@@ -130,7 +130,8 @@ Zwei Prozesse gleichzeitig in separaten Shells:
 pnpm dev
 
 # Shell 2 — Power Apps Connections-Server (zeigt Connector-Daten lokal)
-npx power-apps run --appUrl http://localhost:3000
+#   --appUrl = die URL, die `pnpm dev` ausgibt (Vite wählt den Port selbst, kein fixer 3000)
+npx power-apps run --appUrl http://localhost:<vite-port>
 ```
 
 ```bash

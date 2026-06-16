@@ -6,27 +6,9 @@ Standardisierte Plan-Files für die Skill-Kette `/plan → /execute → /commit 
 
 > **Dieser Ordner ist für Kundenprojekt-Pläne.** In einem neuen Projekt (via GitHub „Use this template") liegen hier eure eigenen Feature-Pläne. Pläne, die das **Tooling selbst** weiterentwickeln (`code-apps-template` / `code-apps-context`), liegen dagegen in `.claude/dev-plans/` — damit sie nicht via „Use this template" in jedes Kundenrepo kopiert werden.
 
-## Workflow (4 Skills)
+## Workflow
 
-1. **`/plan [slug]`** — **interview-first**: lädt Pflicht-Kontext (`.claude/docs/code-app-patterns.md` + `naming-conventions.md` immer; `prd/datamodel/architecture` wenn nicht-Stub), stellt adaptive Rückfragen (`AskUserQuestion`, nur bei echter Mehrdeutigkeit), schlägt einen `Autopilot:`-Wert vor, rendert das Template aus [`.claude/docs/plan-template.md`](../../.claude/docs/plan-template.md) und speichert nach `YYYY-MM-DD-<slug>.md`. Kundenprojekt: zusätzlich `feature/<slug>`-Branch. Klickbarer Pfad im Chat.
-2. **`/execute docs/plans/<file>.md`** — **gated** (Default): **genau eine** offene Phase, dann STOP. Bei `Autopilot: true` im Plan: **alle** offenen Phasen am Stück, `pnpm verify` zwischen jeder, STOP nur bei rot/Fehler/Ende. Files ändern + `git add`, Status/Checkboxes/Execution-Log. **Committet NIE** (auch im Autopilot) — staged nur, du kannst danach nachjustieren.
-3. **`/commit`** — `pnpm verify` als Gate (einmal vorab, konditional). Bei grün: **ein Aufruf erzeugt mehrere geordnete Phasen-Commits** (`feat: phase N — <title>`, Staging-Quelle = `Files touched:` der Phase) und schreibt pro Commit den SHA ins Execution Log. Bei rot: kein Commit.
-4. **`/ship`** — Kundenprojekte: `git push -u origin <branch>` → `gh pr create --draft` mit Goal + Phases-Liste (Commit-SHAs **aus dem Execution Log**) + Plan-Link → `gh pr merge --auto --squash --delete-branch` → zurück auf `main`. Werkzeug-Repos: Submodul-Push + Root-Bump-Push, kein PR.
-
-```
-/plan invoice-export
-  ↓ (Interview + Pflicht-Kontext + Autopilot-Vorschlag → autosave → feature-branch)
-/execute docs/plans/2026-06-05-invoice-export.md
-  ↓ (gated: 1 Phase staged + abgehakt | Autopilot: alle Phasen am Stück)
-git diff --cached   # Dev reviewt, ggf. nachjustieren
-/commit
-  ↓ (verify → mehrere geordnete Phasen-Commits + SHAs ins Log)
-[gated: ggf. weitere /execute + /commit Zyklen]
-/ship
-  ↓ (push + PR mit SHAs aus Log + auto-merge → main)
-```
-
-> Hard Rule aus [`CLAUDE.md`](../../CLAUDE.md): **Gated by default** (ein Schritt → Prüfung → nächster Schritt). **Autopilot ist opt-in pro Plan** (`Autopilot: true`) und läuft Phasen am Stück, stoppt nur bei rotem verify oder am Ende.
+Die fünf Skills (`/bootstrap → /plan → /execute → /commit → /ship`), ihr Gated-vs-Autopilot-Verhalten und die Hard Rule sind **kanonisch** in [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) Sektion „Workflow-Skills" beschrieben (Verweis oben). Diese Datei behandelt ausschließlich die **Plan-File-Konventionen** für diesen Ordner — Naming, Status, Checkbox-Lexikon, Sektionen, Mutationsregeln.
 
 ## Werkzeug-Repos vs. Kundenprojekte
 
