@@ -80,7 +80,8 @@ const boundaryElements = [
 export default tseslint.config(
     // .claude/** = Submodul (code-apps-context) mit eigenem Repo + eigener Lint-Hoheit
     // (Node-Scripts wie audit-standards.mjs). Wird von der App-Config nicht mitgelintet.
-    { ignores: ['dist/**', 'src/generated/**', 'node_modules/**', '.claude/**'] },
+    // scripts/** = Node-Deploy-Tooling (kein App-Code) — wie .claude/** eigene Lint-Hoheit, aus der App-Config genommen.
+    { ignores: ['dist/**', 'src/generated/**', 'node_modules/**', '.claude/**', 'scripts/**'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {

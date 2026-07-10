@@ -12,7 +12,8 @@
         "build": "tsc --noEmit && vite build",
         "lint": "eslint . --max-warnings 0",
         "verify": "pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build",
-        "knip": "knip --no-config-hints"
+        "knip": "knip --no-config-hints",
+        "deploy:prototype": "node scripts/deploy-prototype.mjs"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.62.0",
