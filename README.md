@@ -1,7 +1,31 @@
 # Code Apps Projekt-Template
 
-Ausgangsbasis für UNIT-IX Power Platform Code Apps (React + Vite + TypeScript SPA).  
-Lovable liefert das UI-Grundgerüst, dieses Template steuert Struktur, Toolchain und Claude-Konfiguration bei.
+**Prototype-First Golden Template** für UNIT-IX Power Platform Code Apps (React 19 + Vite + TypeScript SPA).
+Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne Backend, lokal im Browser
+erlebbar — und wird erst nach Kunden-OK auf ein echtes Backend geforkt (Supabase oder Dataverse).
+Das Template bringt Struktur, Toolchain, Data-Seam und Claude-Konfiguration mit.
+
+---
+
+## Zwei Achsen: Stage × Target
+
+Ein Projekt bewegt sich auf zwei unabhängigen Achsen:
+
+| Achse      | Steuert                          | Werte                                                              |
+| ---------- | -------------------------------- | ------------------------------------------------------------------ |
+| **Stage**  | Reifegrad (= Git-Branch)         | `feature/*` → `dev` → `prototype` → `main`                         |
+| **Target** | Datenquelle (= Backend)          | `mock` (Default) → `supabase` **oder** `dataverse` (Fork nach OK)  |
+
+Das aktive Target steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
+
+```json
+{ "target": "mock", "hosting": "cloudflare" }
+```
+
+Der **Data-Seam** (`src/data/`) entkoppelt UI von Backend: UI und Hooks sprechen nur einen
+Port (`@/data`) an, nie einen konkreten Adapter. Der Fork ist deshalb ein Ein-Datei-Swap in
+`src/data/index.ts` — die Features bleiben unangetastet. Was am Fork wegfällt, listet
+[`docs/prototype-manifest.md`](docs/prototype-manifest.md).
 
 ---
 
@@ -18,49 +42,100 @@ git submodule update --init --recursive
 # 3. Node-Version setzen
 nvm use   # liest .nvmrc → Node 24
 
-# 4. README anpassen — Projektname, Kontext, Lovable-Link
+# 4. Abhängigkeiten installieren
+pnpm install
 ```
 
 ---
 
-## Nach dem Lovable-Import
+## Zwei Command-Tracks
 
-Reihenfolge: **Lovable-Code importieren → `/bootstrap <pm-pfad>` → Plan reviewen → 4-Kette abarbeiten.** `/bootstrap` zieht den fachlichen Kontext (PRD/Datenmodell/Architektur) aus dem PM-Framework-Ordner nach `docs/`, fährt einen deterministischen Standards-Audit ([`.claude/scripts/audit-standards.mjs`](.claude/scripts/audit-standards.mjs)) und schreibt daraus den ersten Konformitäts-Plan (`Autopilot: false`). Das manuelle „Artefakte entfernen / verify-Script ergänzen / normalisieren" von früher ist jetzt **Inhalt dieses Plans** — du machst es nicht mehr per Hand, sondern arbeitest die Phasen mit `/execute → /commit → /ship` ab.
+Die Arbeit läuft über zwei Slash-Command-Ketten — eine erzeugt den Prototyp, die andere iteriert ihn:
+
+**Track 1 — Prototyp aufbauen (einmalig, autonom):**
+
+- **`/bootstrap [<pm-pfad>]`** — zieht den fachlichen Kontext (PRD/Datenmodell/Architektur) aus dem
+  PM-Framework-Ordner nach `docs/`. Der **OneDrive-Quellordner wird nie geschrieben**, nur gelesen.
+- **`/prototype <projektordner>`** — baut aus dem PRD den vollständigen Mock-Prototyp: pro Feature ein
+  Modul nach dem Muster von [`src/features/_example`](src/features/_example) (Port-Hook + AsyncBoundary +
+  die fünf DoD-Zustände + `canSee`/`canEdit`). *(Autonome Engine — wird über das `.claude`-Submodul geliefert.)*
+
+**Track 2 — Feature iterieren (pro Änderung, gated):**
+
+1. **`/plan <slug>`** — interview-first, lädt Pflicht-Kontext, schreibt `docs/plans/YYYY-MM-DD-<slug>.md`
+   (+ `feature/<slug>`-Branch), schlägt einen `Autopilot:`-Wert vor.
+2. **Plan inline reviewen** — Phasen/Constraints direkt im Editor anpassen.
+3. **`/execute docs/plans/<file>.md`** — **gated** (Default): genau eine Phase, stagen, abhaken, STOP.
+   Bei `Autopilot: true`: alle Phasen am Stück, `pnpm verify` zwischen jeder. **Committet nie.**
+4. **`/commit`** — `pnpm verify` als Gate → mehrere geordnete Phasen-Commits + SHA ins Execution Log.
+5. **`/ship`** — push + Draft-PR (SHAs aus dem Log) + auto-squash-merge → `main`.
+
+**Regel:** Ein Plan = ein Feature = ein PR. **Gated by default**, Autopilot opt-in pro Plan.
+Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
+
+Kanonische Workflow-Quelle + Repo-Mode-Detection: [`.claude/CLAUDE.md`](.claude/CLAUDE.md).
+Plan-Template: [`.claude/docs/plan-template.md`](.claude/docs/plan-template.md).
+
+---
+
+## Dev-Loop — localhost-first
+
+Der Prototyp läuft **lokal im Browser** gegen den Mock-Adapter — kein Backend, keine Power-Platform-Verbindung nötig:
 
 ```bash
-# 1. Lovable-Code in dieses Repo kopieren
-#    Konflikte: Template gewinnt bei .vscode/, .prettierrc, .editorconfig,
-#               .gitignore, .claude/, eslint.config.js, .github/workflows/ci.yml
-#    package.json: NICHT überschreiben — Lovable bringt seine eigene (react + Runtime-Deps).
-#    Die beiden mergen: Template-Scripts/engines/devDeps + Lovable-Runtime-Deps.
-
-# 2. Lovable-Lockfiles raus, mit pnpm neu installieren
-rm -f package-lock.json yarn.lock
-pnpm install
-
-# 3. Bootstrap — Kontext-Import + Standards-Audit + Konformitäts-Plan
-#    /bootstrap <pfad-zum-pm-framework-ordner>
-#    → docs/prd.md … + docs/plans/<datum>-bootstrap-standards.md (draft, Autopilot: false)
-
-# 4. Plan inline reviewen, dann die 4-Kette pro Phase:
-#    /execute docs/plans/<datum>-bootstrap-standards.md → git diff --cached → /commit → /ship
-#    Jede Plan-Phase (Lovable-Artefakte raus, verify-Script, Folder-Restructure, Naming …)
-#    verifiziert per audit-standards.mjs — der Detektor, der das Problem fand.
+pnpm dev        # Vite Dev-Server → im Browser öffnen (Vite wählt den Port selbst)
+pnpm verify     # lint + knip + typecheck + build (spiegelt CI 1:1)
 ```
+
+`pnpm verify` ist das eine Gate: `lint && knip && tsc --noEmit && build`. Es muss vor jedem Commit
+grün sein und wird von CI 1:1 gespiegelt. Review passiert am laufenden `pnpm dev` im Browser —
+nicht über einen Deploy. Geteilt wird der Prototyp über **Cloudflare Pages** (`hosting: cloudflare`).
+
+> Der Power-Platform-Connections-Server (`npx power-apps run`) und `npx power-apps push` sind
+> **erst am `dataverse`-Fork** relevant, nicht im Mock-Prototyp.
 
 ---
 
 ## Repo-Struktur
 
 ```
-.claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, settings.json)
-.github/workflows/    CI — lint + typecheck + build
-docs/                 Projekt-Doku (PRD, Datenmodell, Architektur)
-eslint.config.js      Base ESLint-Config mit Code-Apps-Hard-Rules
+.claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, commands/, settings.json)
+.github/workflows/    CI — lint + knip + typecheck + build (spiegelt pnpm verify)
+.unitix/              project.json — Target- + Hosting-Achse (Single Source of Truth)
+docs/                 Projekt-Doku (PRD, Datenmodell, Architektur, prototype-manifest.md)
+src/app/              Einstieg (main.tsx, App.tsx) — Provider, Router, QueryClient
+src/domain/           Reine Domänen-Typen (kennt kein Backend)
+src/data/             Data-Seam: ports/ (Interfaces) · index.ts (Swap-Punkt) · adapters/ (mock/…)
+src/features/         Feature-Module (_example = kanonisches Referenz-Feature)
+src/shared/           Übergreifend: components/ (ui = shadcn), lib/, hooks/
+eslint.config.js      Hard-Rules + Lean-Coding-Gates + Layer-Boundaries
 ```
 
-Angebot, Meetings und sonstige Kundendokumente bleiben in OneDrive. **PRD, Datenmodell und Architektur dürfen bewusst ins (private) Repo** — `/bootstrap` kopiert sie aus dem PM-Framework-Ordner nach `docs/`.  
-Claude-Konfiguration: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
+---
+
+## Was wohin gehört
+
+| Artefakt                                    | Ort                                                  |
+| ------------------------------------------- | ---------------------------------------------------- |
+| Angebot, Meetings, sonstige Kundendokumente | OneDrive only — **nie ins Repo, nie überschrieben**  |
+| PRD, Datenmodell, Architektur               | `docs/` im Repo (Owner-Entscheidung — privates Repo) |
+| Code, Konfiguration                         | Repo                                                 |
+
+`/bootstrap` kopiert PRD/Datenmodell/Architektur aus dem PM-Framework-Ordner **einseitig** nach `docs/`
+(liest OneDrive, schreibt es nie). Ab dem Import liegt die Verantwortung für `docs/` beim Dev-Team.
+
+---
+
+## Fork: mock → supabase/dataverse
+
+Sobald der Kunde den Prototyp abgenommen hat:
+
+1. `target` in [`.unitix/project.json`](.unitix/project.json) umstellen.
+2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `src/data/index.ts` um den Zweig ergänzen.
+3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
+4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
+
+Beim `dataverse`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
 
 ---
 
@@ -69,79 +144,4 @@ Claude-Konfiguration: [`.claude/CLAUDE.md`](.claude/CLAUDE.md)
 ```bash
 git submodule update --remote .claude
 git add .claude && git commit -m "chore: update shared claude resources"
-```
-
----
-
-## Übergabe PM → Dev
-
-1. PRD/Datenmodell/Architektur sind im PM-Framework-Ordner (OneDrive) finalisiert
-2. Dev klont das Repo, importiert den Lovable-Code und ruft `/bootstrap <pm-pfad>` auf — das kopiert PRD/Datenmodell/Architektur nach `docs/` (`.docx`/`.pdf` → KI-markierter Stub mit OneDrive-Referenz)
-3. Kopierte `docs/`-Files bleiben untracked, bis der Dev sie via `/commit` bewusst eincheckt
-4. Ab hier liegt die Verantwortung für `docs/` beim Dev-Team — kein automatischer Sync mit OneDrive
-
-**Was wohin gehört:**
-
-| Artefakt                                   | Ort                                    |
-| ------------------------------------------ | -------------------------------------- |
-| Angebot, Meetings, sonstige Kundendokumente | OneDrive only                          |
-| PRD, Datenmodell, Architektur              | `docs/` im Repo (Owner-Entscheidung — privates Repo) |
-| Code, Konfiguration                        | Repo                                   |
-
----
-
-## Dev-Loop
-
-UNIT-IX Code Apps nutzen die `/bootstrap → /plan → /execute → /commit → /ship` Slash-Command-Kette. `/bootstrap` läuft **einmalig** nach dem Lovable-Import (siehe oben), danach iterieren `/plan → /execute → /commit → /ship` pro Feature:
-
-1. **`/plan <slug> [<beschreibung>]`** — **interview-first**: lädt Pflicht-Kontext (`patterns.md` + `naming.md` immer, `prd/datamodel/architecture` wenn vorhanden), stellt adaptive Rückfragen (`AskUserQuestion`) und schlägt einen `Autopilot:`-Wert vor. Schreibt den Plan nach `docs/plans/YYYY-MM-DD-<slug>.md`. In Kundenprojekten zusätzlich `feature/<slug>`-Branch. Pfad ist im Chat-Report klickbar.
-2. **Plan inline reviewen** — du editierst Phasen, Constraints, Steps direkt im VS Code Editor; Inline-Kommentare als `<!-- HUMAN: ... -->` oder `> 💬 DEV-NOTE: ...`. Bei Bedarf `Autopilot: true` setzen.
-3. **`/execute docs/plans/<file>.md`** — **gated** (Default): genau eine Phase, stage, hak ab, STOP. Bei `Autopilot: true`: alle offenen Phasen am Stück, `pnpm verify` zwischen jeder, STOP bei rot/Fehler/Ende. **Committet nie** — du kannst danach noch nachjustieren.
-4. **`/commit`** — `pnpm verify` (lint + typecheck + build, konditional) als Gate → erzeugt aus einem Aufruf **mehrere geordnete Phasen-Commits** (`feat: phase N — <title>`) und schreibt pro Commit den SHA ins Execution Log.
-5. Bei gated Plänen: wiederhole Schritte 3+4 für weitere Phasen.
-6. **`/ship`** — push + Draft-PR (Body = Goal + Phasen mit Commit-SHAs aus dem Execution Log) + `gh pr merge --auto --squash --delete-branch` → zurück auf main. Bei UNIT-IX kein klassisches Code-Review-Gate — Phase 7 Testphase mit Kunde (via Asana) ist das Safety-Net.
-
-**Regel:** Ein Plan = ein Feature = ein PR. **Gated by default**, Autopilot opt-in pro Plan. Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
-
-Details der Skills + Plan-Template: [`.claude/commands/README.md`](.claude/commands/README.md) und [`.claude/docs/plan-template.md`](.claude/docs/plan-template.md). Plan-Workflow-Übersicht: [`docs/plans/README.md`](docs/plans/README.md).
-
----
-
-## Entwicklungsprinzipien
-
-**Ein Schritt → Prüfung → nächster Schritt — gated by default.** Autonome Phasen-Ketten laufen **nur**, wenn ein Plan explizit `Autopilot: true` trägt (opt-in pro Plan, vom `/plan`-Interview vorgeschlagen, vom Dev bestätigt). Ohne dieses Flag stoppt `/execute` nach jeder Phase. Das Safety-Net ist die Phase-7-Testphase mit dem Kunden, nicht ein Per-Phasen-Zwangsstopp.
-
-**Build bleibt immer grün.** `pnpm verify` (lint + typecheck + build) nach jeder Änderung — das spiegelt CI 1:1.
-
-**Lovable nur für initialen UI-Entwurf, manuelles Entwickeln und Claude für Migration und Business-Logik.** Lovable bleibt für initiales Scaffolding zuständig. Nicht für Tests oder Deployment-Logik.
-
-**Keine Tests standardmäßig.** Tests werden eingeführt, wenn konkreter Bedarf entsteht — nicht vorsorglich. Lovable-Testdateien beim Import aktiv entfernen.
-
-**Hard Rules sind nicht verhandelbar.** `power.config.json` und `src/generated/` werden nie manuell bearbeitet. Kein `localStorage`, kein direktes `fetch()` zu externen APIs, kein SSR. Details: [`.claude/docs/code-app-patterns.md`](.claude/docs/code-app-patterns.md) (Sektion "Hard Rules / Constraints")
-
----
-
-## Lokale Entwicklung
-
-Zwei Prozesse gleichzeitig in separaten Shells:
-
-```bash
-# Shell 1 — Vite Dev-Server
-pnpm dev
-
-# Shell 2 — Power Apps Connections-Server (zeigt Connector-Daten lokal)
-#   --appUrl = die URL, die `pnpm dev` ausgibt (Vite wählt den Port selbst, kein fixer 3000)
-npx power-apps run --appUrl http://localhost:<vite-port>
-```
-
-```bash
-pnpm verify   # lint + typecheck + build (spiegelt CI)
-```
-
----
-
-## Deployment
-
-```bash
-npx power-apps push
 ```

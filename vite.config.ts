@@ -1,11 +1,19 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { powerApps } from '@microsoft/power-apps-vite';
+import tailwindcss from '@tailwindcss/vite';
 
-// Vorverdrahtete Power Apps Code App Toolchain.
-// powerApps() embeddet den Dataverse-/Connector-Dev-Proxy — kein separates `pac code run` nötig,
-// `pnpm dev` (= plain `vite`) reicht. Lovable bringt eine eigene vite.config mit: beim Import die
-// Plugins hier mergen, powerApps() NICHT verlieren (sonst keine Datenanbindung im Dev-Server).
+// Prototype-First Golden-Template-Toolchain (target: mock).
+// - react()        — React 19 Fast Refresh
+// - tailwindcss()  — Tailwind v4 via Vite-Plugin (kein tailwind.config, Tokens leben in src/index.css)
+// - @-Alias        — spiegelt tsconfig `paths` ("@/*" -> "./src/*")
+// Das Microsoft-Power-Platform-Overlay (SDK + zugehöriges Vite-Plugin) wird erst am
+// dataverse-Fork re-added (Roadmap R5) — im mock-Default bewusst NICHT vorverdrahtet.
 export default defineConfig({
-    plugins: [react(), powerApps()],
+    plugins: [react(), tailwindcss()],
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+        },
+    },
 });
