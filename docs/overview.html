@@ -97,9 +97,11 @@
 
 <h2>Worum es geht</h2>
 <p>
-  Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Der Prototyp läuft mit
-  erfundenen Daten auf dem Rechner (<code>pnpm dev</code>), wird mit dem Kunden abgestimmt — und
-  <strong>erst nach dem OK</strong> bekommt er ein echtes Backend.
+  Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Er arbeitet mit
+  erfundenen Daten (kein Backend) — <strong>wir entwickeln ihn auf localhost</strong> (<code>pnpm dev</code>),
+  und für die <strong>Abstimmung mit dem Kunden liegt er auf Cloudflare</strong> (immer noch Mock-Daten,
+  standardmäßig auf unserem UNIT-IX-Tenant, beim Kunden nur wenn schon entschieden). <strong>Erst nach dem
+  OK</strong> bekommt er ein echtes Backend — der Umzug geht von der Cloudflare-Fassung aus.
 </p>
 <p>
   Warum: Ein Konzept auf Papier diskutiert man drei Runden lang. Ein klickbarer Prototyp beantwortet dieselben
@@ -112,13 +114,14 @@
 </p>
 
 <h2>Die Landkarte</h2>
-<pre><code>Vertrieb/Workshop        Prototyp                  Backend                Betrieb
-─────────────────        ────────                  ───────                ───────
-PRD + Konzepte     →     /prototype baut      →    Fork: Adapter    →     Kunden-App
-(OneDrive)               Mock, localhost           tauschen               (Cloudflare
-                         ↓                         ↓                       oder Microsoft)
-                         Kunde klickt,             Datenmodell wird
-                         gibt Feedback             technisch</code></pre>
+<pre><code>Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
+─────────────────      ──────────────       ──────────────────     ───────            ───────
+PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
+(OneDrive)             Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
+                       (unsere Dev)          Tenant)               ↓                   oder Microsoft)
+                                             ↓                     Datenmodell
+                                             Kunde klickt,         wird technisch
+                                             gibt Feedback</code></pre>
 <p>
   Es gibt <strong>keine harte Übergabe</strong> zwischen „Konzept“ und „Entwicklung“. Der Prototyp wächst im
   Fluss von ~70–75&nbsp;% auf 100&nbsp;% — wer gerade daran arbeitet, ist zweitrangig. Der Prozess ist bewusst
@@ -236,10 +239,15 @@ src/data/adapters/
 
 <h2>Teilen und Deployen</h2>
 <ul>
-  <li><strong>Entwickelt und reviewt wird auf localhost</strong> (<code>pnpm dev</code>) — nie über einen Deploy.</li>
-  <li><strong>Der Kunden-Link</strong> entsteht über <strong>GitHub Actions</strong>, ausgelöst durch eine Promotion auf <code>prototype</code>.</li>
-  <li><strong>Nicht jeder Commit deployt.</strong> Build-Minuten sind ein echtes Budget.</li>
+  <li><strong>Wir entwickeln auf localhost</strong> (<code>pnpm dev</code>) und machen dort unseren internen Review — nicht über einen Deploy.</li>
+  <li><strong>Der Kunde stimmt auf Cloudflare ab.</strong> Der abgestimmte Stand liegt auf dem <code>prototype</code>-Branch, deployt auf Cloudflare (Default UNIT-IX-Tenant, Kunden-Tenant wenn schon entschieden) — immer noch Mock-Daten.</li>
+  <li><strong>Der Kunden-Link</strong> entsteht über <strong>GitHub Actions</strong>, ausgelöst durch eine Promotion auf <code>prototype</code>. Nicht jeder Commit deployt — Build-Minuten sind ein echtes Budget.</li>
 </ul>
+<blockquote><p>
+  Der Deploy braucht Ollis Cloudflare-Token (siehe „Noch offen“). <strong>Bis der da ist</strong>, ist das
+  Kunden-Artefakt interimsweise der lokale <code>pnpm dev</code> + der PDF-Report; der Cloudflare-Link wird
+  eingesteckt, sobald der Token steht.
+</p></blockquote>
 <p class="muted">
   Details, Secrets und warum es <em>nicht</em> der Dashboard-Weg (git-connect) ist: <a href="hosting.md">hosting.md</a>.
 </p>
@@ -258,7 +266,7 @@ src/data/adapters/
 <h2>Noch offen</h2>
 <div class="wrap"><table>
   <tr><th>Thema</th><th>Stand</th></tr>
-  <tr><td>Cloudflare-Token + Account-ID</td><td>bei Olli — einziger Blocker für den ersten echten Deploy</td></tr>
+  <tr><td>Cloudflare-Token + Account-ID</td><td>bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost + PDF</td></tr>
   <tr><td>Fertig-Kriterien + Go-Gate vor dem <code>/prototype</code>-Lauf</td><td>Team</td></tr>
   <tr><td>Rollenname „Technical Consultant“ + Verantwortungsbereich</td><td>Team</td></tr>
   <tr><td>OneDrive-Live-Read (Projektordner als Single Source of Truth)</td><td>geplant, eigene Runde</td></tr>

@@ -9,9 +9,11 @@
 
 ## Worum es geht
 
-Wir bauen **zuerst einen klickbaren Prototyp**, nicht zuerst ein Backend. Der Prototyp läuft mit
-erfundenen Daten auf dem Rechner (`pnpm dev`), wird mit dem Kunden abgestimmt — und **erst nach dem
-OK** bekommt er ein echtes Backend.
+Wir bauen **zuerst einen klickbaren Prototyp**, nicht zuerst ein Backend. Er arbeitet mit erfundenen
+Daten (kein Backend) — **wir entwickeln ihn auf localhost** (`pnpm dev`), und für die **Abstimmung mit
+dem Kunden liegt er auf Cloudflare** (immer noch Mock-Daten, standardmäßig auf unserem UNIT-IX-Tenant,
+beim Kunden nur wenn schon entschieden). **Erst nach dem OK** bekommt er ein echtes Backend — der Umzug
+geht von der Cloudflare-Fassung aus.
 
 Warum: Ein Konzept auf Papier diskutiert man drei Runden lang. Ein klickbarer Prototyp beantwortet
 dieselben Fragen in einer. Und weil er echter Code ist, ist er kein Wegwerf-Mockup — er *wird* die App.
@@ -25,13 +27,14 @@ Daten, später ein echtes Backend. Für die Oberfläche ändert sich dabei **nic
 ## Die Landkarte
 
 ```
-Vertrieb/Workshop        Prototyp                  Backend                Betrieb
-─────────────────        ────────                  ───────                ───────
-PRD + Konzepte     →     /prototype baut      →    Fork: Adapter    →     Kunden-App
-(OneDrive)               Mock, localhost           tauschen               (Cloudflare
-                         ↓                         ↓                       oder Microsoft)
-                         Kunde klickt,             Datenmodell wird
-                         gibt Feedback             technisch
+Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
+─────────────────      ──────────────       ──────────────────     ───────            ───────
+PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
+(OneDrive)             Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
+                       (unsere Dev)          Tenant)               ↓                   oder Microsoft)
+                                             ↓                     Datenmodell
+                                             Kunde klickt,         wird technisch
+                                             gibt Feedback
 ```
 
 Es gibt **keine harte Übergabe** zwischen „Konzept" und „Entwicklung". Der Prototyp wächst im Fluss
@@ -157,9 +160,14 @@ Layer-Grenzen (Feature → Port → Adapter → Domain) · Rules of Hooks.
 
 ## Teilen und Deployen
 
-- **Entwickelt und reviewt wird auf localhost** (`pnpm dev`) — nie über einen Deploy.
+- **Wir entwickeln auf localhost** (`pnpm dev`) und machen dort unseren internen Review — nicht über einen Deploy.
+- **Der Kunde stimmt auf Cloudflare ab.** Der abgestimmte Stand liegt auf dem `prototype`-Branch, deployt
+  auf Cloudflare (Default UNIT-IX-Tenant, Kunden-Tenant wenn schon entschieden) — immer noch Mock-Daten.
 - **Der Kunden-Link** entsteht über **GitHub Actions**, ausgelöst durch eine Promotion auf `prototype`.
-- **Nicht jeder Commit deployt.** Build-Minuten sind ein echtes Budget.
+  Nicht jeder Commit deployt — Build-Minuten sind ein echtes Budget.
+
+> Der Deploy braucht Ollis Cloudflare-Token (siehe „Noch offen"). **Bis der da ist**, ist das Kunden-Artefakt
+> interimsweise der lokale `pnpm dev` + der PDF-Report; der Cloudflare-Link wird eingesteckt, sobald der Token steht.
 
 Details, Secrets und warum es *nicht* der Dashboard-Weg (git-connect) ist: [`hosting.md`](hosting.md).
 
@@ -179,7 +187,7 @@ Die belastbaren Fertig-Kriterien und das Go-Gate vor dem großen `/prototype`-La
 
 | Thema | Stand |
 | --- | --- |
-| Cloudflare-Token + Account-ID | bei Olli — einziger Blocker für den ersten echten Deploy |
+| Cloudflare-Token + Account-ID | bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost + PDF |
 | Fertig-Kriterien + Go-Gate vor dem `/prototype`-Lauf | Team |
 | Rollenname „Technical Consultant" + Verantwortungsbereich | Team |
 | OneDrive-Live-Read (Projektordner als Single Source of Truth) | geplant, eigene Runde |

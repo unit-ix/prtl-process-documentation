@@ -1,9 +1,11 @@
 # Hosting — Prototyp teilen (Cloudflare Pages)
 
-> **localhost-first bleibt der Default.** Entwickelt und reviewt wird am laufenden `pnpm dev` im Browser
-> gegen den Mock-Adapter. Ein öffentlicher Link ist nur nötig, um den Prototyp mit dem Kunden zu teilen.
-> Bis ein Cloudflare-Zugang existiert, ist das Morgen-Ergebnis der lokale Prototyp + der PDF-Report;
-> der Link wird eingesteckt, sobald der Token da ist.
+> **localhost-first für unsere Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev`
+> im Browser gegen den Mock-Adapter — nicht über einen Deploy. Die **Abstimmung mit dem Kunden** läuft dagegen
+> auf dem **Cloudflare-Deploy** des `prototype`-Branches (weiterhin Mock-Daten, Default UNIT-IX-Tenant,
+> Kunden-Tenant wenn schon entschieden) — das ist der Regelfall, nicht die Ausnahme.
+> Solange der Cloudflare-Zugang (Ollis Token) fehlt, ist das Kunden-Artefakt interimsweise der lokale
+> `pnpm dev` + der PDF-Report; der Link wird eingesteckt, sobald der Token da ist.
 
 Es gibt **einen** automatisierten Weg: **GitHub Actions**. Der Deploy sitzt im Golden Template — Consultant
 und Vertrieb klicken sich nie durchs Cloudflare-Dashboard.
@@ -96,8 +98,9 @@ Das ist eine bewusste Grenze, kein Bug: der Deploy wird nicht für einen Nicht-T
 
 ## Was gehört wohin
 
-- **Entwicklung/Review:** `pnpm dev` (localhost), nie über einen Deploy.
-- **Kunden-Link:** GitHub Actions, ausgelöst durch eine Promotion auf `prototype`.
+- **Unsere Entwicklung + interner Review:** `pnpm dev` (localhost), nie über einen Deploy.
+- **Kunden-Abstimmung:** der Cloudflare-Deploy des `prototype`-Branches — der Kunden-Link entsteht über
+  GitHub Actions, ausgelöst durch eine Promotion auf `prototype`.
 - **Link zwischendurch:** `pnpm deploy:prototype` lokal — gleiche Logik, gleicher Slug, gleiche URL.
 - **Power-Platform-Toolchain** (`npx power-apps …`) ist erst am `dataverse`-Fork relevant — für den
   Mock-Prototyp nie.
