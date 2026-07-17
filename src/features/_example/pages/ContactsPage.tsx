@@ -70,7 +70,9 @@ function useContactsController() {
     const createContact = useCreateContact();
     const deleteContact = useDeleteContact();
 
-    const contacts = query.data ?? [];
+    // useMemo, damit die Fallback-Liste eine stabile Identität behält: `query.data ?? []` erzeugt
+    // sonst bei jedem Render ein neues Array und macht das filtered-useMemo unten wirkungslos.
+    const contacts = useMemo(() => query.data ?? [], [query.data]);
     const needle = search.trim().toLowerCase();
     const filtered = useMemo(
         () => contacts.filter((contact) => contact.fullName.toLowerCase().includes(needle)),

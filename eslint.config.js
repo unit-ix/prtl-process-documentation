@@ -6,6 +6,7 @@
 //     (Ausnahme: data/adapters/** — genau dort DARF ein Backend-Adapter fetchen, siehe Override unten)
 //   - Lean-Coding-Gates (max-lines/-per-function, complexity, max-depth, max-params) auf dem
 //     handgeschriebenen App-Code (features/domain/data/ports) — NICHT auf shadcn-ui/Generiertem
+//   - react-hooks/rules-of-hooks auf dem GESAMTEN src-Baum (Hook-Verstoss = Laufzeit-Bug, kein Stil)
 //   - Dependency-Direction als echte Layer-Boundaries via eslint-plugin-boundaries
 //       feature → port|domain · port → adapter|domain · adapter → domain · domain → nichts
 //     (fängt u. a. den kritischen Verstoß „UI greift direkt auf data/adapters/** zu")
@@ -18,6 +19,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import importPlugin from 'eslint-plugin-import'
 import boundaries from 'eslint-plugin-boundaries'
+import reactHooks from 'eslint-plugin-react-hooks'
 
 // Bare `fetch` ist im Prototyp-First-Template target-neutral verboten: UI/Hooks beziehen Daten
 // AUSSCHLIESSLICH über den Data-Port (`@/data`), nie direkt. Welcher Backend darunter liegt
@@ -99,6 +101,22 @@ export default tseslint.config(
         rules: {
             'no-restricted-globals': ['error', 'localStorage', 'sessionStorage'],
             'no-restricted-syntax': 'off',
+        },
+    },
+    // Rules of Hooks — auf ALLEM App-Code inkl. shared/ui, weil ein Hook-Verstoß ein echter
+    // Laufzeit-Bug ist (kein Stil-Thema): bedingt aufgerufene Hooks zerstören die Hook-Reihenfolge.
+    // Deshalb bewusst breiter als die Lean-Gates unten. Nur Generiertes bleibt aussen vor (global ignoriert).
+    {
+        files: ['src/**/*.{ts,tsx}'],
+        plugins: { 'react-hooks': reactHooks },
+        rules: {
+            'react-hooks/rules-of-hooks': 'error',
+            // exhaustive-deps bleibt 'warn' der Konvention halber — ACHTUNG: `pnpm lint` läuft mit
+            // --max-warnings 0, hier ist eine Warnung also faktisch ein Fehler und CI-blockierend.
+            // Bewusst so: die Regel fand auf Anhieb einen echten Bug im Referenz-Feature
+            // (instabile useMemo-Deps in ContactsPage). Wer sie lockern will, ändert das Lint-Script,
+            // nicht die Severity.
+            'react-hooks/exhaustive-deps': 'warn',
         },
     },
     // Lean-Gates NUR auf handgeschriebenem App-Code.
