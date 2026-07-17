@@ -1,14 +1,19 @@
+# Die EINE Pipeline (konsolidiert 2026-07-17, Hosting-Stack-Review): verify + deploy als zwei Jobs
+# in einer Datei statt zwei Workflows, die auseinanderdriften. Der frühere deploy-prototype.yml
+# lief auf Node 20 / checkout@v4, während ci.yml auf Node 24 / checkout@v6 stand — genau die Art
+# Drift, die Jakobs "wir müssen dann pnpm als Standard festlegen" adressiert.
 name: CI
 
 on:
     pull_request:
     push:
-        branches: [main]
+        branches: [main, prototype]
+    workflow_dispatch: {}
 
 jobs:
     verify:
         runs-on: ubuntu-latest
-        # Das Template-Repo selbst hat keine App (kein src/) — CI läuft nur in abgeleiteten Kundenprojekten.
+        # CI läuft nur in abgeleiteten Kundenprojekten, nicht im Template-Repo selbst.
         if: github.repository != 'unit-ix/code-apps-template'
         steps:
             # submodules: recursive zieht das PRIVATE code-apps-context (.claude/). Der Default-GITHUB_TOKEN
@@ -51,3 +56,51 @@ jobs:
             # Keine separaten Lint/Typecheck/Build-Steps mehr, damit CI nie von der lokalen Definition abweicht.
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm verify
+
+    # Cloudflare-Pages-Deploy. GEGATET + standardmäßig AUS — läuft erst, wenn Olli den Token
+    # provisioniert hat und die Repo-Variable gesetzt ist. Bis dahin dokumentiert, aber inert.
+    #
+    # Deploy-Weg = GitHub Actions (entschieden 2026-07-17, Hosting-Stack-Review): der git-connect-/
+    # Worker-Build-Weg bindet pro Cloudflare-Account nur EINEN GitHub-Account und ist damit aus einer
+    # Agentur-Org nicht in Kunden-Cloudflare-Accounts deploybar. Dieser Weg läuft über Token + Account-ID
+    # und bedient alle drei Ownership-Fälle. Siehe docs/hosting.md.
+    #
+    # Build-Minuten-Disziplin: NUR `prototype` deployt — der eingefrorene, gegatete Promotion-Branch.
+    # feature/* und dev nie. Nicht jeder Commit soll deployen (Hosting-Stack-Review).
+    deploy:
+        runs-on: ubuntu-latest
+        needs: verify
+        if: github.ref == 'refs/heads/prototype' && vars.CLOUDFLARE_DEPLOY_ENABLED == 'true'
+        # Zwei schnelle Promotions hintereinander sollen nicht doppelt Build-Minuten verbrennen.
+        concurrency:
+            group: deploy-prototype-${{ github.ref }}
+            cancel-in-progress: true
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  submodules: recursive
+                  # token: ${{ secrets.SUBMODULE_TOKEN }}
+
+            - uses: pnpm/action-setup@v5
+              with:
+                  version: 10
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm build
+
+            # Ruft bewusst DAS Script statt die Deploy-Logik zu duplizieren (Review Jakob, A3):
+            # sonst nimmt CI den Repo-Namen und das Script .unitix/project.json als Slug-Quelle →
+            # zwei Pages-Projekte mit zwei URLs. Das Script sanitized den Slug und legt das Projekt
+            # bei Bedarf an (wrangler täte das sonst nur interaktiv → erster CI-Deploy failt).
+            # wrangler liest beide Env-Vars nativ.
+            - run: node scripts/deploy-prototype.mjs
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
