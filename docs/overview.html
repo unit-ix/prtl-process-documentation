@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vom Kundengespräch zur fertigen App — Prototype-First Golden Template</title>
+<!--
+  Visuelle Fassung von overview.md. QUELLE IST overview.md — bei Änderungen dort zuerst editieren,
+  dann diese Datei nachziehen. Bewusst self-contained: kein Build, keine externen Requests, offline
+  lauffähig, Light/Dark. Dieses Repo hat keinen HTML-Generator (der SharePoint-Skill baut Kunden-Decks
+  und ist hier nicht zuständig) — diese Datei wird von Hand gepflegt.
+-->
+<style>
+  :root {
+    --bg: oklch(1 0 0);
+    --fg: oklch(0.145 0 0);
+    --muted: oklch(0.556 0 0);
+    --line: oklch(0.922 0 0);
+    --card: oklch(0.985 0 0);
+    --accent: oklch(0.45 0.13 250);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: oklch(0.145 0 0); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0);
+      --line: oklch(0.269 0 0); --card: oklch(0.205 0 0); --accent: oklch(0.72 0.12 250);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: oklch(0.145 0 0); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0);
+    --line: oklch(0.269 0 0); --card: oklch(0.205 0 0); --accent: oklch(0.72 0.12 250);
+  }
+  :root[data-theme="light"] {
+    --bg: oklch(1 0 0); --fg: oklch(0.145 0 0); --muted: oklch(0.556 0 0);
+    --line: oklch(0.922 0 0); --card: oklch(0.985 0 0); --accent: oklch(0.45 0.13 250);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 .5rem; }
+  h2 {
+    font-size: 1.25rem; letter-spacing: -0.01em; margin: 3.5rem 0 1rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--line);
+  }
+  h3 { font-size: 1rem; margin: 2rem 0 .5rem; }
+  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 2rem; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: .1em .35em;
+  }
+  pre {
+    font-family: var(--mono); font-size: .82rem; line-height: 1.6;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 1rem; overflow-x: auto; margin: 1rem 0;
+  }
+  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+  .wrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+  blockquote {
+    margin: 1.5rem 0; padding: .9rem 1.1rem; background: var(--card);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+    font-size: .93rem;
+  }
+  blockquote p { margin: 0; }
+  #theme {
+    position: fixed; top: 1rem; right: 1rem; z-index: 10;
+    background: var(--card); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: .4rem .8rem; font: inherit; font-size: .8rem; cursor: pointer;
+  }
+  #theme:hover { color: var(--fg); }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+  @media print { #theme { display: none; } }
+</style>
+</head>
+<body>
+<button id="theme" type="button">Theme</button>
+<main>
+
+<h1>Vom Kundengespräch zur fertigen App</h1>
+<p class="lede">
+  Das Handbuch zum Prototype-First Golden Template — der rote Faden in ~10&nbsp;Minuten.
+</p>
+
+<blockquote><p>
+  <strong>Diese Seite dupliziert keine Regeln.</strong> Sie zeigt, wie die Teile zusammenhängen, und verlinkt
+  die kanonischen Quellen. Bei Widerspruch gewinnt immer die verlinkte Quelle, nie diese Seite.
+  Quelle dieses Dokuments: <code>docs/overview.md</code>.
+</p></blockquote>
+
+<h2>Worum es geht</h2>
+<p>
+  Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Der Prototyp läuft mit
+  erfundenen Daten auf dem Rechner (<code>pnpm dev</code>), wird mit dem Kunden abgestimmt — und
+  <strong>erst nach dem OK</strong> bekommt er ein echtes Backend.
+</p>
+<p>
+  Warum: Ein Konzept auf Papier diskutiert man drei Runden lang. Ein klickbarer Prototyp beantwortet dieselben
+  Fragen in einer. Und weil er echter Code ist, ist er kein Wegwerf-Mockup — er <em>wird</em> die App.
+</p>
+<p>
+  Die zentrale Idee, die das ermöglicht: die App weiß nicht, woher ihre Daten kommen. Sie fragt einen
+  <strong>Port</strong>; dahinter steckt ein austauschbarer <strong>Adapter</strong>. Am Anfang liefert der
+  Mock-Adapter erfundene Daten, später ein echtes Backend. Für die Oberfläche ändert sich dabei <strong>nichts</strong>.
+</p>
+
+<h2>Die Landkarte</h2>
+<pre><code>Vertrieb/Workshop        Prototyp                  Backend                Betrieb
+─────────────────        ────────                  ───────                ───────
+PRD + Konzepte     →     /prototype baut      →    Fork: Adapter    →     Kunden-App
+(OneDrive)               Mock, localhost           tauschen               (Cloudflare
+                         ↓                         ↓                       oder Microsoft)
+                         Kunde klickt,             Datenmodell wird
+                         gibt Feedback             technisch</code></pre>
+<p>
+  Es gibt <strong>keine harte Übergabe</strong> zwischen „Konzept“ und „Entwicklung“. Der Prototyp wächst im
+  Fluss von ~70–75&nbsp;% auf 100&nbsp;% — wer gerade daran arbeitet, ist zweitrangig. Der Prozess ist bewusst
+  <strong>personenungebunden</strong> beschrieben.
+</p>
+
+<h2>Die zwei Achsen</h2>
+<p>Alles im Template hängt an genau zwei Schaltern. Sie sind <strong>unabhängig</strong> voneinander.</p>
+
+<h3>Stage = welcher Git-Branch</h3>
+<pre><code>feature/*  →  dev  →  prototype  →  main</code></pre>
+<div class="wrap"><table>
+  <tr><th>Branch</th><th>Bedeutung</th></tr>
+  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature. Kein Deploy.</td></tr>
+  <tr><td><code>dev</code></td><td>Mutable Testbasis. Kein Deploy.</td></tr>
+  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. <strong>Nur hier wird deployt.</strong></td></tr>
+  <tr><td><code>main</code></td><td>Produktion. Je nach Ziel mit Cloudflare <strong>oder</strong> Microsoft verbunden.</td></tr>
+</table></div>
+
+<h3>Target = woher die Daten kommen</h3>
+<p class="muted">Steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit dieser Achse.</p>
+<div class="wrap"><table>
+  <tr><th>Target</th><th>Bedeutung</th></tr>
+  <tr><td><code>mock</code></td><td>Erfundene Daten aus dem Seed. Kein Backend. Der Default eines frischen Templates.</td></tr>
+  <tr><td><code>supabase</code></td><td>Postgres + RLS + Auth. Bleibt auf Cloudflare. <strong>Strategisch der Haupt-Weg.</strong></td></tr>
+  <tr><td><code>dataverse</code></td><td>Microsoft Power Platform Code App.</td></tr>
+</table></div>
+
+<blockquote><p>
+  <strong>Richtung (Stand 2026-07-17):</strong> Neue Projekte entstehen als Code Apps, Canvas Apps laufen aus
+  (~95&nbsp;%, keine harte Deadline — sie sind nicht KI-ready). Produktiv geht es Richtung „mehr Supabase,
+  weniger Power Platform“. Bestehendes wird <strong>selektiv</strong> migriert, nicht per Hauruck. Azure ist
+  bewusst <strong>kein</strong> Bestandteil des Templates — es ist das Compliance-Argument („gleiche Leistung,
+  ca. 100–150&nbsp;EUR/Monat“) und belegt, dass wir nicht an einen Hersteller gekettet sind.
+</p></blockquote>
+
+<h2>Der Fork ist eine Datei</h2>
+<p>
+  Wenn der Kunde OK sagt, wird aus dem Prototyp die echte App. Das ist <strong>kein Neubau</strong> — es wird
+  ein Adapter getauscht:
+</p>
+<pre><code>src/data/index.ts        ← der eine Swap-Punkt
+src/data/ports/          ← Interfaces. Ändern sich nie.
+src/data/adapters/
+    mock/                ← Seed-Daten
+    supabase/            ← echtes Backend
+    dataverse/           ← echtes Backend</code></pre>
+<p>
+  Die Regel, die das zusammenhält: <strong>UI und Hooks sprechen nur den Port an (<code>@/data</code>), nie
+  einen Adapter.</strong> Das ist mechanisch erzwungen (ESLint-Boundaries) — nicht nur eine Bitte.
+</p>
+<p>
+  Die Domain-Typen in <code>src/domain/</code> sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen
+  sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt <strong>nur</strong> im Adapter.
+</p>
+<p class="muted">Details: <a href="architecture.md">architecture.md</a> · <a href="prototype-manifest.md">prototype-manifest.md</a></p>
+
+<h2>Der Command-Flow</h2>
+<p>Es gibt <strong>zwei Spuren</strong>. Welche gilt, hängt am Repo, nicht am Gefühl.</p>
+
+<h3>Kundenprojekt</h3>
+<pre><code>/prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom (Consultant-Einstieg)
+/plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch
+/execute &lt;plan&gt;              → arbeitet Phasen ab, staged. Committet nie.
+/commit                      → pnpm verify als Gate, dann Phasen-Commits
+/ship                        → Push + Draft-PR auf dev + auto-merge</code></pre>
+
+<h3>Werkzeug-Repo (<code>code-apps-template</code> / <code>code-apps-context</code>)</h3>
+<pre><code>/dev-plan &lt;slug&gt;     → lean, kein Interview, kein Branch
+/dev-execute &lt;plan&gt;  → arbeitet ab + committet + pusht direkt auf main. Kein PR.</code></pre>
+<p class="muted">Kanonische Beschreibung: <code>.claude/CLAUDE.md</code> → „Workflow-Skills“.</p>
+
+<h2>Die Regeln — und wo sie stehen</h2>
+<p>
+  <strong>Vor jedem Task liest die KI zwei Dateien immer</strong> und <strong>genau eine</strong> target-abhängig:
+</p>
+<div class="wrap"><table>
+  <tr><th>Immer</th><th>bei <code>mock</code></th><th>bei <code>supabase</code></th><th>bei <code>dataverse</code></th></tr>
+  <tr>
+    <td><code>naming-conventions.md</code><br><code>lean-coding.md</code></td>
+    <td><code>prototype-patterns.md</code><br><span class="muted">Mock ok, <code>fetch</code> ok</span></td>
+    <td><code>supabase-patterns.md</code><br><span class="muted"><strong>RLS Pflicht</strong></span></td>
+    <td><code>code-app-patterns.md</code><br><span class="muted">CSP, Dataverse-only</span></td>
+  </tr>
+</table></div>
+<p>
+  Der teure Fehler ist der <strong>falsche Regelsatz</strong>: Supabase-Code in eine CSP-gesperrte Code App
+  bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten
+  <code>target</code>-Feld — nie am Branch.
+</p>
+
+<h3>DB-Naming ist systemabhängig</h3>
+<p class="muted">Kein Versehen, sondern Beschluss.</p>
+<div class="wrap"><table>
+  <tr><th></th><th>Supabase / SQL</th><th>Dataverse / Canvas</th></tr>
+  <tr><td>Tabelle</td><td><code>service_tickets</code><br><span class="muted">snake_case, plural, <strong>kein</strong> Präfix</span></td><td><code>unitix_tblServiceTicket</code></td></tr>
+  <tr><td>Spalte</td><td><code>customer_name</code><br><span class="muted"><strong>kein</strong> Datentyp-Präfix</span></td><td><code>strCustomerName</code></td></tr>
+</table></div>
+<p>
+  Begründung: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ein Präfix dupliziert ihn
+  nur. Bei Canvas Apps ist er sichtbar sinnvoll, weil der Typ im Code fehlt.
+</p>
+
+<h3>Was ESLint hart erzwingt</h3>
+<p>
+  <code>pnpm lint</code> — kein <code>fetch</code> außerhalb von Adaptern · kein <code>localStorage</code>/<code>sessionStorage</code> ·
+  max. <strong>300 Zeilen</strong> pro Datei · Layer-Grenzen (Feature → Port → Adapter → Domain) · Rules of Hooks.
+</p>
+
+<h3>Design</h3>
+<p>
+  Ausschließlich Design-Tokens + die shadcn-Komponenten in <code>src/shared/components/ui/</code>.
+  <strong>Kein eigenes CSS-File, keine Inline-Farben.</strong> Tokens (oklch) leben in <code>src/index.css</code>.
+</p>
+
+<h2>Teilen und Deployen</h2>
+<ul>
+  <li><strong>Entwickelt und reviewt wird auf localhost</strong> (<code>pnpm dev</code>) — nie über einen Deploy.</li>
+  <li><strong>Der Kunden-Link</strong> entsteht über <strong>GitHub Actions</strong>, ausgelöst durch eine Promotion auf <code>prototype</code>.</li>
+  <li><strong>Nicht jeder Commit deployt.</strong> Build-Minuten sind ein echtes Budget.</li>
+</ul>
+<p class="muted">
+  Details, Secrets und warum es <em>nicht</em> der Dashboard-Weg (git-connect) ist: <a href="hosting.md">hosting.md</a>.
+</p>
+
+<h2>Wann ist der Prototyp fertig?</h2>
+<p>
+  Kurzfassung: wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, Erfolg,
+  Keine-Rechte) und der Kunde OK sagt. Ab dann darf das Backend dran.
+</p>
+<p>
+  Die belastbaren Fertig-Kriterien und das Go-Gate vor dem großen <code>/prototype</code>-Lauf sind
+  <strong>noch in Arbeit</strong> (Team-Aufgabe, Stand 2026-07-17). Die DoD-Checkliste im Detail:
+  <code>.claude/docs/prototype-patterns.md</code>.
+</p>
+
+<h2>Noch offen</h2>
+<div class="wrap"><table>
+  <tr><th>Thema</th><th>Stand</th></tr>
+  <tr><td>Cloudflare-Token + Account-ID</td><td>bei Olli — einziger Blocker für den ersten echten Deploy</td></tr>
+  <tr><td>Fertig-Kriterien + Go-Gate vor dem <code>/prototype</code>-Lauf</td><td>Team</td></tr>
+  <tr><td>Rollenname „Technical Consultant“ + Verantwortungsbereich</td><td>Team</td></tr>
+  <tr><td>OneDrive-Live-Read (Projektordner als Single Source of Truth)</td><td>geplant, eigene Runde</td></tr>
+  <tr><td>Automatischer Datenmodell-Sync</td><td>zurückgestellt</td></tr>
+</table></div>
+
+<h2>Diese Seite pflegen</h2>
+<p>
+  <code>overview.md</code> ist die <strong>Quelle</strong> — dort wird editiert. Diese HTML-Fassung ist die
+  visuelle Variante fürs Meeting und wird <strong>von Hand</strong> nachgezogen (dieses Repo hat bewusst keinen
+  HTML-Generator; der SharePoint-Skill baut Kunden-Decks und ist hier nicht zuständig).
+</p>
+<p>
+  Wenn sich am Template etwas ändert — Commands, Architektur, Regelsätze, Branching, Hosting —, gehört die
+  betroffene Stelle hier nachgezogen. <strong>Kanonische Quellen gewinnen immer</strong> gegen diese Seite:
+  <code>.claude/CLAUDE.md</code> · <code>.claude/commands/*</code> ·
+  <code>.claude/docs/prototype-first-architecture.md</code> · <code>eslint.config.js</code> ·
+  <code>src/index.css</code> · <a href="hosting.md">hosting.md</a>.
+</p>
+<p>
+  Und die Regel, die dieses Dokument kurz hält: <strong>nicht duplizieren, verlinken.</strong> Eine Info, die
+  hier und in der kanonischen Quelle steht, ist eine Info, die irgendwann auseinanderläuft.
+</p>
+
+<footer>
+  UNIT&nbsp;IX · Prototype-First Golden Template · Quelle: <code>docs/overview.md</code>
+</footer>
+
+</main>
+<script>
+  // Theme-Toggle: folgt dem System, bis der Nutzer einmal klickt — dann gewinnt die Wahl (localStorage).
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('overview-theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* privater Modus: dann eben nur System-Theme */ }
+    btn.addEventListener('click', function () {
+      var current = root.getAttribute('data-theme');
+      if (!current) {
+        current = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      var next = current === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('overview-theme', next); } catch (e) { /* egal */ }
+    });
+  })();
+</script>
+</body>
+</html>
