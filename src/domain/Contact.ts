@@ -18,5 +18,6 @@ export interface Contact {
     /** Lookup auf Company (→ refCompany). Nur die id, nie das eingebettete Objekt. */
     company: { id: string };
     isPrimary: boolean;
-    createdOn: Date;
+    createdOn: string; // ISO-String (⇒ dte) — überlebt den JSON-Seam der echten Backends; kein Laufzeit-Objekt
+
 }

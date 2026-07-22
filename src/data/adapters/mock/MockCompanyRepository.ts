@@ -18,7 +18,7 @@ export class MockCompanyRepository implements CompanyRepository {
     }
 
     async create(input: CompanyCreate): Promise<Company> {
-        const company: Company = { ...input, id: nextId('company'), createdOn: new Date() };
+        const company: Company = { ...input, id: nextId('company'), createdOn: new Date().toISOString() };
         db.companies.push(company);
         return clone(company);
     }

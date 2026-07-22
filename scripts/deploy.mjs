@@ -120,10 +120,19 @@ function resolveBaseSlug() {
   return base
 }
 
-// Projektname je Umgebung: Basis-Slug + statisches Suffix, erneut auf die 58-Zeichen-Grenze
-// getrimmt (die Basis ist schon sauber, das Suffix ist konstant clean).
+// Projektname je Umgebung: Basis-Slug + statisches Suffix. Die Basis wird VOR dem Anhängen des
+// Suffix auf (58 − Suffix-Länge) gekürzt — sonst frisst die 58-Zeichen-Grenze bei langen Repo-Namen
+// das Umgebungs-Suffix weg und prototype/dev/main kollabieren auf denselben Cloudflare-Slug (der
+// Prototyp überschriebe still die Produktion). So bleibt das Suffix immer erhalten und die drei
+// Umgebungen deployen garantiert auf drei getrennte Projekte.
+// Exportiert (wie sanitizeProjectName) für den Test mit einem 60-Zeichen-Dummy-Slug.
+export function envProjectName(baseSlug, suffix) {
+  const base = baseSlug.slice(0, 58 - suffix.length).replace(/-+$/g, '')
+  return `${base}${suffix}`
+}
+
 function projectNameFor(env) {
-  return `${resolveBaseSlug()}${ENVIRONMENTS[env].suffix}`.slice(0, 58).replace(/-+$/g, '')
+  return envProjectName(resolveBaseSlug(), ENVIRONMENTS[env].suffix)
 }
 
 // dev/main deployen nur, wenn das Target web-hostbar ist. dataverse läuft in Power Platform.

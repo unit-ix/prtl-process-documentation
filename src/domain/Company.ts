@@ -23,5 +23,6 @@ export interface Company {
     employeeCount: number;
     city: string;
     website: string;
-    createdOn: Date;
+    createdOn: string; // ISO-String (⇒ dte) — überlebt den JSON-Seam der echten Backends; kein Laufzeit-Objekt
+
 }

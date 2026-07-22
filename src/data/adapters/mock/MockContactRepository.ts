@@ -25,7 +25,7 @@ export class MockContactRepository implements ContactRepository {
             ...input,
             id: nextId('contact'),
             fullName: fullNameOf(input.firstName, input.lastName),
-            createdOn: new Date(),
+            createdOn: new Date().toISOString(),
         };
         db.contacts.push(contact);
         return clone(contact);

@@ -47,7 +47,7 @@ export function buildSeed(): SeedData {
         employeeCount: faker.number.int({ min: 3, max: 5000 }),
         city: faker.location.city(),
         website: faker.internet.url(),
-        createdOn: faker.date.past({ years: 3 }),
+        createdOn: faker.date.past({ years: 3 }).toISOString(),
     }));
 
     const contacts: Contact[] = Array.from({ length: CONTACT_COUNT }, () => {
@@ -63,7 +63,7 @@ export function buildSeed(): SeedData {
             role: faker.helpers.arrayElement(CONTACT_ROLES),
             company: { id: pickRef(companies) },
             isPrimary: faker.datatype.boolean(),
-            createdOn: faker.date.recent({ days: 90 }),
+            createdOn: faker.date.recent({ days: 90 }).toISOString(),
         };
     });
 
