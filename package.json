@@ -12,7 +12,7 @@
         "dev": "vite",
         "build": "tsc --noEmit && vite build",
         "lint": "eslint . --max-warnings 0",
-        "verify": "pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build",
+        "verify": "pnpm lint && pnpm knip && pnpm build",
         "knip": "knip --no-config-hints",
         "deploy": "node scripts/deploy.mjs",
         "deploy:prototype": "node scripts/deploy.mjs --env=prototype"

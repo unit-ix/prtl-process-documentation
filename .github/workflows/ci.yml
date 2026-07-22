@@ -52,8 +52,9 @@ jobs:
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm install --frozen-lockfile
 
-            # Single Source of Truth: exakt derselbe Lauf wie lokal — pnpm verify = lint && tsc --noEmit && build.
-            # Keine separaten Lint/Typecheck/Build-Steps mehr, damit CI nie von der lokalen Definition abweicht.
+            # Single Source of Truth: exakt derselbe Lauf wie lokal — pnpm verify = lint && knip && build
+            # (build = tsc --noEmit && vite build, deckt den Typecheck mit ab). Keine separaten
+            # Lint/Typecheck/Build-Steps mehr, damit CI nie von der lokalen Definition abweicht.
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm verify
 

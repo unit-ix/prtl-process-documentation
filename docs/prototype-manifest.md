@@ -26,8 +26,14 @@
 | Seeded / laufende ids | `src/data/adapters/mock/store.ts` (`nextId`) | `*-new-N` Sequenz + Seed-uuids | Vom Backend vergebene ids (uuid/GUID) | `prototype` |
 | Adapter-Swap-Punkt | `src/data/index.ts` | Nur `target: mock` verdrahtet, sonst `unsupported()` | Fork ergänzt den `supabase`/`dataverse`-Zweig | `prototype` |
 | Error-Simulation | `src/features/_example/pages/ContactsPage.tsx` (`simulateError`) + `hooks/useContacts.ts` | Button erzwingt den DoD-Error-Zustand | Entfällt — echte Ladefehler triggern den Zustand | `prototype` |
-| Demo-Anlegen | `src/features/_example/pages/ContactsPage.tsx` (`handleCreateDemo`) | Legt einen Platzhalter-Kontakt an | Ersetzt durch echtes Formular pro Feature | `prototype` |
+| Demo-Anlegen | `src/features/_example/pages/ContactsPage.tsx` (`handleCreateDemoContact`) | Legt einen Platzhalter-Kontakt an | Ersetzt durch echtes Formular pro Feature | `prototype` |
 | Referenz-Feature `_example` | `src/features/_example/*` | Kanonisches „mirror this, then delete."-Muster | Gelöscht, sobald das erste echte Feature steht | `prototype` |
+
+## Bewusste `ui/`-Ausnahmen (kein PROTOTYPE-ONLY, bleiben in Produktion)
+
+Stellen in `src/shared/components/ui/` (vendored shadcn) weichen bewusst von einer Posture-Regel ab, tragen aber **keinen** `PROTOTYPE-ONLY`-Marker (deshalb nicht in der Tabelle oben) — sie bleiben auch in Produktion:
+
+- **`sidebar.tsx` — `document.cookie`-Persistenz** (`SIDEBAR_COOKIE_NAME`): der shadcn-Sidebar-Block persistiert den Auf/Zu-Zustand in einem Cookie. Das ist eine harmlose UI-Präferenz (kein App-State, kein Secret), bewusst der „kein `localStorage`/Client-State"-Posture entzogen und als vendored shadcn-Standard **unverändert** übernommen. Kein Fork-Handlungsbedarf.
 
 ## Fork-Checkliste (beim Übergang mock → supabase/dataverse)
 

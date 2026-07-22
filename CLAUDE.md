@@ -18,7 +18,7 @@
 
 - **localhost-first**: entwickelt und reviewt wird am laufenden `pnpm dev` im Browser (Mock-Target), nicht über einen Deploy. Der Prototyp wird über Cloudflare Pages geteilt; die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `dataverse`-Fork relevant.
 - Neue Features spiegeln [`src/features/_example`](src/features/_example) — Build muss nach jedem Schritt grün bleiben.
-- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build`). Das Gate sitzt in `/execute` (Customer, pro Phase vor dem Merge) bzw. `/dev-execute` (Tool-Track).
+- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm knip && pnpm build`; `build` = `tsc --noEmit && vite build`, deckt den Typecheck also mit ab — kein separater tsc-Lauf mehr). Das Gate sitzt in `/execute` (Customer, pro Phase vor dem Merge) bzw. `/dev-execute` (Tool-Track).
 
 ## Projekt-Doku
 

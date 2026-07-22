@@ -8,7 +8,7 @@
 //     handgeschriebenen App-Code (features/domain/data/ports) — NICHT auf shadcn-ui/Generiertem
 //   - react-hooks/rules-of-hooks auf dem GESAMTEN src-Baum (Hook-Verstoss = Laufzeit-Bug, kein Stil)
 //   - Dependency-Direction als echte Layer-Boundaries via eslint-plugin-boundaries
-//       feature → port|domain · port → adapter|domain · adapter → domain · domain → nichts
+//       feature → port|domain · port → adapter|domain · adapter → port|domain · domain → nichts
 //     (fängt u. a. den kritischen Verstoß „UI greift direkt auf data/adapters/** zu")
 //   - Ergänzend die pfad-/specifier-basierten Zonen (Backstop, greift auch ohne Resolver)
 //
