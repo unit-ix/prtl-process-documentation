@@ -30,7 +30,7 @@ Daten, später ein echtes Backend. Für die Oberfläche ändert sich dabei **nic
 Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
 ─────────────────      ──────────────       ──────────────────     ───────            ───────
 PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
-(OneDrive)             Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
+(SharePoint)           Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
                        (unsere Dev)          Tenant)               ↓                   oder Microsoft)
                                              ↓                     Datenmodell
                                              Kunde klickt,         wird technisch
@@ -49,15 +49,18 @@ Alles im Template hängt an genau zwei Schaltern. Sie sind **unabhängig** vonei
 
 ### Stage = welcher Git-Branch
 
+Zwei Promotion-Pfade, **nicht** ein linearer Durchlauf:
+
 ```
-feature/*  →  dev  →  prototype  →  main
+Prototyp-Phase:  feature/*  →  dev  →  prototype     (Cloudflare, Kunden-Abstimmung, dann eingefroren)
+Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)
 ```
 
 | Branch | Bedeutung |
 | --- | --- |
-| `feature/*` | Arbeit an einem Feature. Kein Deploy. |
-| `dev` | Mutable Testbasis. Kein Deploy. |
-| `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. **Nur hier wird deployt.** |
+| `feature/*` | Arbeit an einem Feature (von `dev` abgezweigt). Kein Deploy. |
+| `dev` | Mutable Testbasis. `/execute` merged hierher. Kein Deploy. |
+| `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase **aus dem Pfad raus** (bewusst übersprungen). **Nur hier wird deployt** (Stand heute — ein `main`-Deploy-Trigger ist Folge-Arbeit). |
 | `main` | Produktion. Je nach Ziel mit Cloudflare **oder** Microsoft verbunden. |
 
 ### Target = woher die Daten kommen
@@ -98,7 +101,7 @@ Das ist mechanisch erzwungen (ESLint-Boundaries) — nicht nur eine Bitte.
 Die Domain-Typen in `src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen sie,
 fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt **nur** im Adapter.
 
-Details: [`architecture.md`](architecture.md) · [`prototype-manifest.md`](prototype-manifest.md)
+Details: [`prototype-manifest.md`](prototype-manifest.md)
 
 ---
 
@@ -201,7 +204,7 @@ Die belastbaren Fertig-Kriterien und das Go-Gate vor dem großen `/prototype`-La
 | Cloudflare-Token + Account-ID | bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost + PDF |
 | Fertig-Kriterien + Go-Gate vor dem `/prototype`-Lauf | Team |
 | Rollenname „Technical Consultant" + Verantwortungsbereich | Team |
-| OneDrive-Live-Read (Projektordner als Single Source of Truth) | geplant, eigene Runde |
+| SharePoint-Live-Read (Pointer statt `docs/`-Snapshot; SharePoint-Master als Single Source of Truth) | geplant, eigene Runde |
 | Automatischer Datenmodell-Sync | zurückgestellt |
 
 ---

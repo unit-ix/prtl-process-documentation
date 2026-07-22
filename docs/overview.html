@@ -117,7 +117,7 @@
 <pre><code>Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
 ─────────────────      ──────────────       ──────────────────     ───────            ───────
 PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
-(OneDrive)             Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
+(SharePoint)           Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
                        (unsere Dev)          Tenant)               ↓                   oder Microsoft)
                                              ↓                     Datenmodell
                                              Kunde klickt,         wird technisch
@@ -132,12 +132,14 @@ PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: A
 <p>Alles im Template hängt an genau zwei Schaltern. Sie sind <strong>unabhängig</strong> voneinander.</p>
 
 <h3>Stage = welcher Git-Branch</h3>
-<pre><code>feature/*  →  dev  →  prototype  →  main</code></pre>
+<p>Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf:</p>
+<pre><code>Prototyp-Phase:  feature/*  →  dev  →  prototype     (Cloudflare, Kunden-Abstimmung, dann eingefroren)
+Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)</code></pre>
 <div class="wrap"><table>
   <tr><th>Branch</th><th>Bedeutung</th></tr>
-  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature. Kein Deploy.</td></tr>
-  <tr><td><code>dev</code></td><td>Mutable Testbasis. Kein Deploy.</td></tr>
-  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. <strong>Nur hier wird deployt.</strong></td></tr>
+  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature (von <code>dev</code> abgezweigt). Kein Deploy.</td></tr>
+  <tr><td><code>dev</code></td><td>Mutable Testbasis. <code>/execute</code> merged hierher. Kein Deploy.</td></tr>
+  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase <strong>aus dem Pfad raus</strong> (bewusst übersprungen). <strong>Nur hier wird deployt</strong> (Stand heute — ein <code>main</code>-Deploy-Trigger ist Folge-Arbeit).</td></tr>
   <tr><td><code>main</code></td><td>Produktion. Je nach Ziel mit Cloudflare <strong>oder</strong> Microsoft verbunden.</td></tr>
 </table></div>
 
@@ -177,7 +179,7 @@ src/data/adapters/
   Die Domain-Typen in <code>src/domain/</code> sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen
   sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt <strong>nur</strong> im Adapter.
 </p>
-<p class="muted">Details: <a href="architecture.md">architecture.md</a> · <a href="prototype-manifest.md">prototype-manifest.md</a></p>
+<p class="muted">Details: <a href="prototype-manifest.md">prototype-manifest.md</a></p>
 
 <h2>Der Command-Flow</h2>
 <p>Es gibt <strong>zwei Spuren</strong>. Welche gilt, hängt am Repo, nicht am Gefühl.</p>
@@ -279,7 +281,7 @@ Produkt-Phase (Developer):
   <tr><td>Cloudflare-Token + Account-ID</td><td>bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost + PDF</td></tr>
   <tr><td>Fertig-Kriterien + Go-Gate vor dem <code>/prototype</code>-Lauf</td><td>Team</td></tr>
   <tr><td>Rollenname „Technical Consultant“ + Verantwortungsbereich</td><td>Team</td></tr>
-  <tr><td>OneDrive-Live-Read (Projektordner als Single Source of Truth)</td><td>geplant, eigene Runde</td></tr>
+  <tr><td>SharePoint-Live-Read (Pointer statt <code>docs/</code>-Snapshot; SharePoint-Master als Single Source of Truth)</td><td>geplant, eigene Runde</td></tr>
   <tr><td>Automatischer Datenmodell-Sync</td><td>zurückgestellt</td></tr>
 </table></div>
 
