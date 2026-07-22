@@ -106,15 +106,26 @@ Details: [`architecture.md`](architecture.md) · [`prototype-manifest.md`](proto
 
 Es gibt **zwei Spuren**. Welche gilt, hängt am Repo, nicht am Gefühl.
 
-### Kundenprojekt
+### Kundenprojekt — zwei Phasen
 
 ```
-/prototype <projektordner>   → baut den Mock-Prototyp autonom (Consultant-Einstieg)
-/plan <slug>                 → Interview + Plan-File + feature/-Branch
-/execute <plan>              → arbeitet Phasen ab, staged. Committet nie.
-/commit                      → pnpm verify als Gate, dann Phasen-Commits
-/ship                        → Push + Draft-PR auf dev + auto-merge
+Prototyp-Phase (Consultant):
+/prototype <projektordner>   → baut den Mock-Prototyp autonom → prototype-Branch
+                               → Cloudflare → Kunde OK → prototype eingefroren
+
+Übergabe:
+/handoff                     → seedet dev aus dem eingefrorenen prototype (einmalig)
+
+Produkt-Phase (Developer):
+/plan <slug>                 → Interview + Plan-File + feature/-Branch (von dev)
+/execute <plan>              → Autopilot-Default: committet nach jeder Phase, pusht
+                               auf Draft-PR gegen dev, merged am Ende autonom → dev
+                               (Autopilot: false → Per-Phasen-Stopp)
+# Tests laufen auf dev
+/ship                        → Produktions-Promotion dev → main (gegatet)
 ```
+
+`/commit` ist **kein** Customer-Schritt mehr — `/execute` committet selbst.
 
 ### Werkzeug-Repo (`code-apps-template` / `code-apps-context`)
 

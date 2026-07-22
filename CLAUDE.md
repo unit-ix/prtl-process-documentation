@@ -14,13 +14,14 @@
 
 ## Workflow-Regeln
 
-- **Gated by default**: ein Schritt → Prüfung → nächster Schritt. Autopilot ist **opt-in pro Plan** (`Autopilot: true` im Header, vom `/plan`-Interview vorgeschlagen, vom Dev bestätigt) und läuft Phasen am Stück, stoppt nur bei rotem verify oder am Ende. Keine impliziten autonomen Ketten ohne dieses Flag.
+- **Autonom bis `dev`, gegatet auf `main`** (Customer-Track): `/execute` läuft **Autopilot-by-default** — arbeitet alle Phasen am Stück ab, committet nach jeder Phase, pusht auf einen Draft-PR gegen `dev` und merged ihn am Ende autonom. `Autopilot: false` im Header erzwingt den Per-Phasen-Stopp. Der bewusste menschliche Gate-Punkt ist **`/ship` (dev→main)**. (Der Tool-Track `/dev-execute` bleibt gated-by-default — direct-push auf `main`.)
 - **localhost-first**: entwickelt und reviewt wird am laufenden `pnpm dev` im Browser (Mock-Target), nicht über einen Deploy. Der Prototyp wird über Cloudflare Pages geteilt; die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `dataverse`-Fork relevant.
 - Neue Features spiegeln [`src/features/_example`](src/features/_example) — Build muss nach jedem Schritt grün bleiben.
-- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build`). Das Gate sitzt im `/commit`-Skill.
+- `pnpm verify` muss vor jedem Commit grün sein (`pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build`). Das Gate sitzt in `/execute` (Customer, pro Phase vor dem Merge) bzw. `/commit`/`/dev-execute` (Tool-Track).
 - **Prototyp aufbauen (einmalig):** `/bootstrap [<pm-pfad>]` importiert PRD/Datenmodell/Architektur nach `docs/` (liest den OneDrive-Quellordner, schreibt ihn nie); `/prototype <projektordner>` baut daraus den Mock-Prototyp Feature für Feature nach dem `_example`-Muster.
-- Für nicht-triviale Änderungen danach: `/plan <slug> [<beschreibung>]` (interview-first, lädt Pflicht-Kontext) → Plan-File inline editieren → `/execute docs/plans/<file>.md` (eine Phase gated, oder alle bei Autopilot) → ggf. nachjustieren → `/commit` (erzeugt mehrere geordnete Phasen-Commits) → `/ship`.
-- **Kanonische Workflow-Quelle:** `[.claude/CLAUDE.md](.claude/CLAUDE.md)` Sektion „Workflow-Skills" (5-Kette `/bootstrap → /plan → /execute → /commit → /ship`). Diese Datei führt nur die projektspezifische Kurz-Summary — Details und Repo-Mode-Detection dort.
+- **Übergabe an die Produkt-Phase (einmalig):** `/handoff` seedet `dev` aus dem abgestimmten, eingefrorenen `prototype`.
+- Für nicht-triviale Änderungen danach: `/plan <slug> [<beschreibung>]` (interview-first, Feature-Branch **von `dev`**) → Plan-File inline editieren → `/execute docs/plans/<file>.md` (Autopilot-Default: committet pro Phase, pusht auf Draft-PR gegen `dev`, merged am Ende autonom) → `/ship` (Produktions-Promotion `dev → main`).
+- **Kanonische Workflow-Quelle:** `[.claude/CLAUDE.md](.claude/CLAUDE.md)` Sektion „Workflow-Skills" (Customer-Kette `/prototype → /handoff → /plan → /execute → /ship`; `/commit` ist kein Customer-Schritt mehr, bleibt Mechanik-Referenz). Diese Datei führt nur die projektspezifische Kurz-Summary — Details und Repo-Mode-Detection dort.
 
 ## Projekt-Doku
 

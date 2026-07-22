@@ -182,12 +182,22 @@ src/data/adapters/
 <h2>Der Command-Flow</h2>
 <p>Es gibt <strong>zwei Spuren</strong>. Welche gilt, hängt am Repo, nicht am Gefühl.</p>
 
-<h3>Kundenprojekt</h3>
-<pre><code>/prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom (Consultant-Einstieg)
-/plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch
-/execute &lt;plan&gt;              → arbeitet Phasen ab, staged. Committet nie.
-/commit                      → pnpm verify als Gate, dann Phasen-Commits
-/ship                        → Push + Draft-PR auf dev + auto-merge</code></pre>
+<h3>Kundenprojekt — zwei Phasen</h3>
+<pre><code>Prototyp-Phase (Consultant):
+/prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom → prototype-Branch
+                               → Cloudflare → Kunde OK → prototype eingefroren
+
+Übergabe:
+/handoff                     → seedet dev aus dem eingefrorenen prototype (einmalig)
+
+Produkt-Phase (Developer):
+/plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch (von dev)
+/execute &lt;plan&gt;              → Autopilot-Default: committet nach jeder Phase, pusht
+                               auf Draft-PR gegen dev, merged am Ende autonom → dev
+                               (Autopilot: false → Per-Phasen-Stopp)
+# Tests laufen auf dev
+/ship                        → Produktions-Promotion dev → main (gegatet)</code></pre>
+<p><code>/commit</code> ist <strong>kein</strong> Customer-Schritt mehr — <code>/execute</code> committet selbst.</p>
 
 <h3>Werkzeug-Repo (<code>code-apps-template</code> / <code>code-apps-context</code>)</h3>
 <pre><code>/dev-plan &lt;slug&gt;     → lean, kein Interview, kein Branch
