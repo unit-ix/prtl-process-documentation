@@ -7,7 +7,7 @@
 
 **Prototype-First Golden Template.** Das Projekt startet als lauffähiger **Mock-Prototyp** (seed-basiert, localhost, kein Backend) und wird erst nach Kunden-OK auf ein echtes Backend geforkt. Zwei Achsen:
 
-- **Stage** = Git-Branch. **Zwei Promotion-Pfade, nicht linear:** Prototyp-Phase `feature → dev → prototype` (Cloudflare, Kunden-Abstimmung) → `prototype` **eingefroren**; Produkt-Phase `feature → dev → main`, wobei `prototype` eingefroren bleibt und **aus dem Produkt-Pfad raus** ist (bewusst übersprungen).
+- **Stage** = Git-Branch. **Zwei Promotion-Pfade, nicht linear:** Prototyp-Phase `/prototype → prototype` (die Engine committet Feature für Feature **direkt auf `prototype`**, Cloudflare, Kunden-Abstimmung) → `prototype` **eingefroren**. `dev` und `feature/*` gibt es erst in der **Produkt-Phase** (`dev` wird bei `/handoff` aus `prototype` geseedet): `feature → dev → main`, wobei `prototype` eingefroren bleibt und **aus dem Produkt-Pfad raus** ist (bewusst übersprungen).
 - **Target** = Datenquelle aus [`.unitix/project.json`](.unitix/project.json) (`mock` → `supabase` **oder** `dataverse`). Das ist die Single Source of Truth der `target`-Achse; UI/Hooks sprechen nur den Port (`@/data`) an, nie einen Adapter. Der Fork ist ein Ein-Datei-Swap in `src/data/index.ts` — siehe [`docs/prototype-manifest.md`](docs/prototype-manifest.md).
 
 **Design-Regel:** UI ausschließlich über die Design-Tokens und die shadcn-Komponenten in `src/shared/components/ui/` — **kein eigenes CSS-File, keine Inline-Farben.** Tokens leben in `src/index.css` (oklch), Varianten über die Komponenten-Props.

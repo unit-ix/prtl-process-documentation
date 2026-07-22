@@ -133,14 +133,16 @@ PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: A
 
 <h3>Stage = welcher Git-Branch</h3>
 <p>Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf:</p>
-<pre><code>Prototyp-Phase:  feature/*  →  dev  →  prototype     (Cloudflare, Kunden-Abstimmung, dann eingefroren)
+<pre><code>Prototyp-Phase:  /prototype  →  prototype           (Feature-Checkpoints direkt auf prototype → Cloudflare, dann eingefroren)
+Übergabe:        /handoff:   prototype ─seed→ dev    (dev entsteht hier, einmalig)
 Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)</code></pre>
+<p><code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong> — in der Prototyp-Phase committet <code>/prototype</code> direkt auf <code>prototype</code>.</p>
 <div class="wrap"><table>
   <tr><th>Branch</th><th>Bedeutung</th></tr>
-  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature (von <code>dev</code> abgezweigt). Kein Deploy.</td></tr>
-  <tr><td><code>dev</code></td><td>Mutable Testbasis. <code>/execute</code> merged hierher. Kein Deploy.</td></tr>
-  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase <strong>aus dem Pfad raus</strong> (bewusst übersprungen). <strong>Nur hier wird deployt</strong> (Stand heute — ein <code>main</code>-Deploy-Trigger ist Folge-Arbeit).</td></tr>
-  <tr><td><code>main</code></td><td>Produktion. Je nach Ziel mit Cloudflare <strong>oder</strong> Microsoft verbunden.</td></tr>
+  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature (von <code>dev</code> abgezweigt, nur Produkt-Phase). Kein Deploy.</td></tr>
+  <tr><td><code>dev</code></td><td>Mutable Testbasis. <code>/execute</code> merged hierher. <strong>Testumgebung</strong> — deployt (target-aware) auf ein eigenes Cloudflare-Projekt <code>&lt;slug&gt;-dev</code>.</td></tr>
+  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase <strong>aus dem Pfad raus</strong> (bewusst übersprungen). Deployt auf sein eigenes Cloudflare-Projekt <code>&lt;slug&gt;-prototype</code> (immer Mock).</td></tr>
+  <tr><td><code>main</code></td><td>Produktion. Deployt (target-aware) auf <code>&lt;slug&gt;</code> — Cloudflare (<code>mock</code>/<code>supabase</code>) <strong>oder</strong> Microsoft/Power Platform (<code>dataverse</code>).</td></tr>
 </table></div>
 
 <h3>Target = woher die Daten kommen</h3>

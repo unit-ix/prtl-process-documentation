@@ -52,16 +52,19 @@ Alles im Template hängt an genau zwei Schaltern. Sie sind **unabhängig** vonei
 Zwei Promotion-Pfade, **nicht** ein linearer Durchlauf:
 
 ```
-Prototyp-Phase:  feature/*  →  dev  →  prototype     (Cloudflare, Kunden-Abstimmung, dann eingefroren)
+Prototyp-Phase:  /prototype  →  prototype           (Feature-Checkpoints direkt auf prototype → Cloudflare, dann eingefroren)
+Übergabe:        /handoff:   prototype ─seed→ dev    (dev entsteht hier, einmalig)
 Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)
 ```
 
+`feature/*` und `dev` gibt es **nur in der Produkt-Phase** — in der Prototyp-Phase committet `/prototype` direkt auf `prototype`.
+
 | Branch | Bedeutung |
 | --- | --- |
-| `feature/*` | Arbeit an einem Feature (von `dev` abgezweigt). Kein Deploy. |
-| `dev` | Mutable Testbasis. `/execute` merged hierher. Kein Deploy. |
-| `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase **aus dem Pfad raus** (bewusst übersprungen). **Nur hier wird deployt** (Stand heute — ein `main`-Deploy-Trigger ist Folge-Arbeit). |
-| `main` | Produktion. Je nach Ziel mit Cloudflare **oder** Microsoft verbunden. |
+| `feature/*` | Arbeit an einem Feature (von `dev` abgezweigt, nur Produkt-Phase). Kein Deploy. |
+| `dev` | Mutable Testbasis. `/execute` merged hierher. **Testumgebung** — deployt (target-aware) auf ein eigenes Cloudflare-Projekt `<slug>-dev`. |
+| `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase **aus dem Pfad raus** (bewusst übersprungen). Deployt auf sein eigenes Cloudflare-Projekt `<slug>-prototype` (immer Mock). |
+| `main` | Produktion. Deployt (target-aware) auf `<slug>` — Cloudflare (`mock`/`supabase`) **oder** Microsoft/Power Platform (`dataverse`). |
 
 ### Target = woher die Daten kommen
 
