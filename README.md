@@ -48,30 +48,36 @@ pnpm install
 
 ---
 
-## Zwei Command-Tracks
+## Die Command-Kette (Customer-Track)
 
-Die Arbeit läuft über zwei Slash-Command-Ketten — eine erzeugt den Prototyp, die andere iteriert ihn:
+Die Arbeit läuft in zwei Phasen mit zwei Promotion-Pfaden: `/prototype → /handoff → /plan → /execute → /ship`.
 
-**Track 1 — Prototyp aufbauen (einmalig, autonom):**
+**Prototyp-Phase (einmalig, autonom):**
 
-- **`/bootstrap [<pm-pfad>]`** — zieht den fachlichen Kontext (PRD/Datenmodell/Architektur) aus dem
-  PM-Framework-Ordner nach `docs/`. Der **OneDrive-Quellordner wird nie geschrieben**, nur gelesen.
-- **`/prototype <projektordner>`** — baut aus dem PRD den vollständigen Mock-Prototyp: pro Feature ein
-  Modul nach dem Muster von [`src/features/_example`](src/features/_example) (Port-Hook + AsyncBoundary +
-  die fünf DoD-Zustände + `canSee`/`canEdit`). *(Autonome Engine — wird über das `.claude`-Submodul geliefert.)*
+- **`/prototype <projektordner>`** — der einzige Consultant-Einstieg. Faltet die Ingestion ein (zieht
+  PRD/Datenmodell aus dem **SharePoint-Quellordner** read-only nach `docs/` — als Snapshot) und baut daraus
+  den vollständigen Mock-Prototyp: pro Feature ein Modul nach dem Muster von
+  [`src/features/_example`](src/features/_example) (Port-Hook + AsyncBoundary + die fünf DoD-Zustände +
+  `canSee`/`canEdit`). Landet auf `prototype` → Cloudflare → Kunden-Abstimmung → `prototype` **eingefroren**.
+  *(Autonome Engine — wird über das `.claude`-Submodul geliefert.)*
 
-**Track 2 — Feature iterieren (pro Änderung, gated):**
+**Übergabe (einmalig):**
+
+- **`/handoff`** — seedet `dev` aus dem abgestimmten, eingefrorenen `prototype` und eröffnet die Produkt-Phase.
+
+**Produkt-Phase (pro Änderung):**
 
 1. **`/plan <slug>`** — interview-first, lädt Pflicht-Kontext, schreibt `docs/plans/YYYY-MM-DD-<slug>.md`
-   (+ `feature/<slug>`-Branch), schlägt einen `Autopilot:`-Wert vor.
+   (+ `feature/<slug>`-Branch **von `dev`**), schlägt einen `Autopilot:`-Wert vor.
 2. **Plan inline reviewen** — Phasen/Constraints direkt im Editor anpassen.
-3. **`/execute docs/plans/<file>.md`** — **gated** (Default): genau eine Phase, stagen, abhaken, STOP.
-   Bei `Autopilot: true`: alle Phasen am Stück, `pnpm verify` zwischen jeder. **Committet nie.**
-4. **`/commit`** — `pnpm verify` als Gate → mehrere geordnete Phasen-Commits + SHA ins Execution Log.
-5. **`/ship`** — push + Draft-PR (SHAs aus dem Log) + auto-squash-merge → `main`.
+3. **`/execute docs/plans/<file>.md`** — **autonomer Kern (Autopilot-Default):** committet nach jeder Phase
+   (verify-Gate pro Phase), pusht auf einen Draft-PR gegen `dev` und merged ihn am Ende (echter Merge-Commit)
+   → `dev`. `Autopilot: false` erzwingt den Per-Phasen-Stopp.
+4. **`/ship`** — Produktions-Promotion `dev → main` (echter Merge-Commit, kein Squash).
 
-**Regel:** Ein Plan = ein Feature = ein PR. **Gated by default**, Autopilot opt-in pro Plan.
-Kein Merge ohne grünes `pnpm verify` (Gate sitzt in `/commit`, nicht in CI).
+**Regel:** Autonom bis `dev`; der einzige bewusste menschliche Gate-Punkt ist **`/ship` (dev→main)**.
+`prototype` ist in der Produkt-Phase eingefroren und aus dem Pfad raus. Kein Merge ohne grünes `pnpm verify`
+(Gate sitzt in `/execute`, pro Phase). `/commit` ist kein Customer-Schritt mehr (nur noch Tool-Track-Mechanik-Referenz).
 
 Kanonische Workflow-Quelle + Repo-Mode-Detection: [`.claude/CLAUDE.md`](.claude/CLAUDE.md).
 Plan-Template: [`.claude/docs/plan-template.md`](.claude/docs/plan-template.md).
@@ -102,7 +108,7 @@ nicht über einen Deploy. Geteilt wird der Prototyp über **Cloudflare Pages** (
 .claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, commands/, settings.json)
 .github/workflows/    CI — lint + knip + typecheck + build (spiegelt pnpm verify)
 .unitix/              project.json — Target- + Hosting-Achse (Single Source of Truth)
-docs/                 Projekt-Doku (PRD, Datenmodell, Architektur, prototype-manifest.md)
+docs/                 Projekt-Doku (PRD, Datenmodell — SharePoint-Snapshots, prototype-manifest.md)
 src/app/              Einstieg (main.tsx, App.tsx) — Provider, Router, QueryClient
 src/domain/           Reine Domänen-Typen (kennt kein Backend)
 src/data/             Data-Seam: ports/ (Interfaces) · index.ts (Swap-Punkt) · adapters/ (mock/…)
@@ -117,12 +123,14 @@ eslint.config.js      Hard-Rules + Lean-Coding-Gates + Layer-Boundaries
 
 | Artefakt                                    | Ort                                                  |
 | ------------------------------------------- | ---------------------------------------------------- |
-| Angebot, Meetings, sonstige Kundendokumente | OneDrive only — **nie ins Repo, nie überschrieben**  |
-| PRD, Datenmodell, Architektur               | `docs/` im Repo (Owner-Entscheidung — privates Repo) |
+| Angebot, Meetings, sonstige Kundendokumente | SharePoint only — **nie ins Repo, nie überschrieben** |
+| PRD, Datenmodell                            | `docs/` im Repo als Snapshot (Owner-Entscheidung — privates Repo) |
 | Code, Konfiguration                         | Repo                                                 |
 
-`/bootstrap` kopiert PRD/Datenmodell/Architektur aus dem PM-Framework-Ordner **einseitig** nach `docs/`
-(liest OneDrive, schreibt es nie). Ab dem Import liegt die Verantwortung für `docs/` beim Dev-Team.
+`/prototype` kopiert PRD/Datenmodell aus dem **SharePoint-Quellordner** (lokal via OneDrive-Sync) **einseitig**
+nach `docs/` — als Snapshot mit `Stand:`/`Quelle:`-Header, liest SharePoint read-only, schreibt es nie. Die
+SharePoint-Bibliothek bleibt die laufend gepflegte Single Source of Truth; bei Änderung frischt ein erneuter
+`/prototype`-Ingest (`[O]verwrite`) den Snapshot auf. Ab dem Import liegt die Verantwortung für `docs/` beim Dev-Team.
 
 ---
 
