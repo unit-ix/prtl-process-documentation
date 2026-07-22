@@ -14,7 +14,8 @@
         "lint": "eslint . --max-warnings 0",
         "verify": "pnpm lint && pnpm knip && pnpm tsc --noEmit && pnpm build",
         "knip": "knip --no-config-hints",
-        "deploy:prototype": "node scripts/deploy-prototype.mjs"
+        "deploy": "node scripts/deploy.mjs",
+        "deploy:prototype": "node scripts/deploy.mjs --env=prototype"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.62.0",

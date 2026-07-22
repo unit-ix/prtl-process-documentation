@@ -1,7 +1,18 @@
 #!/usr/bin/env node
-// Cloudflare Pages Direct-Upload-Deploy für den Mock-Prototyp.
+// Cloudflare Pages Direct-Upload-Deploy für die drei Umgebungen eines Kundenprojekts.
 //
-// Die EINE Deploy-Logik — lokal für den Ad-hoc-„Link am Morgen" UND aus der CI heraus.
+// Drei Cloudflare-Pages-Projekte pro Kundenprojekt (entschieden 2026-07-22):
+//   prototype-Branch → <slug>-prototype   (eingefrorene Kunden-Referenz, immer Mock)
+//   dev-Branch       → <slug>-dev          (Testumgebung — hier testet das Team)
+//   main-Branch      → <slug>              (Produktion)
+//
+// target-aware (.unitix/project.json → target):
+//   prototype deployt IMMER (er ist per Definition mock).
+//   dev/main deployen auf Cloudflare nur bei target `mock`|`supabase`.
+//   Bei target `dataverse` läuft die App IN Power Platform → dev/main werden sauber
+//   ÜBERSPRUNGEN (exit 0, kein CI-Fehler). Der echte PP-Deploy ist eigene Folge-Arbeit.
+//
+// Die EINE Deploy-Logik — lokal für den Ad-hoc-„Link zwischendurch" UND aus der CI heraus.
 // Der Deploy-Job in .github/workflows/ci.yml ruft genau dieses Script auf, statt die Logik zu
 // duplizieren (Review Jakob 2026-07-17): sonst entstehen je nach Weg zwei Pages-Projekte mit zwei
 // URLs, weil CI den Repo-Namen und das Script .unitix/project.json als Slug-Quelle nimmt.
@@ -22,7 +33,8 @@
 // Beide Namen liest wrangler nativ — deshalb genau diese Schreibweise (kein CF_-Kurzname mehr,
 // vereinheitlicht 2026-07-17: Hosting-Stack-Review + Jakobs Kommentar zu docs/hosting.md).
 //
-// Projektname (wrangler `--project-name`): Priorität arg > .unitix/project.json (name/slug) > package.json name.
+// Umgebung: --env=prototype|dev|main  ODER  --branch=<name>  ODER  aktueller Git-Branch.
+// Projekt-Basis-Slug (wrangler `--project-name`): Priorität arg > .unitix/project.json (name/slug) > package.json name.
 // Details: docs/hosting.md.
 
 import { spawnSync } from 'node:child_process'
@@ -32,8 +44,16 @@ import { dirname, resolve } from 'node:path'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
+// Branch → { Projekt-Suffix, Cloudflare-production-branch, deployt-immer }.
+// prototype ist immer mock → alwaysDeploy; dev/main sind target-aware (siehe shouldDeploy).
+const ENVIRONMENTS = {
+  prototype: { suffix: '-prototype', productionBranch: 'prototype', alwaysDeploy: true },
+  dev: { suffix: '-dev', productionBranch: 'dev', alwaysDeploy: false },
+  main: { suffix: '', productionBranch: 'main', alwaysDeploy: false },
+}
+
 function fail(message) {
-  console.error(`\n✖ deploy-prototype: ${message}\n`)
+  console.error(`\n✖ deploy: ${message}\n`)
   process.exit(1)
 }
 
@@ -45,6 +65,31 @@ function readJson(relPath) {
   } catch {
     return null
   }
+}
+
+function argValue(flag) {
+  const prefix = `${flag}=`
+  return process.argv
+    .slice(2)
+    .map((a) => (a.startsWith(prefix) ? a.slice(prefix.length) : null))
+    .find(Boolean)
+}
+
+// Umgebung auflösen: expliziter --env / --branch schlägt den aktuellen Git-Branch.
+// So deployt CI über `--branch=${{ github.ref_name }}` deterministisch, lokal reicht der Checkout.
+function resolveEnv() {
+  let branch = argValue('--env') || argValue('--branch')
+  if (!branch) {
+    const r = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' })
+    branch = (r.stdout ?? '').trim()
+  }
+  if (!ENVIRONMENTS[branch]) {
+    fail(
+      `Unbekannte Deploy-Umgebung "${branch || '(leer)'}". Erwartet: prototype | dev | main ` +
+        '(via --env=, --branch= oder aktuellem Git-Branch). feature/*-Branches deployen nicht.',
+    )
+  }
+  return branch
 }
 
 // wrangler-Projektnamen sind lowercase, alphanumerisch + Bindestriche (max. 58 Zeichen)
@@ -63,21 +108,35 @@ export function sanitizeProjectName(raw) {
     .replace(/^-+|-+$/g, '')
 }
 
-function resolveProjectName() {
+function resolveBaseSlug() {
   // Priorität: arg > .unitix/project.json > package.json.
-  const argName = process.argv
-    .slice(2)
-    .map((a) => (a.startsWith('--project-name=') ? a.slice('--project-name='.length) : a))
-    .find((a) => a && !a.startsWith('-'))
-
   const unitix = readJson('.unitix/project.json') ?? {}
   const pkg = readJson('package.json') ?? {}
-  const rawName = argName || unitix.name || unitix.slug || pkg.name
-  if (!rawName) fail('Kein Projektname — via Argument, .unitix/project.json (name) oder package.json (name) setzen.')
+  const rawName = argValue('--project-name') || unitix.name || unitix.slug || pkg.name
+  if (!rawName) fail('Kein Projektname — via --project-name=, .unitix/project.json (name) oder package.json (name) setzen.')
 
-  const projectName = sanitizeProjectName(rawName)
-  if (!projectName) fail(`Projektname "${rawName}" ergibt keinen gültigen Cloudflare-Slug (a-z0-9-).`)
-  return projectName
+  const base = sanitizeProjectName(rawName)
+  if (!base) fail(`Projektname "${rawName}" ergibt keinen gültigen Cloudflare-Slug (a-z0-9-).`)
+  return base
+}
+
+// Projektname je Umgebung: Basis-Slug + statisches Suffix, erneut auf die 58-Zeichen-Grenze
+// getrimmt (die Basis ist schon sauber, das Suffix ist konstant clean).
+function projectNameFor(env) {
+  return `${resolveBaseSlug()}${ENVIRONMENTS[env].suffix}`.slice(0, 58).replace(/-+$/g, '')
+}
+
+// dev/main deployen nur, wenn das Target web-hostbar ist. dataverse läuft in Power Platform.
+function shouldDeploy(env) {
+  if (ENVIRONMENTS[env].alwaysDeploy) return true
+  const target = (readJson('.unitix/project.json') ?? {}).target
+  if (target === 'dataverse') {
+    console.log(
+      `→ target=dataverse → ${env} läuft in Power Platform, kein Cloudflare-Deploy. Übersprungen.`,
+    )
+    return false
+  }
+  return true
 }
 
 function assertPrerequisites() {
@@ -109,15 +168,22 @@ function wrangler(args, { allowFailure = false } = {}) {
 }
 
 function main() {
-  const projectName = resolveProjectName()
+  const env = resolveEnv()
+
+  // target-aware ZUERST — ein dataverse-dev/main-Push soll exit 0 liefern, nicht am fehlenden
+  // Token sterben. Deshalb der Skip-Check vor assertPrerequisites().
+  if (!shouldDeploy(env)) process.exit(0)
+
   assertPrerequisites()
+  const projectName = projectNameFor(env)
+  const { productionBranch } = ENVIRONMENTS[env]
 
   // --- Pages-Projekt sicherstellen ---
   // wrangler legt ein fehlendes Projekt beim deploy nur INTERAKTIV an — in CI failt damit der
   // allererste Deploy, solange niemand es vorher im Dashboard geklickt hat (Review Jakob, A3).
   // Deshalb explizit anlegen und ein bereits existierendes Projekt tolerieren.
-  console.log(`→ Stelle Cloudflare-Pages-Projekt sicher: ${projectName} …`)
-  const create = wrangler(['pages', 'project', 'create', projectName, '--production-branch=prototype'], {
+  console.log(`→ Umgebung ${env} → Stelle Cloudflare-Pages-Projekt sicher: ${projectName} …`)
+  const create = wrangler(['pages', 'project', 'create', projectName, `--production-branch=${productionBranch}`], {
     allowFailure: true,
   })
   if (create.status !== 0) {
