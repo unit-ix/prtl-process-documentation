@@ -2,7 +2,7 @@
 
 > Der rote Faden durch das Prototype-First Golden Template — für neue Teammitglieder, in ~10 Minuten.
 > Diese Seite erklärt, wie die Teile zusammenhängen, und verlinkt die Regeln statt sie zu wiederholen.
-> Bei Widerspruch gewinnt immer die verlinkte Quelle. Visuelle Fassung fürs Meeting: [`overview.html`](overview.html).
+> Bei Widerspruch gewinnt immer die verlinkte Quelle. Fürs Meeting gibt es [`overview.html`](overview.html) — dieselben Inhalte als Diagramme (Achsen-Matrix, Branch-Graph, Data-Seam), kein 1:1-Abbild dieser Seite.
 
 ## Worum es geht
 
