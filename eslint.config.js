@@ -1,30 +1,18 @@
-// ESLint Flat Config — UNIT-IX Code Apps Hard-Rule- + Lean-Coding-Enforcement.
-//
-// Deterministisch HIER enforced (CI-gated über `pnpm lint`):
-//   - no-restricted-globals: localStorage / sessionStorage (keine Browser-Persistenz) + fetch (bare global)
-//   - no-restricted-syntax:  fetch() / window.fetch / globalThis.fetch — Daten NUR über den Data-Port
-//     (Ausnahme: data/adapters/** — genau dort DARF ein Backend-Adapter fetchen, siehe Override unten)
-//   - Lean-Coding-Gates (max-lines/-per-function, complexity, max-depth, max-params) auf dem
-//     handgeschriebenen App-Code (features/domain/data/ports) — NICHT auf shadcn-ui/Generiertem
-//   - react-hooks/rules-of-hooks auf dem GESAMTEN src-Baum (Hook-Verstoss = Laufzeit-Bug, kein Stil)
-//   - Dependency-Direction als echte Layer-Boundaries via eslint-plugin-boundaries
-//       feature → port|domain · port → adapter|domain · adapter → port|domain · domain → nichts
-//     (fängt u. a. den kritischen Verstoß „UI greift direkt auf data/adapters/** zu")
-//   - Ergänzend die pfad-/specifier-basierten Zonen (Backstop, greift auch ohne Resolver)
-//
-// NICHT hier, sondern per CODEOWNERS/Review enforced (statisch nicht zuverlässig fassbar):
-//   - src/generated/** Immutability (auto-generiert, niemals manuell editieren) — daher unten aus dem Lint genommen
-//   - power.config.json Immutability
+// ESLint Flat Config — UNIT-IX Code Apps Hard-Rules + Lean-Coding-Gates.
+// Alles hier ist über `pnpm lint` (Teil von `pnpm verify`) CI-blockierend:
+//   - kein localStorage/sessionStorage, kein direktes fetch (Ausnahme: data/adapters/**)
+//   - kein BrowserRouter, kein Next.js/SSR — das Template ist eine statische SPA
+//   - Lean-Gates (max-lines, complexity, …) auf handgeschriebenem App-Code, nicht auf shadcn/Generiertem
+//   - Layer-Boundaries: feature → port|domain · port → adapter|domain · adapter → port|domain · domain → ∅
+//   - react-hooks/rules-of-hooks auf dem gesamten src-Baum
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import importPlugin from 'eslint-plugin-import'
 import boundaries from 'eslint-plugin-boundaries'
 import reactHooks from 'eslint-plugin-react-hooks'
 
-// Bare `fetch` ist im Prototyp-First-Template backend-neutral verboten: UI/Hooks beziehen Daten
-// AUSSCHLIESSLICH über den Data-Port (`@/data`), nie direkt. Welcher Backend darunter liegt
-// (mock/supabase/dataverse), ist eine Adapter-Frage — und der mock/supabase-Adapter DARF fetchen
-// (siehe Override auf data/adapters/**). Keine backend-spezifische Anbindungs-Instruktion hier.
+// UI und Hooks beziehen Daten ausschließlich über den Data-Port (`@/data`), nie direkt. Welches
+// Backend darunter liegt, ist eine Adapter-Frage — und Adapter DÜRFEN fetchen (Override unten).
 const forbiddenFetch = [
     {
         selector: "CallExpression[callee.name='fetch']",
@@ -39,6 +27,27 @@ const forbiddenFetch = [
         message: 'Kein globalThis.fetch — Daten über den Data-Port (@/data) beziehen. Backend-Calls gehören in data/adapters/**.',
     },
 ]
+
+// Das Template ist per Design eine statische SPA mit HashRouter (überlebt den späteren
+// Dataverse-iframe, macht _redirects auf Cloudflare überflüssig). BrowserRouter bräuchte
+// Server-Routing, Next.js/SSR einen Server — beides gibt es hier nie.
+// Bewusst als no-restricted-imports (nicht -syntax): der Adapter-Override unten schaltet
+// no-restricted-syntax ab, diese Regel soll aber überall gelten.
+const forbiddenSpaImports = {
+    paths: [
+        {
+            name: 'react-router-dom',
+            importNames: ['BrowserRouter', 'createBrowserRouter'],
+            message: 'Kein BrowserRouter — statische SPA, HashRouter verwenden.',
+        },
+    ],
+    patterns: [
+        {
+            group: ['next', 'next/*'],
+            message: 'Kein Next.js/SSR — Code Apps sind reine Browser-SPAs ohne Server.',
+        },
+    ],
+}
 
 const dependencyZones = [
     {
@@ -58,9 +67,8 @@ const dependencyZones = [
     },
 ]
 
-// Lean-Coding-Gates: mechanisch statt als Chat-Ansage. Bewusst NUR auf handgeschriebenem
-// App-Code — shadcn-ui-Primitives (src/shared/components/ui/**) und Generiertes sind fremder
-// bzw. auto-erzeugter Code, den diese Limits nicht sinnvoll fassen.
+// Lean-Coding-Gates — nur auf handgeschriebenem App-Code. shadcn-ui-Primitives und Generiertes
+// sind fremder bzw. auto-erzeugter Code, den diese Limits nicht sinnvoll fassen.
 const leanRules = {
     'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
     'max-lines-per-function': ['error', { max: 50, skipBlankLines: true, skipComments: true }],
@@ -70,8 +78,7 @@ const leanRules = {
 }
 
 // Layer-Elemente für eslint-plugin-boundaries. Reihenfolge = Priorität: der spezifischere
-// adapter-Pfad muss VOR dem generischen port-Pfad (src/data) stehen, sonst würde data/adapters/**
-// fälschlich als port klassifiziert.
+// adapter-Pfad muss VOR dem generischen port-Pfad (src/data) stehen.
 const boundaryElements = [
     { type: 'domain', pattern: 'src/domain', mode: 'folder' },
     { type: 'adapter', pattern: 'src/data/adapters/*', mode: 'folder', capture: ['backend'] },
@@ -80,9 +87,8 @@ const boundaryElements = [
 ]
 
 export default tseslint.config(
-    // .claude/** = Submodul (code-apps-context) mit eigenem Repo + eigener Lint-Hoheit
-    // (Node-Scripts wie audit-standards.mjs). Wird von der App-Config nicht mitgelintet.
-    // scripts/** = Node-Deploy-Tooling (kein App-Code) — wie .claude/** eigene Lint-Hoheit, aus der App-Config genommen.
+    // .claude/** = Submodul mit eigenem Repo, scripts/** = Node-Tooling (kein App-Code).
+    // Beide haben eigene Lint-Hoheit und sind aus der App-Config genommen.
     { ignores: ['dist/**', 'src/generated/**', 'node_modules/**', '.claude/**', 'scripts/**'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
@@ -92,6 +98,7 @@ export default tseslint.config(
             'no-restricted-globals': ['error', 'localStorage', 'sessionStorage', 'fetch'],
             'no-restricted-syntax': ['error', ...forbiddenFetch],
             'import/no-restricted-paths': ['error', { zones: dependencyZones }],
+            'no-restricted-imports': ['error', forbiddenSpaImports],
         },
     },
     // Backend-Adapter-Override: GENAU hier (und nur hier) darf ein Adapter fetchen — er ist die
@@ -103,19 +110,16 @@ export default tseslint.config(
             'no-restricted-syntax': 'off',
         },
     },
-    // Rules of Hooks — auf ALLEM App-Code inkl. shared/ui, weil ein Hook-Verstoß ein echter
-    // Laufzeit-Bug ist (kein Stil-Thema): bedingt aufgerufene Hooks zerstören die Hook-Reihenfolge.
-    // Deshalb bewusst breiter als die Lean-Gates unten. Nur Generiertes bleibt aussen vor (global ignoriert).
+    // Rules of Hooks — auf ALLEM App-Code inkl. shared/ui: ein Hook-Verstoß ist ein echter
+    // Laufzeit-Bug, kein Stil-Thema. Bewusst breiter gescopt als die Lean-Gates.
     {
         files: ['src/**/*.{ts,tsx}'],
         plugins: { 'react-hooks': reactHooks },
         rules: {
             'react-hooks/rules-of-hooks': 'error',
-            // exhaustive-deps bleibt 'warn' der Konvention halber — ACHTUNG: `pnpm lint` läuft mit
-            // --max-warnings 0, hier ist eine Warnung also faktisch ein Fehler und CI-blockierend.
-            // Bewusst so: die Regel fand auf Anhieb einen echten Bug im Referenz-Feature
-            // (instabile useMemo-Deps in ContactsPage). Wer sie lockern will, ändert das Lint-Script,
-            // nicht die Severity.
+            // 'warn' der Konvention halber, aber `pnpm lint` läuft mit --max-warnings 0 —
+            // faktisch also ein Fehler und CI-blockierend. Wer lockern will, ändert das
+            // Lint-Script, nicht die Severity.
             'react-hooks/exhaustive-deps': 'warn',
         },
     },
@@ -146,16 +150,15 @@ export default tseslint.config(
                     rules: [
                         { from: ['feature'], allow: ['port', 'domain'] },
                         { from: ['port'], allow: ['adapter', 'domain'] },
-                        // adapter → port: der Adapter MUSS das Port-Interface importieren, das er
-                        // implementiert (Ports & Adapters). Der kritische Verstoß bleibt verboten:
-                        // feature → adapter greift NICHT (feature darf nur port|domain).
+                        // adapter → port: der Adapter MUSS das Interface importieren, das er
+                        // implementiert. Der kritische Verstoß feature → adapter bleibt verboten.
                         { from: ['adapter'], allow: ['port', 'domain'] },
                         { from: ['domain'], allow: [] },
                     ],
                 },
             ],
-            // Öffentliche Einstiegspunkte je Layer: der Port wird über @/data (index.ts) bzw. seine
-            // Interface-Files (ports/*) angesprochen — nie über einen Deep-Import in data/adapters/**.
+            // Öffentliche Einstiegspunkte je Layer: der Port über @/data bzw. ports/* —
+            // nie per Deep-Import in data/adapters/**.
             'boundaries/entry-point': [
                 'error',
                 {
@@ -172,13 +175,16 @@ export default tseslint.config(
     },
     // Specifier-basierter Boundary-Backstop: fängt `@/`-Alias-Imports auch ohne Resolver.
     // Nur für shared/ (das einzige aus features/ verbotene, tatsächlich gelintete Verzeichnis).
+    // Die SPA-Restriktionen werden mitgeführt, weil diese Rule-Config die globale ersetzt.
     {
         files: ['src/shared/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': [
                 'error',
                 {
+                    paths: forbiddenSpaImports.paths,
                     patterns: [
+                        ...forbiddenSpaImports.patterns,
                         {
                             group: ['@/features/*', '@/features/**', '**/features/*', '**/features/**'],
                             message: 'shared/ darf nicht aus features/ importieren (Dependency-Direction).',
