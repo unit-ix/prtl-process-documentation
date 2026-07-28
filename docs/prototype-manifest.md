@@ -24,7 +24,7 @@
 | Mock-Adapter | `src/data/adapters/mock/*` | In-Memory-Store implementiert die Ports | `Supabase*Repository` (R4) bzw. `Dataverse*Repository` (R5) am selben Port | `prototype` |
 | Seed-Daten (faker) | `src/data/adapters/mock/seed.ts` | Deterministische deutsche Fake-Daten (SEED 42, fixe REF_DATE) | Echte Backend-Daten; faker fällt komplett weg | `prototype` |
 | Seeded / laufende ids | `src/data/adapters/mock/store.ts` (`nextId`) | `*-new-N` Sequenz + Seed-uuids | Vom Backend vergebene ids (uuid/GUID) | `prototype` |
-| Adapter-Swap-Punkt | `src/data/index.ts` | Nur `target: mock` verdrahtet, sonst `unsupported()` | Fork ergänzt den `supabase`/`dataverse`-Zweig | `prototype` |
+| Adapter-Swap-Punkt | `src/data/index.ts` | Nur `backend: mock` verdrahtet, sonst `unsupported()` | Fork ergänzt den `supabase`/`dataverse`-Zweig | `prototype` |
 | Error-Simulation | `src/features/_example/pages/ContactsPage.tsx` (`simulateError`) + `hooks/useContacts.ts` | Button erzwingt den DoD-Error-Zustand | Entfällt — echte Ladefehler triggern den Zustand | `prototype` |
 | Demo-Anlegen | `src/features/_example/pages/ContactsPage.tsx` (`handleCreateDemoContact`) | Legt einen Platzhalter-Kontakt an | Ersetzt durch echtes Formular pro Feature | `prototype` |
 | Referenz-Feature `_example` | `src/features/_example/*` | Kanonisches „mirror this, then delete."-Muster | Gelöscht, sobald das erste echte Feature steht | `prototype` |
@@ -37,7 +37,7 @@ Stellen in `src/shared/components/ui/` (vendored shadcn) weichen bewusst von ein
 
 ## Fork-Checkliste (beim Übergang mock → supabase/dataverse)
 
-1. `target` in `.unitix/project.json` umstellen.
+1. `backend` in `.unitix/project.json` umstellen.
 2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider`: Persona-Quelle auf den Host-User umstellen, `RoleSwitcher` aus `AppShell` entfernen.
 4. `_example` löschen (falls noch vorhanden), Error-Simulation + Demo-Anlegen aus echten Features entfernen.

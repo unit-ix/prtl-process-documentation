@@ -31,12 +31,12 @@ Bis dahin ist der Job dokumentiert, aber **inert**.
 | Branch | Cloudflare-Projekt | Rolle | Deployt? |
 | --- | --- | --- | --- |
 | `prototype` | `<slug>-prototype` | Eingefrorene Kunden-Referenz (immer Mock) | **Immer** |
-| `dev` | `<slug>-dev` | Testumgebung — hier testet das Team | **target-aware** |
-| `main` | `<slug>` | Produktion | **target-aware** |
+| `dev` | `<slug>-dev` | Testumgebung — hier testet das Team | **backend-aware** |
+| `main` | `<slug>` | Produktion | **backend-aware** |
 | `feature/*` | — | Feature-Arbeit | **Nie** |
 
-**target-aware** heißt: `prototype` ist per Definition Mock und deployt immer auf Cloudflare. Für `dev`/`main`
-liest das Script `.unitix/project.json` → `target`: bei `mock`/`supabase` deployt es auf Cloudflare, bei
+**backend-aware** heißt: `prototype` ist per Definition Mock und deployt immer auf Cloudflare. Für `dev`/`main`
+liest das Script `.unitix/project.json` → `backend`: bei `mock`/`supabase` deployt es auf Cloudflare, bei
 `dataverse` läuft die App **in Power Platform** — dann überspringt das Script den Cloudflare-Deploy sauber
 (exit 0, kein CI-Fehler; der echte Power-Platform-Deploy ist eigene Folge-Arbeit).
 
@@ -82,7 +82,7 @@ pnpm deploy -- --env=dev # oder explizit eine Umgebung erzwingen (prototype|dev|
   (`name`), auf einen gültigen Cloudflare-Slug normalisiert (`a-z0-9-`, max. 58, kein führender/abschließender
   Bindestrich); das Umgebungs-Suffix hängt das Script an. `.unitix/project.json` ist die vorgesehene Quelle —
   damit CI und lokal **denselben** Slug treffen.
-- **target-aware:** bei `target: dataverse` überspringt das Script `dev`/`main` (Power Platform) sauber mit exit 0.
+- **backend-aware:** bei `backend: dataverse` überspringt das Script `dev`/`main` (Power Platform) sauber mit exit 0.
 - **Fail loud:** fehlt (bei einem tatsächlichen Deploy) `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder
   `dist/`, bricht das Script mit klarer Meldung ab.
 
@@ -122,8 +122,8 @@ Das ist eine bewusste Grenze, kein Bug: der Deploy wird nicht für einen Nicht-T
 - **Kunden-Abstimmung:** der Cloudflare-Deploy des `prototype`-Branches (`<slug>-prototype`) — der Kunden-Link
   entsteht über GitHub Actions, ausgelöst durch eine Promotion auf `prototype`.
 - **Team-Test der Produkt-Phase:** der Cloudflare-Deploy des `dev`-Branches (`<slug>-dev`) — die Testumgebung,
-  auf der das Team die weitergebauten Features prüft (bei `dataverse`-Target stattdessen Power Platform).
-- **Produktion:** der Deploy des `main`-Branches (`<slug>`) — target-aware (Cloudflare oder Power Platform).
+  auf der das Team die weitergebauten Features prüft (bei `dataverse`-Backend stattdessen Power Platform).
+- **Produktion:** der Deploy des `main`-Branches (`<slug>`) — backend-aware (Cloudflare oder Power Platform).
 - **Link zwischendurch:** `pnpm deploy` lokal — gleiche Logik, Umgebung = aktueller Branch.
 - **Power-Platform-Toolchain** (`npx power-apps …`) ist erst am `dataverse`-Fork relevant — für den
   Mock-Prototyp nie.

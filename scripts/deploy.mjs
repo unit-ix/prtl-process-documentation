@@ -6,10 +6,10 @@
 //   dev-Branch       → <slug>-dev          (Testumgebung — hier testet das Team)
 //   main-Branch      → <slug>              (Produktion)
 //
-// target-aware (.unitix/project.json → target):
+// backend-aware (.unitix/project.json → backend):
 //   prototype deployt IMMER (er ist per Definition mock).
-//   dev/main deployen auf Cloudflare nur bei target `mock`|`supabase`.
-//   Bei target `dataverse` läuft die App IN Power Platform → dev/main werden sauber
+//   dev/main deployen auf Cloudflare nur bei backend `mock`|`supabase`.
+//   Bei backend `dataverse` läuft die App IN Power Platform → dev/main werden sauber
 //   ÜBERSPRUNGEN (exit 0, kein CI-Fehler). Der echte PP-Deploy ist eigene Folge-Arbeit.
 //
 // Die EINE Deploy-Logik — lokal für den Ad-hoc-„Link zwischendurch" UND aus der CI heraus.
@@ -24,18 +24,18 @@
 //
 // SPA-only: hochgeladen wird ein statisches `dist/`. Das Golden Template IST per Design eine SPA
 // (HashRouter-Pin, Pflicht für den späteren Dataverse-iframe). SSR-Projekte (TanStack) laufen
-// nicht über diesen Pfad — siehe docs/hosting.md.
+// nicht über diesen Pfad — siehe docs/frontend.md.
 //
 // Voraussetzungen (fail loud, siehe unten):
 //   CLOUDFLARE_API_TOKEN  — Account > Cloudflare Pages > Edit (wer provisioniert: Olli)
 //   CLOUDFLARE_ACCOUNT_ID — Account-ID (Cloudflare-Dashboard, rechte Sidebar)
 //   dist/                 — vorher `pnpm build`
 // Beide Namen liest wrangler nativ — deshalb genau diese Schreibweise (kein CF_-Kurzname mehr,
-// vereinheitlicht 2026-07-17: Hosting-Stack-Review + Jakobs Kommentar zu docs/hosting.md).
+// vereinheitlicht 2026-07-17: Hosting-Stack-Review + Jakobs Kommentar zu docs/frontend.md).
 //
 // Umgebung: --env=prototype|dev|main  ODER  --branch=<name>  ODER  aktueller Git-Branch.
 // Projekt-Basis-Slug (wrangler `--project-name`): Priorität arg > .unitix/project.json (name/slug) > package.json name.
-// Details: docs/hosting.md.
+// Details: docs/frontend.md.
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -45,7 +45,7 @@ import { dirname, resolve } from 'node:path'
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 // Branch → { Projekt-Suffix, Cloudflare-production-branch, deployt-immer }.
-// prototype ist immer mock → alwaysDeploy; dev/main sind target-aware (siehe shouldDeploy).
+// prototype ist immer mock → alwaysDeploy; dev/main sind backend-aware (siehe shouldDeploy).
 const ENVIRONMENTS = {
   prototype: { suffix: '-prototype', productionBranch: 'prototype', alwaysDeploy: true },
   dev: { suffix: '-dev', productionBranch: 'dev', alwaysDeploy: false },
@@ -135,13 +135,13 @@ function projectNameFor(env) {
   return envProjectName(resolveBaseSlug(), ENVIRONMENTS[env].suffix)
 }
 
-// dev/main deployen nur, wenn das Target web-hostbar ist. dataverse läuft in Power Platform.
+// dev/main deployen nur, wenn das Backend web-hostbar ist. dataverse läuft in Power Platform.
 function shouldDeploy(env) {
   if (ENVIRONMENTS[env].alwaysDeploy) return true
-  const target = (readJson('.unitix/project.json') ?? {}).target
-  if (target === 'dataverse') {
+  const backend = (readJson('.unitix/project.json') ?? {}).backend
+  if (backend === 'dataverse') {
     console.log(
-      `→ target=dataverse → ${env} läuft in Power Platform, kein Cloudflare-Deploy. Übersprungen.`,
+      `→ backend=dataverse → ${env} läuft in Power Platform, kein Cloudflare-Deploy. Übersprungen.`,
     )
     return false
   }
@@ -155,7 +155,7 @@ function assertPrerequisites() {
         '  CLOUDFLARE_API_TOKEN  (Account > Cloudflare Pages > Edit)\n' +
         '  CLOUDFLARE_ACCOUNT_ID (Cloudflare-Dashboard, rechte Sidebar)\n' +
         'Wer provisioniert: Olli. Ohne Token bleibt der Prototyp localhost-first (pnpm dev) + PDF-Report.\n' +
-        'Details: docs/hosting.md.',
+        'Details: docs/frontend.md.',
     )
   }
   if (!existsSync(resolve(repoRoot, 'dist'))) fail('Kein dist/ gefunden — zuerst `pnpm build` ausführen.')
@@ -179,7 +179,7 @@ function wrangler(args, { allowFailure = false } = {}) {
 function main() {
   const env = resolveEnv()
 
-  // target-aware ZUERST — ein dataverse-dev/main-Push soll exit 0 liefern, nicht am fehlenden
+  // backend-aware ZUERST — ein dataverse-dev/main-Push soll exit 0 liefern, nicht am fehlenden
   // Token sterben. Deshalb der Skip-Check vor assertPrerequisites().
   if (!shouldDeploy(env)) process.exit(0)
 

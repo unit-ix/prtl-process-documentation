@@ -1,25 +1,26 @@
 # Code Apps Projekt-Template
 
 **Prototype-First Golden Template** für UNIT-IX Power Platform Code Apps (React 19 + Vite + TypeScript SPA).
-Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne Backend, lokal im Browser
-erlebbar — und wird erst nach Kunden-OK auf ein echtes Backend geforkt (Supabase oder Dataverse).
+
+Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne Backend, lokal im Browser erlebbar — und wird erst nach Kunden-OK auf ein echtes Backend geforkt (Supabase oder Dataverse).
+
 Das Template bringt Struktur, Toolchain, Data-Seam und Claude-Konfiguration mit.
 
 ---
 
-## Zwei Achsen: Stage × Target
+## Zwei Achsen: Stage × Backend
 
 Ein Projekt bewegt sich auf zwei unabhängigen Achsen:
 
-| Achse      | Steuert                          | Werte                                                              |
-| ---------- | -------------------------------- | ------------------------------------------------------------------ |
-| **Stage**  | Reifegrad (= Git-Branch)         | `feature/*` → `dev` → `prototype` → `main`                         |
-| **Target** | Datenquelle (= Backend)          | `mock` (Default) → `supabase` **oder** `dataverse` (Fork nach OK)  |
+| Achse      | Steuert                  | Werte                                                             |
+| ---------- | ------------------------ | ----------------------------------------------------------------- |
+| **Stage**  | Reifegrad (= Git-Branch) | `feature/*` → `dev` → `prototype` → `main`                        |
+| **Backend** | Datenquelle (= Backend)  | `mock` (Default) → `supabase` **oder** `dataverse` (Fork nach OK) |
 
-Das aktive Target steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
+Das aktive Backend steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
 
 ```json
-{ "target": "mock", "hosting": "cloudflare" }
+{ "backend": "mock", "frontend": "cloudflare" }
 ```
 
 Der **Data-Seam** (`src/data/`) entkoppelt UI von Backend: UI und Hooks sprechen nur einen
@@ -59,7 +60,7 @@ Die Arbeit läuft in zwei Phasen mit zwei Promotion-Pfaden: `/prototype → /han
   den vollständigen Mock-Prototyp: pro Feature ein Modul nach dem Muster von
   [`src/features/_example`](src/features/_example) (Port-Hook + AsyncBoundary + die fünf DoD-Zustände +
   `canSee`/`canEdit`). Landet auf `prototype` → Cloudflare → Kunden-Abstimmung → `prototype` **eingefroren**.
-  *(Autonome Engine — wird über das `.claude`-Submodul geliefert.)*
+  _(Autonome Engine — wird über das `.claude`-Submodul geliefert.)_
 
 **Übergabe (einmalig):**
 
@@ -95,7 +96,7 @@ pnpm verify     # lint + knip + typecheck + build (spiegelt CI 1:1)
 
 `pnpm verify` ist das eine Gate: `lint && knip && tsc --noEmit && build`. Es muss vor jedem Commit
 grün sein und wird von CI 1:1 gespiegelt. Review passiert am laufenden `pnpm dev` im Browser —
-nicht über einen Deploy. Geteilt wird der Prototyp über **Cloudflare Pages** (`hosting: cloudflare`).
+nicht über einen Deploy. Geteilt wird der Prototyp über **Cloudflare Pages** (`frontend: cloudflare`).
 
 > Der Power-Platform-Connections-Server (`npx power-apps run`) und `npx power-apps push` sind
 > **erst am `dataverse`-Fork** relevant, nicht im Mock-Prototyp.
@@ -107,7 +108,7 @@ nicht über einen Deploy. Geteilt wird der Prototyp über **Cloudflare Pages** (
 ```
 .claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, commands/, settings.json)
 .github/workflows/    CI — lint + knip + typecheck + build (spiegelt pnpm verify)
-.unitix/              project.json — Target- + Hosting-Achse (Single Source of Truth)
+.unitix/              project.json — Backend- + Hosting-Achse (Single Source of Truth)
 docs/                 Projekt-Doku (PRD, Datenmodell — SharePoint-Snapshots, prototype-manifest.md)
 src/app/              Einstieg (main.tsx, App.tsx) — Provider, Router, QueryClient
 src/domain/           Reine Domänen-Typen (kennt kein Backend)
@@ -121,11 +122,11 @@ eslint.config.js      Hard-Rules + Lean-Coding-Gates + Layer-Boundaries
 
 ## Was wohin gehört
 
-| Artefakt                                    | Ort                                                  |
-| ------------------------------------------- | ---------------------------------------------------- |
-| Angebot, Meetings, sonstige Kundendokumente | SharePoint only — **nie ins Repo, nie überschrieben** |
+| Artefakt                                    | Ort                                                               |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| Angebot, Meetings, sonstige Kundendokumente | SharePoint only — **nie ins Repo, nie überschrieben**             |
 | PRD, Datenmodell                            | `docs/` im Repo als Snapshot (Owner-Entscheidung — privates Repo) |
-| Code, Konfiguration                         | Repo                                                 |
+| Code, Konfiguration                         | Repo                                                              |
 
 `/prototype` kopiert PRD/Datenmodell aus dem **SharePoint-Quellordner** (lokal via OneDrive-Sync) **einseitig**
 nach `docs/` — als Snapshot mit `Stand:`/`Quelle:`-Header, liest SharePoint read-only, schreibt es nie. Die
@@ -138,7 +139,7 @@ SharePoint-Bibliothek bleibt die laufend gepflegte Single Source of Truth; bei �
 
 Sobald der Kunde den Prototyp abgenommen hat:
 
-1. `target` in [`.unitix/project.json`](.unitix/project.json) umstellen.
+1. `backend` in [`.unitix/project.json`](.unitix/project.json) umstellen.
 2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
