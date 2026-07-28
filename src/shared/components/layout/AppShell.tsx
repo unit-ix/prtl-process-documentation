@@ -19,7 +19,7 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { PERSONAS, type Persona, useRole } from '@/shared/lib/role/RoleContext';
 
-// Statische Tag-1-Navigation. Die /prototype-Engine (Part E) hängt hier pro Feature
+// Statische Tag-1-Navigation. Die /prototype-Engine haengt hier pro Feature
 // eine react-router-NavLink-Zeile ein; A4 verdrahtet das _example-Feature.
 const NAV_ITEMS = [{ label: 'Übersicht', icon: LayoutDashboard, active: true }] as const;
 

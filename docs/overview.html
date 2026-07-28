@@ -190,25 +190,22 @@
         <button id="theme" type="button">Theme</button>
         <main>
             <h1>Vom Kundengespräch zur fertigen App</h1>
-            <p class="lede">Das Handbuch zum Prototype-First Golden Template — der rote Faden in ~10&nbsp;Minuten.</p>
+            <p class="lede">Der rote Faden durch das Prototype-First Golden Template — in ~10&nbsp;Minuten.</p>
 
             <blockquote>
                 <p>
-                    <strong>Diese Seite dupliziert keine Regeln.</strong> Sie zeigt, wie die Teile zusammenhängen, und
-                    verlinkt die kanonischen Quellen. Bei Widerspruch gewinnt immer die verlinkte Quelle, nie diese
-                    Seite. Quelle dieses Dokuments: <code>docs/overview.md</code>.
+                    Diese Seite erklärt, wie die Teile zusammenhängen, und verlinkt die Regeln statt sie zu wiederholen.
+                    Bei Widerspruch gewinnt immer die verlinkte Quelle. Quelle dieses Dokuments:
+                    <code>docs/overview.md</code> — dort wird editiert, diese Fassung wird von Hand nachgezogen.
                 </p>
             </blockquote>
 
             <h2>Worum es geht</h2>
             <p>
                 Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Er arbeitet mit
-                erfundenen Daten (kein Backend) — <strong>wir entwickeln ihn auf localhost</strong> (<code
-                    >pnpm dev</code
-                >), und für die <strong>Abstimmung mit dem Kunden liegt er auf Cloudflare</strong> (immer noch
-                Mock-Daten, standardmäßig auf unserem UNIT-IX-Tenant, beim Kunden nur wenn schon entschieden).
-                <strong>Erst nach dem OK</strong> bekommt er ein echtes Backend — der Umzug geht von der
-                Cloudflare-Fassung aus.
+                erfundenen Daten; wir entwickeln ihn auf localhost (<code>pnpm dev</code>), und für die
+                <strong>Abstimmung mit dem Kunden</strong> liegt er auf Cloudflare — immer noch mit Mock-Daten. Erst
+                nach dem OK bekommt er ein echtes Backend.
             </p>
             <p>
                 Warum: Ein Konzept auf Papier diskutiert man drei Runden lang. Ein klickbarer Prototyp beantwortet
@@ -217,37 +214,32 @@
             </p>
             <p>
                 Die zentrale Idee, die das ermöglicht: die App weiß nicht, woher ihre Daten kommen. Sie fragt einen
-                <strong>Port</strong>; dahinter steckt ein austauschbarer <strong>Adapter</strong>. Am Anfang liefert
-                der Mock-Adapter erfundene Daten, später ein echtes Backend. Für die Oberfläche ändert sich dabei
-                <strong>nichts</strong>.
+                <strong>Port</strong>; dahinter steckt ein austauschbarer <strong>Adapter</strong>. Für die Oberfläche
+                ändert sich beim Backend-Wechsel <strong>nichts</strong>.
             </p>
 
             <h2>Die Landkarte</h2>
             <pre><code>Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
 ─────────────────      ──────────────       ──────────────────     ───────            ───────
 PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
-(SharePoint)           Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
-                       (unsere Dev)          Tenant)               ↓                   oder Microsoft)
-                                             ↓                     Datenmodell
-                                             Kunde klickt,         wird technisch
-                                             gibt Feedback</code></pre>
+(SharePoint)           Mock, localhost      (Mock-Daten,           tauschen           (Cloudflare
+                                             Kunde klickt)                             oder Microsoft)</code></pre>
             <p>
                 Es gibt <strong>keine harte Übergabe</strong> zwischen „Konzept“ und „Entwicklung“. Der Prototyp wächst
-                im Fluss von ~70–75&nbsp;% auf 100&nbsp;% — wer gerade daran arbeitet, ist zweitrangig. Der Prozess ist
-                bewusst <strong>personenungebunden</strong> beschrieben.
+                im Fluss von ~70–75&nbsp;% auf 100&nbsp;%; wer gerade daran arbeitet, ist zweitrangig. Der Prozess ist
+                bewusst personenungebunden.
             </p>
 
             <h2>Die zwei Achsen</h2>
-            <p>Alles im Template hängt an genau zwei Schaltern. Sie sind <strong>unabhängig</strong> voneinander.</p>
+            <p>Alles hängt an genau zwei Schaltern, und sie sind <strong>unabhängig</strong> voneinander.</p>
 
             <h3>Stage = welcher Git-Branch</h3>
             <p>Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf:</p>
-            <pre><code>Prototyp-Phase:  /prototype  →  prototype           (Feature-Checkpoints direkt auf prototype → Cloudflare, dann eingefroren)
-Übergabe:        /handoff:   prototype ─seed→ dev    (dev entsteht hier, einmalig)
-Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)</code></pre>
+            <pre><code>Prototyp-Phase:  /prototype  →  prototype        (Feature-Checkpoints direkt auf prototype, dann eingefroren)
+Übergabe:        /handoff:   prototype ─seed→ dev
+Produkt-Phase:   feature/*  →  dev  →  main      (prototype eingefroren, aus dem Pfad raus)</code></pre>
             <p>
-                <code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong> — in der
-                Prototyp-Phase committet <code>/prototype</code> direkt auf <code>prototype</code>.
+                <code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong>.
             </p>
             <div class="wrap">
                 <table>
@@ -257,31 +249,27 @@ Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren,
                     </tr>
                     <tr>
                         <td><code>feature/*</code></td>
-                        <td>
-                            Arbeit an einem Feature (von <code>dev</code> abgezweigt, nur Produkt-Phase). Kein Deploy.
-                        </td>
+                        <td>Arbeit an einem Feature, von <code>dev</code> abgezweigt. Kein Deploy.</td>
                     </tr>
                     <tr>
                         <td><code>dev</code></td>
                         <td>
-                            Mutable Testbasis. <code>/execute</code> merged hierher. <strong>Testumgebung</strong> —
-                            deployt (backend-aware) auf ein eigenes Cloudflare-Projekt <code>&lt;slug&gt;-dev</code>.
+                            Mutable Testbasis. <code>/execute</code> merged hierher. Deployt auf
+                            <code>&lt;slug&gt;-dev</code>.
                         </td>
                     </tr>
                     <tr>
                         <td><code>prototype</code></td>
                         <td>
-                            <strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. In der
-                            Produkt-Phase <strong>aus dem Pfad raus</strong> (bewusst übersprungen). Deployt auf sein
-                            eigenes Cloudflare-Projekt <code>&lt;slug&gt;-prototype</code> (immer Mock).
+                            <strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. Deployt auf
+                            <code>&lt;slug&gt;-prototype</code>, immer Mock.
                         </td>
                     </tr>
                     <tr>
                         <td><code>main</code></td>
                         <td>
-                            Produktion. Deployt (backend-aware) auf <code>&lt;slug&gt;</code> — Cloudflare
-                            (<code>mock</code>/<code>supabase</code>) <strong>oder</strong> Microsoft/Power Platform
-                            (<code>dataverse</code>).
+                            Produktion. Deployt auf <code>&lt;slug&gt;</code> — Cloudflare oder Power Platform, je nach
+                            Backend.
                         </td>
                     </tr>
                 </table>
@@ -299,12 +287,12 @@ Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren,
                     </tr>
                     <tr>
                         <td><code>mock</code></td>
-                        <td>Erfundene Daten aus dem Seed. Kein Backend. Der Default eines frischen Templates.</td>
+                        <td>Erfundene Daten aus dem Seed. Kein Backend. Default eines frischen Templates.</td>
                     </tr>
                     <tr>
                         <td><code>supabase</code></td>
                         <td>
-                            Postgres + RLS + Auth. Bleibt auf Cloudflare. <strong>Strategisch der Haupt-Weg.</strong>
+                            Postgres + RLS + Auth, bleibt auf Cloudflare. <strong>Strategisch der Haupt-Weg.</strong>
                         </td>
                     </tr>
                     <tr>
@@ -313,17 +301,11 @@ Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren,
                     </tr>
                 </table>
             </div>
-
-            <blockquote>
-                <p>
-                    <strong>Richtung (Stand 2026-07-17):</strong> Neue Projekte entstehen als Code Apps, Canvas Apps
-                    laufen aus (~95&nbsp;%, keine harte Deadline — sie sind nicht KI-ready). Produktiv geht es Richtung
-                    „mehr Supabase, weniger Power Platform“. Bestehendes wird <strong>selektiv</strong> migriert, nicht
-                    per Hauruck. Azure ist bewusst <strong>kein</strong> Bestandteil des Templates — es ist das
-                    Compliance-Argument („gleiche Leistung, ca. 100–150&nbsp;EUR/Monat“) und belegt, dass wir nicht an
-                    einen Hersteller gekettet sind.
-                </p>
-            </blockquote>
+            <p>
+                Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI-ready). Produktiv geht
+                die Richtung „mehr Supabase, weniger Power Platform“ — Bestehendes wird selektiv migriert, nicht per
+                Hauruck.
+            </p>
 
             <h2>Der Fork ist eine Datei</h2>
             <p>
@@ -337,45 +319,31 @@ src/data/adapters/
     supabase/            ← echtes Backend
     dataverse/           ← echtes Backend</code></pre>
             <p>
-                Die Regel, die das zusammenhält:
-                <strong>UI und Hooks sprechen nur den Port an (<code>@/data</code>), nie einen Adapter.</strong> Das ist
-                mechanisch erzwungen (ESLint-Boundaries) — nicht nur eine Bitte.
-            </p>
-            <p>
-                Die Domain-Typen in <code>src/domain/</code> sind der Vertrag: eine Entität = eine künftige Tabelle.
-                Stimmen sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt
-                <strong>nur</strong> im Adapter.
+                Die Regel, die das zusammenhält: <strong>UI und Hooks sprechen nur den Port an</strong>
+                (<code>@/data</code>), nie einen Adapter — mechanisch erzwungen über ESLint-Boundaries. Die
+                Domain-Typen in <code>src/domain/</code> sind der Vertrag: eine Entität = eine künftige Tabelle.
+                Backend-Naming lebt ausschließlich im Adapter.
             </p>
             <p class="muted">Details: <a href="prototype-manifest.md">prototype-manifest.md</a></p>
 
             <h2>Der Command-Flow</h2>
-            <p>Es gibt <strong>zwei Lanes</strong>.</p>
-
-            <h3>Kundenprojekt — zwei Phasen</h3>
-            <pre><code>Prototyp-Phase:
-/prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom → prototype-Branch
-                               → Cloudflare → Kunde OK → prototype eingefroren
-
-Übergabe:
-/handoff                     → seedet dev aus dem eingefrorenen prototype (einmalig)
-
-Produkt-Phase:
-/plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch (von dev)
-/execute &lt;plan&gt;              → Autopilot-Default: committet nach jeder Phase, pusht
-                               auf Draft-PR gegen dev, merged am Ende autonom → dev
-                               (Autopilot: false → Per-Phasen-Stopp)
-# Tests laufen auf dev
-/ship                        → Produktions-Promotion dev → main (gegatet)</code></pre>
-
-            <h3>Werkzeug-Repo (<code>code-apps-template</code> / <code>code-apps-context</code>)</h3>
-            <pre><code>/dev-plan &lt;slug&gt;     → lean, kein Interview, kein Branch
-/dev-execute &lt;plan&gt;  → arbeitet ab + committet + pusht direkt auf main. Kein PR.</code></pre>
-            <p class="muted">Kanonische Beschreibung: <code>.claude/CLAUDE.md</code> → „Workflow-Skills“.</p>
+            <p>Kundenprojekte laufen in zwei Phasen:</p>
+            <pre><code>Prototyp-Phase:  /prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom → prototype-Branch
+                                              → Cloudflare → Kunde OK → prototype eingefroren
+Übergabe:        /handoff                     → seedet dev aus dem eingefrorenen prototype
+Produkt-Phase:   /plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch (von dev)
+                 /execute &lt;plan&gt;              → committet pro Phase, PR gegen dev, merged autonom
+                 /ship                        → Promotion dev → main (der eine gegatete Schritt)</code></pre>
+            <p>
+                Am Tooling selbst (<code>code-apps-template</code> / <code>code-apps-context</code>) gibt es keine
+                Command-Kette: dort wird direkt auf <code>main</code> gearbeitet.
+            </p>
+            <p class="muted">Kanonische Beschreibung: <code>.claude/CLAUDE.md</code></p>
 
             <h2>Die Regeln — und wo sie stehen</h2>
             <p>
-                <strong>Vor jedem Task liest die KI zwei Dateien immer</strong> und
-                <strong>genau eine</strong> backend-abhängig:
+                <strong>Vor jedem Task liest die KI zwei Dateien immer</strong> und <strong>genau eine</strong>
+                backend-abhängig:
             </p>
             <div class="wrap">
                 <table>
@@ -386,29 +354,25 @@ Produkt-Phase:
                         <th>bei <code>dataverse</code></th>
                     </tr>
                     <tr>
-                        <td><code>naming-conventions.md</code><br /><code>lean-coding.md</code></td>
-                        <td>
-                            <code>prototype-patterns.md</code><br /><span class="muted"
-                                >Mock ok, <code>fetch</code> ok</span
-                            >
-                        </td>
-                        <td>
-                            <code>supabase-patterns.md</code><br /><span class="muted"
-                                ><strong>RLS Pflicht</strong></span
-                            >
-                        </td>
-                        <td><code>code-app-patterns.md</code><br /><span class="muted">CSP, Dataverse-only</span></td>
+                        <td><code>naming-conventions.md</code></td>
+                        <td><code>prototype-patterns.md</code></td>
+                        <td><code>supabase-patterns.md</code></td>
+                        <td><code>code-app-patterns.md</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>lean-coding.md</code></td>
+                        <td>Mock ok, <code>fetch</code> ok</td>
+                        <td><strong>RLS Pflicht</strong></td>
+                        <td>CSP, Dataverse-only</td>
                     </tr>
                 </table>
             </div>
             <p>
                 Der teure Fehler ist der <strong>falsche Regelsatz</strong>: Supabase-Code in eine CSP-gesperrte Code
                 App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten
-                <code>backend</code>-Feld — nie am Branch.
+                <code>backend</code>-Feld, nie am Branch.
             </p>
-
-            <h3>DB-Naming ist systemabhängig</h3>
-            <p class="muted">Kein Versehen, sondern Beschluss.</p>
+            <p><strong>DB-Naming ist systemabhängig</strong> — kein Versehen, sondern Beschluss:</p>
             <div class="wrap">
                 <table>
                     <tr>
@@ -418,135 +382,56 @@ Produkt-Phase:
                     </tr>
                     <tr>
                         <td>Tabelle</td>
-                        <td>
-                            <code>service_tickets</code><br /><span class="muted"
-                                >snake_case, plural, <strong>kein</strong> Präfix</span
-                            >
-                        </td>
+                        <td><code>service_tickets</code> (snake_case, plural, <strong>kein</strong> Präfix)</td>
                         <td><code>unitix_tblServiceTicket</code></td>
                     </tr>
                     <tr>
                         <td>Spalte</td>
-                        <td>
-                            <code>customer_name</code><br /><span class="muted"
-                                ><strong>kein</strong> Datentyp-Präfix</span
-                            >
-                        </td>
+                        <td><code>customer_name</code> (<strong>kein</strong> Datentyp-Präfix)</td>
                         <td><code>strCustomerName</code></td>
                     </tr>
                 </table>
             </div>
             <p>
-                Begründung: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ein Präfix dupliziert
-                ihn nur. Bei Canvas Apps ist er sichtbar sinnvoll, weil der Typ im Code fehlt.
+                Grund: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ein Präfix dupliziert ihn
+                nur. Bei Canvas Apps ist er sichtbar sinnvoll, weil der Typ im Code fehlt.
             </p>
-
-            <h3>Was ESLint hart erzwingt</h3>
             <p>
-                <code>pnpm lint</code> — kein <code>fetch</code> außerhalb von Adaptern · kein
-                <code>localStorage</code>/<code>sessionStorage</code> · max. <strong>300 Zeilen</strong> pro Datei ·
-                Layer-Grenzen (Feature → Port → Adapter → Domain) · Rules of Hooks.
+                <strong>Was ESLint hart erzwingt</strong> (<code>eslint.config.js</code>): kein <code>fetch</code>
+                außerhalb von Adaptern · kein <code>localStorage</code>/<code>sessionStorage</code> · kein
+                <code>BrowserRouter</code>, kein Next.js/SSR · max. 300 Zeilen pro Datei · Layer-Grenzen (Feature →
+                Port → Adapter → Domain) · Rules of Hooks.
             </p>
-
-            <h3>Design</h3>
             <p>
-                Ausschließlich Design-Tokens + die shadcn-Komponenten in <code>src/shared/components/ui/</code>.
-                <strong>Kein eigenes CSS-File, keine Inline-Farben.</strong> Tokens (oklch) leben in
-                <code>src/index.css</code>.
+                <strong>Design:</strong> ausschließlich Design-Tokens + die shadcn-Komponenten in
+                <code>src/shared/components/ui/</code>. <strong>Kein eigenes CSS-File, keine Inline-Farben.</strong>
+                Tokens (oklch) leben in <code>src/index.css</code>, das Inventar in <code>COMPONENTS.md</code>.
             </p>
 
             <h2>Teilen und Deployen</h2>
             <ul>
                 <li>
-                    <strong>Wir entwickeln auf localhost</strong> (<code>pnpm dev</code>) und machen dort unseren
-                    internen Review — nicht über einen Deploy.
+                    <strong>Wir entwickeln auf localhost</strong> (<code>pnpm dev</code>) und machen dort den internen
+                    Review — nicht über einen Deploy.
                 </li>
                 <li>
-                    <strong>Der Kunde stimmt auf Cloudflare ab.</strong> Der abgestimmte Stand liegt auf dem
-                    <code>prototype</code>-Branch, deployt auf Cloudflare (Default UNIT-IX-Tenant, Kunden-Tenant wenn
-                    schon entschieden) — immer noch Mock-Daten.
+                    <strong>Der Kunde stimmt auf Cloudflare ab</strong>, auf dem Deploy des
+                    <code>prototype</code>-Branches — immer noch Mock-Daten.
                 </li>
                 <li>
-                    <strong>Der Kunden-Link</strong> entsteht über <strong>GitHub Actions</strong>, ausgelöst durch eine
-                    Promotion auf <code>prototype</code>. Nicht jeder Commit deployt — Build-Minuten sind ein echtes
-                    Budget.
+                    <strong>Der Link entsteht über GitHub Actions</strong>, ausgelöst durch eine Promotion auf
+                    <code>prototype</code>. Nicht jeder Commit deployt — Build-Minuten sind ein echtes Budget.
                 </li>
             </ul>
-            <blockquote>
-                <p>
-                    Der Deploy braucht Ollis Cloudflare-Token (siehe „Noch offen“). <strong>Bis der da ist</strong>, ist
-                    das Kunden-Artefakt interimsweise der lokale <code>pnpm dev</code> + der PDF-Report; der
-                    Cloudflare-Link wird eingesteckt, sobald der Token steht.
-                </p>
-            </blockquote>
             <p class="muted">
-                Details, Secrets und warum es <em>nicht</em> der Dashboard-Weg (git-connect) ist:
-                <a href="hosting.md">hosting.md</a>.
+                Details, Secrets und die drei Umgebungen: <a href="hosting.md">hosting.md</a>
             </p>
 
             <h2>Wann ist der Prototyp fertig?</h2>
             <p>
-                Kurzfassung: wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, Erfolg,
-                Keine-Rechte) und der Kunde OK sagt. Ab dann darf das Backend dran.
-            </p>
-            <p>
-                Die belastbaren Fertig-Kriterien und das Go-Gate vor dem großen <code>/prototype</code>-Lauf sind
-                <strong>noch in Arbeit</strong> (Team-Aufgabe, Stand 2026-07-17). Die DoD-Checkliste im Detail:
-                <code>.claude/docs/prototype-patterns.md</code>.
-            </p>
-
-            <h2>Noch offen</h2>
-            <div class="wrap">
-                <table>
-                    <tr>
-                        <th>Thema</th>
-                        <th>Stand</th>
-                    </tr>
-                    <tr>
-                        <td>Cloudflare-Token + Account-ID</td>
-                        <td>
-                            bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost +
-                            PDF
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Fertig-Kriterien + Go-Gate vor dem <code>/prototype</code>-Lauf</td>
-                        <td>Team</td>
-                    </tr>
-                    <tr>
-                        <td>Rollenname „Technical Consultant“ + Verantwortungsbereich</td>
-                        <td>Team</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            SharePoint-Live-Read (Pointer statt <code>docs/</code>-Snapshot; SharePoint-Master als
-                            Single Source of Truth)
-                        </td>
-                        <td>geplant, eigene Runde</td>
-                    </tr>
-                    <tr>
-                        <td>Automatischer Datenmodell-Sync</td>
-                        <td>zurückgestellt</td>
-                    </tr>
-                </table>
-            </div>
-
-            <h2>Diese Seite pflegen</h2>
-            <p>
-                <code>overview.md</code> ist die <strong>Quelle</strong> — dort wird editiert. Diese HTML-Fassung ist
-                die visuelle Variante fürs Meeting und wird <strong>von Hand</strong> nachgezogen (dieses Repo hat
-                bewusst keinen HTML-Generator; der SharePoint-Skill baut Kunden-Decks und ist hier nicht zuständig).
-            </p>
-            <p>
-                Wenn sich am Template etwas ändert — Commands, Architektur, Regelsätze, Branching, Hosting —, gehört die
-                betroffene Stelle hier nachgezogen. <strong>Kanonische Quellen gewinnen immer</strong> gegen diese
-                Seite: <code>.claude/CLAUDE.md</code> · <code>.claude/commands/*</code> ·
-                <code>.claude/docs/prototype-first-architecture.md</code> · <code>eslint.config.js</code> ·
-                <code>src/index.css</code> · <a href="hosting.md">hosting.md</a>.
-            </p>
-            <p>
-                Und die Regel, die dieses Dokument kurz hält: <strong>nicht duplizieren, verlinken.</strong> Eine Info,
-                die hier und in der kanonischen Quelle steht, ist eine Info, die irgendwann auseinanderläuft.
+                Wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, 404,
+                Confirm-vor-Löschen) und der Kunde OK sagt. Die vollständige Checkliste steht in
+                <code>.claude/docs/prototype-patterns.md</code> → Definition of Done.
             </p>
 
             <footer>UNIT&nbsp;IX · Prototype-First Golden Template · Quelle: <code>docs/overview.md</code></footer>

@@ -1,41 +1,30 @@
 #!/usr/bin/env node
 // Cloudflare Pages Direct-Upload-Deploy für die drei Umgebungen eines Kundenprojekts.
 //
-// Drei Cloudflare-Pages-Projekte pro Kundenprojekt (entschieden 2026-07-22):
 //   prototype-Branch → <slug>-prototype   (eingefrorene Kunden-Referenz, immer Mock)
-//   dev-Branch       → <slug>-dev          (Testumgebung — hier testet das Team)
+//   dev-Branch       → <slug>-dev          (Testumgebung)
 //   main-Branch      → <slug>              (Produktion)
 //
-// backend-aware (.unitix/project.json → backend):
-//   prototype deployt IMMER (er ist per Definition mock).
-//   dev/main deployen auf Cloudflare nur bei backend `mock`|`supabase`.
-//   Bei backend `dataverse` läuft die App IN Power Platform → dev/main werden sauber
-//   ÜBERSPRUNGEN (exit 0, kein CI-Fehler). Der echte PP-Deploy ist eigene Folge-Arbeit.
+// backend-aware (.unitix/project.json → backend): prototype deployt IMMER (per Definition mock);
+// dev/main nur bei `mock`|`supabase`. Bei `dataverse` läuft die App IN Power Platform → dev/main
+// werden sauber ÜBERSPRUNGEN (exit 0, kein CI-Fehler).
 //
-// Die EINE Deploy-Logik — lokal für den Ad-hoc-„Link zwischendurch" UND aus der CI heraus.
-// Der Deploy-Job in .github/workflows/ci.yml ruft genau dieses Script auf, statt die Logik zu
-// duplizieren (Review Jakob 2026-07-17): sonst entstehen je nach Weg zwei Pages-Projekte mit zwei
-// URLs, weil CI den Repo-Namen und das Script .unitix/project.json als Slug-Quelle nimmt.
-// localhost-first bleibt der Default für Entwicklung/Review.
+// Die EINE Deploy-Logik — lokal für den Ad-hoc-Link UND aus der CI heraus. Der Deploy-Job in
+// .github/workflows/ci.yml ruft dieses Script auf statt die Logik zu duplizieren: sonst entstehen
+// zwei Pages-Projekte mit zwei URLs, weil CI den Repo-Namen und das Script .unitix/project.json
+// als Slug-Quelle nimmt.
 //
-// Lädt den fertigen `dist/`-Build via `wrangler pages deploy` als Direct Upload hoch, legt das
-// Pages-Projekt bei Bedarf vorher explizit an (in CI unverzichtbar — wrangler würde sonst
+// Legt das Pages-Projekt bei Bedarf vorher explizit an (in CI unverzichtbar — wrangler würde sonst
 // interaktiv nachfragen und der allererste Deploy failt) und printet die `*.pages.dev`-URL.
 //
-// SPA-only: hochgeladen wird ein statisches `dist/`. Das Golden Template IST per Design eine SPA
-// (HashRouter-Pin, Pflicht für den späteren Dataverse-iframe). SSR-Projekte (TanStack) laufen
-// nicht über diesen Pfad — siehe docs/frontend.md.
+// SPA-only: hochgeladen wird ein statisches `dist/`. SSR-Projekte laufen nicht über diesen Pfad.
 //
-// Voraussetzungen (fail loud, siehe unten):
-//   CLOUDFLARE_API_TOKEN  — Account > Cloudflare Pages > Edit (wer provisioniert: Olli)
-//   CLOUDFLARE_ACCOUNT_ID — Account-ID (Cloudflare-Dashboard, rechte Sidebar)
-//   dist/                 — vorher `pnpm build`
-// Beide Namen liest wrangler nativ — deshalb genau diese Schreibweise (kein CF_-Kurzname mehr,
-// vereinheitlicht 2026-07-17: Hosting-Stack-Review + Jakobs Kommentar zu docs/frontend.md).
+// Voraussetzungen (fail loud): CLOUDFLARE_API_TOKEN (Scope Account > Cloudflare Pages > Edit),
+// CLOUDFLARE_ACCOUNT_ID, und ein gebautes `dist/`. Beide Env-Namen liest wrangler nativ.
 //
 // Umgebung: --env=prototype|dev|main  ODER  --branch=<name>  ODER  aktueller Git-Branch.
-// Projekt-Basis-Slug (wrangler `--project-name`): Priorität arg > .unitix/project.json (name/slug) > package.json name.
-// Details: docs/frontend.md.
+// Basis-Slug (`--project-name`): arg > .unitix/project.json (name/slug) > package.json name.
+// Details: docs/hosting.md.
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -95,10 +84,9 @@ function resolveEnv() {
 // wrangler-Projektnamen sind lowercase, alphanumerisch + Bindestriche (max. 58 Zeichen)
 // und dürfen weder auf `-` beginnen noch enden.
 //
-// Reihenfolge ist wichtig: das Trimmen der Bindestriche muss NACH dem slice(0,58) passieren.
-// Vorher wurde erst getrimmt und dann geschnitten — ein Name, dessen 58. Zeichen ein `-` war,
-// endete damit auf `-` und Cloudflare lehnte ihn ab (Review Jakob 2026-07-17, A4).
-// Doppel-Bindestriche werden zusätzlich kollabiert, damit `Ein__Name` nicht zu `ein--name` wird.
+// Reihenfolge ist wichtig: das Trimmen der Bindestriche muss NACH dem slice(0,58) passieren —
+// sonst endet ein Name, dessen 58. Zeichen ein `-` ist, auf `-` und Cloudflare lehnt ihn ab.
+// Doppel-Bindestriche werden kollabiert, damit `Ein__Name` nicht zu `ein--name` wird.
 export function sanitizeProjectName(raw) {
   return String(raw)
     .toLowerCase()
@@ -154,8 +142,7 @@ function assertPrerequisites() {
       'Cloudflare-Zugang fehlt. Bitte setzen:\n' +
         '  CLOUDFLARE_API_TOKEN  (Account > Cloudflare Pages > Edit)\n' +
         '  CLOUDFLARE_ACCOUNT_ID (Cloudflare-Dashboard, rechte Sidebar)\n' +
-        'Wer provisioniert: Olli. Ohne Token bleibt der Prototyp localhost-first (pnpm dev) + PDF-Report.\n' +
-        'Details: docs/frontend.md.',
+        'Ohne Token bleibt der Prototyp localhost-first (pnpm dev). Details: docs/hosting.md.',
     )
   }
   if (!existsSync(resolve(repoRoot, 'dist'))) fail('Kein dist/ gefunden — zuerst `pnpm build` ausführen.')
@@ -163,8 +150,7 @@ function assertPrerequisites() {
 
 // wrangler liest CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID selbst aus der Env — process.env
 // wird unverändert durchgereicht, kein Umbiegen nötig.
-// `pnpm dlx` statt `npx`: PNPM ist der Standard (Nerd-Session + Hosting-Stack-Review 2026-07-17),
-// npx war die letzte Stelle, an der das npm-Binary zur Laufzeit nötig war.
+// `pnpm dlx` statt `npx`: pnpm ist der Standard, npx bräuchte das npm-Binary zur Laufzeit.
 function wrangler(args, { allowFailure = false } = {}) {
   const r = spawnSync('pnpm', ['dlx', 'wrangler@latest', ...args], {
     cwd: repoRoot,
@@ -189,7 +175,7 @@ function main() {
 
   // --- Pages-Projekt sicherstellen ---
   // wrangler legt ein fehlendes Projekt beim deploy nur INTERAKTIV an — in CI failt damit der
-  // allererste Deploy, solange niemand es vorher im Dashboard geklickt hat (Review Jakob, A3).
+  // allererste Deploy, solange niemand es vorher im Dashboard geklickt hat .
   // Deshalb explizit anlegen und ein bereits existierendes Projekt tolerieren.
   console.log(`→ Umgebung ${env} → Stelle Cloudflare-Pages-Projekt sicher: ${projectName} …`)
   const create = wrangler(['pages', 'project', 'create', projectName, `--production-branch=${productionBranch}`], {

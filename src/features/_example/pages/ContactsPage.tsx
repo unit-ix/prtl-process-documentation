@@ -240,9 +240,9 @@ function DeleteContactDialog({
     );
 }
 
-// Das kanonische Referenz-Feature: „mirror this, then delete." Die /prototype-Engine (Part E)
-// baut pro PRD-Feature genau dieses Muster nach — Controller-Hook + AsyncBoundary + alle fuenf
-// DoD-Zustaende + canSee/canEdit statt verstreuter Rollen-Checks. Die Page bleibt reiner Render.
+// Das kanonische Referenz-Feature: „mirror this, then delete." Jedes echte Feature baut dieses
+// Muster nach — Controller-Hook + AsyncBoundary + alle fuenf DoD-Zustaende + canSee/canEdit
+// statt verstreuter Rollen-Checks. Die Page selbst bleibt reiner Render.
 export function ContactsPage() {
     const { canSee, canEdit } = useRole();
     const state = useContactsController();

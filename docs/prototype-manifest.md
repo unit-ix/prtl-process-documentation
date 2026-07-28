@@ -7,7 +7,7 @@
 >
 > **Konvention:** Jede PROTOTYPE-ONLY-Stelle im Code trägt den Marker-Kommentar
 > `PROTOTYPE-ONLY` **und** eine Zeile in der Tabelle unten. Kein Marker ohne Zeile,
-> keine Zeile ohne Marker. Die `/prototype`-Engine (Part E) pflegt diese Tabelle mit.
+> keine Zeile ohne Marker. Die `/prototype`-Engine pflegt diese Tabelle mit.
 
 ## Legende — Status
 

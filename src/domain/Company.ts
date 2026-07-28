@@ -1,7 +1,5 @@
-// Domain-Typ — sauberer Persistenz-Vertrag (src/domain schlaegt DoD-feature-lokale types/).
-// → unitix_tblCompany   Backend-Naming (unitix_*, snake_case) lebt NUR im Adapter,
-//                       nie hier. Diese Datei ist der one-entity-one-table-Vertrag,
-//                       discoverable fuer Jakobs Schema-derive-CLI (Roadmap R5).
+// Domain-Typ — sauberer Persistenz-Vertrag, eine Entitaet = eine kuenftige Tabelle.
+// → unitix_tblCompany   Backend-Naming lebt NUR im Adapter, nie hier.
 
 /** Branche (Choice → optIndustry). String-Literal-Union, nie ein numerischer Code. */
 export type Industry =

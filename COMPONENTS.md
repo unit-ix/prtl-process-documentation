@@ -2,7 +2,6 @@
 
 > **Regel (nicht verhandelbar):** Nur die hier gelisteten Komponenten + Tokens verwenden.
 > **Kein eigenes CSS-File anlegen**, kein Roh-Hex/px, keine Inline-`style`-Farben.
-> Jakobs Design-Registry (Roadmap R3) verfeinert Theme + Set später — dieser Vertrag bleibt.
 
 ## Token-Vokabular (`src/index.css`)
 

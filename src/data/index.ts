@@ -9,7 +9,7 @@ import { MockContactRepository } from '@/data/adapters/mock/MockContactRepositor
 
 function unsupported(): never {
     throw new Error(
-        `Data-Adapter für Backend "${backend}" nicht implementiert — siehe Roadmap R4 (supabase) / R5 (dataverse).`,
+        `Data-Adapter für Backend "${backend}" nicht implementiert — wird beim Fork ergänzt.`,
     );
 }
 
