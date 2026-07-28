@@ -62,15 +62,15 @@ Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren,
 | Branch | Bedeutung |
 | --- | --- |
 | `feature/*` | Arbeit an einem Feature (von `dev` abgezweigt, nur Produkt-Phase). Kein Deploy. |
-| `dev` | Mutable Testbasis. `/execute` merged hierher. **Testumgebung** — deployt (target-aware) auf ein eigenes Cloudflare-Projekt `<slug>-dev`. |
+| `dev` | Mutable Testbasis. `/execute` merged hierher. **Testumgebung** — deployt (backend-aware) auf ein eigenes Cloudflare-Projekt `<slug>-dev`. |
 | `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase **aus dem Pfad raus** (bewusst übersprungen). Deployt auf sein eigenes Cloudflare-Projekt `<slug>-prototype` (immer Mock). |
-| `main` | Produktion. Deployt (target-aware) auf `<slug>` — Cloudflare (`mock`/`supabase`) **oder** Microsoft/Power Platform (`dataverse`). |
+| `main` | Produktion. Deployt (backend-aware) auf `<slug>` — Cloudflare (`mock`/`supabase`) **oder** Microsoft/Power Platform (`dataverse`). |
 
-### Target = woher die Daten kommen
+### Backend = woher die Daten kommen
 
 Steht in [`.unitix/project.json`](../.unitix/project.json) — **die** Wahrheit dieser Achse:
 
-| Target | Bedeutung |
+| Backend | Bedeutung |
 | --- | --- |
 | `mock` | Erfundene Daten aus dem Seed. Kein Backend. Der Default eines frischen Templates. |
 | `supabase` | Postgres + RLS + Auth. Bleibt auf Cloudflare. **Strategisch der Haupt-Weg.** |
@@ -146,7 +146,7 @@ Kanonische Beschreibung: [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) → „Work
 
 ## Die Regeln — und wo sie stehen
 
-**Vor jedem Task liest die KI zwei Dateien immer** und **genau eine** target-abhängig:
+**Vor jedem Task liest die KI zwei Dateien immer** und **genau eine** backend-abhängig:
 
 | Immer | Zusätzlich bei `mock` | bei `supabase` | bei `dataverse` |
 | --- | --- | --- | --- |
@@ -154,7 +154,7 @@ Kanonische Beschreibung: [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) → „Work
 | [`lean-coding.md`](../.claude/docs/lean-coding.md) | Mock ok, `fetch` ok | **RLS Pflicht** | CSP, Dataverse-only |
 
 Der teure Fehler ist der **falsche Regelsatz**: Supabase-Code in eine CSP-gesperrte Code App bauen, oder
-einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `target`-Feld — nie am Branch.
+einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `backend`-Feld — nie am Branch.
 
 **DB-Naming ist systemabhängig** (kein Versehen, sondern Beschluss):
 

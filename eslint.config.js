@@ -21,10 +21,10 @@ import importPlugin from 'eslint-plugin-import'
 import boundaries from 'eslint-plugin-boundaries'
 import reactHooks from 'eslint-plugin-react-hooks'
 
-// Bare `fetch` ist im Prototyp-First-Template target-neutral verboten: UI/Hooks beziehen Daten
+// Bare `fetch` ist im Prototyp-First-Template backend-neutral verboten: UI/Hooks beziehen Daten
 // AUSSCHLIESSLICH über den Data-Port (`@/data`), nie direkt. Welcher Backend darunter liegt
 // (mock/supabase/dataverse), ist eine Adapter-Frage — und der mock/supabase-Adapter DARF fetchen
-// (siehe Override auf data/adapters/**). Keine target-spezifische Anbindungs-Instruktion hier.
+// (siehe Override auf data/adapters/**). Keine backend-spezifische Anbindungs-Instruktion hier.
 const forbiddenFetch = [
     {
         selector: "CallExpression[callee.name='fetch']",

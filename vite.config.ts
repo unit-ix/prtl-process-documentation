@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Prototype-First Golden-Template-Toolchain (target: mock).
+// Prototype-First Golden-Template-Toolchain (backend: mock).
 // - react()        — React 19 Fast Refresh
 // - tailwindcss()  — Tailwind v4 via Vite-Plugin (kein tailwind.config, Tokens leben in src/index.css)
 // - @-Alias        — spiegelt tsconfig `paths` ("@/*" -> "./src/*")
