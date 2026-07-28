@@ -5,12 +5,10 @@ interface EmptyStateProps {
     title?: string;
     description?: string;
     icon?: ComponentType<{ className?: string }>;
-    /** Optionale Primär-Aktion (z. B. "Neu anlegen"). */
+    /** Optional primary action. */
     action?: ReactNode;
 }
 
-// DoD-Pflichtzustand „Empty": eine Liste ohne Datensätze ist nie eine leere Seite,
-// sondern erklärt sich + bietet ggf. den nächsten Schritt an.
 export function EmptyState({
     title = 'Keine Einträge',
     description = 'Hier gibt es noch nichts zu sehen.',

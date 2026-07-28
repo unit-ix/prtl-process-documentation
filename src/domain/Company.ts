@@ -1,7 +1,6 @@
-// Domain-Typ — sauberer Persistenz-Vertrag, eine Entitaet = eine kuenftige Tabelle.
-// → unitix_tblCompany   Backend-Naming lebt NUR im Adapter, nie hier.
+// Backend naming (unitix_tblCompany / companies) lives ONLY in the adapter, never here.
 
-/** Branche (Choice → optIndustry). String-Literal-Union, nie ein numerischer Code. */
+/** Always a string literal union, never a numeric code. */
 export type Industry =
     | 'technology'
     | 'manufacturing'
@@ -10,7 +9,6 @@ export type Industry =
     | 'public_sector'
     | 'other';
 
-/** Status im Vertriebs-Lebenszyklus (Choice → optStatus). */
 export type CompanyStatus = 'prospect' | 'active' | 'inactive';
 
 export interface Company {
@@ -21,6 +19,6 @@ export interface Company {
     employeeCount: number;
     city: string;
     website: string;
-    createdOn: string; // ISO-String (⇒ dte) — überlebt den JSON-Seam der echten Backends; kein Laufzeit-Objekt
-
+    /** ISO string, not a Date — survives the JSON boundary of the real backends. */
+    createdOn: string;
 }

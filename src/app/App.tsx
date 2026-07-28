@@ -6,15 +6,13 @@ import { Toaster } from '@/shared/components/ui/sonner';
 import { RoleProvider } from '@/shared/lib/role/RoleContext';
 import { ContactsPage } from '@/features/_example';
 
-// EIN QueryClient pro App-Instanz (Modul-Scope, nicht pro Render) → stabile Cache-Identitaet.
-// retry: false → der DoD-Error-Zustand erscheint sofort statt nach stillen Retries.
+// retry: false surfaces the error state immediately instead of after silent retries.
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
 });
 
-// HashRouter (nicht BrowserRouter): der Code-App-/Static-Host serviert keine SPA-Rewrites,
-// #-Routing funktioniert ohne Server-Config. Reihenfolge der Provider ist bewusst:
-// Query außen (Daten), Role darunter (UI-Sicht), Router innen (Navigation).
+// HashRouter, never BrowserRouter: static hosts serve no SPA rewrites and the later Dataverse
+// iframe needs hash routing.
 export function App() {
     return (
         <QueryClientProvider client={queryClient}>
@@ -23,11 +21,9 @@ export function App() {
                     <AppShell>
                         <Routes>
                             <Route path="/" element={<ContactsPage />} />
-                            {/* catch-all → DoD-Pflichtzustand 404 (per falschem Hash erreichbar). */}
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </AppShell>
-                    {/* Toasts global: immer sonner, nie die alte toast-Komponente. */}
                     <Toaster richColors position="bottom-right" />
                 </HashRouter>
             </RoleProvider>

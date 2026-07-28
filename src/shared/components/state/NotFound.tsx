@@ -4,12 +4,10 @@ import { Button } from '@/shared/components/ui/button';
 interface NotFoundProps {
     title?: string;
     description?: string;
-    /** Ziel des „Zurück"-Buttons (HashRouter-Pfad). */
+    /** Target of the back button (HashRouter path). */
     homeHref?: string;
 }
 
-// DoD-Pflichtzustand „404": die catch-all-Route (`*` in App.tsx) rendert dies —
-// nie eine Sackgasse ohne Rückweg.
 export function NotFound({
     title = 'Seite nicht gefunden',
     description = 'Diese Seite existiert nicht (mehr).',

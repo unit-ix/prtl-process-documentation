@@ -65,7 +65,7 @@ Wenn der Kunde OK sagt, wird aus dem Prototyp die echte App. Das ist **kein Neub
 
 ```
 src/data/index.ts        ← der eine Swap-Punkt
-src/data/ports/          ← Interfaces. Ändern sich nie.
+src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich nicht mehr AM FORK.
 src/data/adapters/
     mock/                ← Seed-Daten
     supabase/            ← echtes Backend
@@ -73,6 +73,8 @@ src/data/adapters/
 ```
 
 Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
+
+Damit das trägt, muss der Port **alles** können, was ein echtes Backend später können soll — deshalb laufen Filtern, Sortieren und Paginieren schon im Mock-Prototyp serverseitig durch `list()`. Würde man sie erst am Fork nachrüsten, wäre der Fork keine Datei, sondern eine Signatur-Änderung an Port, allen Adaptern, allen Hooks und jeder Listen-UI. Was eine Entität dafür deklariert: [`prototype-patterns.md`](../.claude/docs/prototype-patterns.md) → Data-Seam.
 
 Details: [`prototype-manifest.md`](prototype-manifest.md)
 

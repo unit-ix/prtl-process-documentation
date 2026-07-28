@@ -4,7 +4,7 @@ import { Button } from '@/shared/components/ui/button';
 interface ErrorStateProps {
     title?: string;
     error?: unknown;
-    /** Wenn gesetzt, wird ein „Erneut versuchen"-Button gezeigt (z. B. query.refetch). */
+    /** When set, a retry button is shown — typically query.refetch. */
     onRetry?: () => void;
 }
 
@@ -14,8 +14,6 @@ function messageOf(error: unknown): string | undefined {
     return undefined;
 }
 
-// DoD-Pflichtzustand „Error": ein fehlgeschlagener Ladevorgang zeigt eine
-// verständliche Meldung + Wiederholen-Option, nie einen weißen Screen.
 export function ErrorState({ title = 'Etwas ist schiefgelaufen', error, onRetry }: ErrorStateProps) {
     const detail = messageOf(error);
     return (

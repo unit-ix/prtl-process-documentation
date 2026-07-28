@@ -22,11 +22,12 @@
 | Rollen-Switcher | `src/shared/components/layout/AppShell.tsx` (`RoleSwitcher`) | UI-Buttons wechseln die Persona frei | Switcher entfällt; Persona wird aus dem Host-User abgeleitet | `prototype` |
 | Persona-Quelle | `src/shared/lib/role/RoleContext.tsx` (`RoleProvider`) | Persona = lokaler `useState`, Default `admin` | Eine Zeile: Persona aus Host-Identity / Claims lesen | `prototype` |
 | Mock-Adapter | `src/data/adapters/mock/*` | In-Memory-Store implementiert die Ports | `Supabase*Repository` (R4) bzw. `Dataverse*Repository` (R5) am selben Port | `prototype` |
+| Query-Übersetzer | `src/data/adapters/mock/query.ts` (`applyQuery`) | Filtert/sortiert/schneidet die Seed-Arrays in-memory, spec-getrieben | Derselbe Aufbau mit nativen Mitteln: PostgREST `.ilike/.eq/.order/.range` + `count: 'exact'` bzw. OData `filter`/`orderBy`/`maxPageSize`/`skipToken`. Der Port-Vertrag (`ListQuery`/`Page`/`QuerySpec`) bleibt unverändert | `prototype` |
 | Seed-Daten (faker) | `src/data/adapters/mock/seed.ts` | Deterministische deutsche Fake-Daten (SEED 42, fixe REF_DATE) | Echte Backend-Daten; faker fällt komplett weg | `prototype` |
 | Seeded / laufende ids | `src/data/adapters/mock/store.ts` (`nextId`) | `*-new-N` Sequenz + Seed-uuids | Vom Backend vergebene ids (uuid/GUID) | `prototype` |
 | Adapter-Swap-Punkt | `src/data/index.ts` | Nur `backend: mock` verdrahtet, sonst `unsupported()` | Fork ergänzt den `supabase`/`dataverse`-Zweig | `prototype` |
-| Error-Simulation | `src/features/_example/pages/ContactsPage.tsx` (`simulateError`) + `hooks/useContacts.ts` | Button erzwingt den DoD-Error-Zustand | Entfällt — echte Ladefehler triggern den Zustand | `prototype` |
 | Demo-Anlegen | `src/features/_example/pages/ContactsPage.tsx` (`handleCreateDemoContact`) | Legt einen Platzhalter-Kontakt an | Ersetzt durch echtes Formular pro Feature | `prototype` |
+| Error-Demo-Trigger | `src/features/_example/hooks/useContacts.ts` (`simulateError`) | `?debugError=1` in der URL erzwingt den DoD-Error-Zustand, ohne UI-Button | Entfällt — echte Ladefehler triggern den Zustand | `prototype` |
 | Referenz-Feature `_example` | `src/features/_example/*` | Kanonisches „mirror this, then delete."-Muster | Gelöscht, sobald das erste echte Feature steht | `prototype` |
 
 ## Bewusste `ui/`-Ausnahmen (kein PROTOTYPE-ONLY, bleiben in Produktion)
@@ -40,6 +41,6 @@ Stellen in `src/shared/components/ui/` (vendored shadcn) weichen bewusst von ein
 1. `backend` in `.unitix/project.json` umstellen.
 2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider`: Persona-Quelle auf den Host-User umstellen, `RoleSwitcher` aus `AppShell` entfernen.
-4. `_example` löschen (falls noch vorhanden), Error-Simulation + Demo-Anlegen aus echten Features entfernen.
+4. `_example` löschen (falls noch vorhanden), Demo-Anlegen + Error-Demo-Trigger aus echten Features entfernen.
 5. faker-Abhängigkeit entfernen, sobald kein Mock-Adapter mehr importiert wird.
 6. Jede Zeile oben auf `forked`/`n/a` ziehen — bleibt eine auf `prototype`, ist der Fork nicht fertig.

@@ -8,9 +8,7 @@ interface PersonaCapabilities {
     readonly edit: readonly string[];
 }
 
-// EINE Capability-Map als Quelle fuer Sichtbarkeit/Editierbarkeit — nie verstreute
-// `if (persona === ...)`-Checks in Komponenten. '*' = alle Ressourcen; Keys sind
-// feature-uebergreifende Ressourcen-Strings (z. B. 'company', 'contact').
+// '*' means every resource.
 const CAPABILITIES: Record<Persona, PersonaCapabilities> = {
     admin: { see: ['*'], edit: ['*'] },
     manager: { see: ['*'], edit: ['company', 'contact'] },
@@ -22,7 +20,7 @@ const allows = (list: readonly string[], key: string): boolean =>
 
 export interface RoleContextValue {
     persona: Persona;
-    /** PROTOTYPE-ONLY: Persona-Wechsel per UI-Switcher (siehe RoleProvider). */
+    /** PROTOTYPE-ONLY: switched from the UI, see RoleProvider. */
     setPersona: (persona: Persona) => void;
     canSee: (key: string) => boolean;
     canEdit: (key: string) => boolean;
@@ -31,8 +29,7 @@ export interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-    // PROTOTYPE-ONLY: Persona-Quelle ist lokaler State + UI-Switcher.
-    // Produktion: aus dem Host-User ableiten — genau diese eine Zeile tauschen.
+    // PROTOTYPE-ONLY — production reads the persona from the host user.
     const [persona, setPersona] = useState<Persona>('admin');
 
     const value = useMemo<RoleContextValue>(() => {

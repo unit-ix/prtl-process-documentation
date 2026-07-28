@@ -1,17 +1,17 @@
 import projectConfigData from '../../../.unitix/project.json';
 
-/** `mock` = seed-basierter Prototyp (Default), `supabase`/`dataverse` = Forks nach Kunden-OK. */
+/** `mock` = seed-based prototype (default), `supabase`/`dataverse` = forks after customer sign-off. */
 export type Backend = 'mock' | 'supabase' | 'dataverse';
 
-/** Wo die App gehostet wird. Prototyp-Default: Cloudflare Pages. */
-export type Frontend = 'cloudflare' | 'dataverse';
+/** Where the app is hosted. Prototype default: Cloudflare Pages. */
+export type Frontend = 'cloudflare' | 'powerapps';
 
 export interface ProjectConfig {
   readonly backend: Backend;
   readonly frontend: Frontend;
 }
 
-/** Typisierter Reader für `.unitix/project.json` — Single Source of Truth der Backend-Achse. */
+/** Typed reader for `.unitix/project.json` — single source of truth for the backend axis. */
 export const projectConfig: ProjectConfig = projectConfigData as ProjectConfig;
 
 export const backend: Backend = projectConfig.backend;

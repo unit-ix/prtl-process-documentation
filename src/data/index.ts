@@ -1,6 +1,4 @@
-// EINZIGER Swap-Punkt des Data-Seams: waehlt die Adapter nach `backend`.
-// Kein anderer File in src/ importiert aus data/adapters/** — hier ist die Grenze.
-// Fork = diese Datei um einen Zweig ergaenzen, sonst nichts.
+// The one swap point of the data seam: picks the adapters by `backend`.
 import { backend } from '@/shared/lib/projectConfig';
 import type { CompanyRepository } from './ports/CompanyRepository';
 import type { ContactRepository } from './ports/ContactRepository';

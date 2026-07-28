@@ -18,13 +18,11 @@ interface ConfirmDialogProps {
     description?: string;
     confirmLabel?: string;
     cancelLabel?: string;
-    /** Rot einfärben für destruktive Aktionen (z. B. Löschen). */
+    /** Red styling for destructive actions. */
     destructive?: boolean;
     onConfirm: () => void;
 }
 
-// DoD-Pflichtzustand „Confirm vor Löschen": destruktive Aktionen laufen nie ohne
-// bewusste Bestätigung. Kontrolliert (open/onOpenChange) — der Aufrufer hält den State.
 export function ConfirmDialog({
     open,
     onOpenChange,

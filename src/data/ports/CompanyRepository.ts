@@ -1,7 +1,15 @@
 import type { Company } from '@/domain/Company';
+import type { QueryOf, QuerySpec } from './Query';
 import type { Repository } from './Repository';
 
-// Beim Anlegen entfaellt Server-Verantwortetes: id + createdOn.
 export type CompanyCreate = Omit<Company, 'id' | 'createdOn'>;
 
-export type CompanyRepository = Repository<Company, CompanyCreate>;
+export const companyQuerySpec = {
+    searchField: 'name',
+    equalityFields: ['status', 'industry'],
+    sortFields: ['name', 'city', 'employeeCount', 'createdOn'],
+} as const satisfies QuerySpec<Company>;
+
+export type CompanyQuery = QueryOf<Company, typeof companyQuerySpec>;
+
+export type CompanyRepository = Repository<Company, CompanyCreate, CompanyQuery>;
