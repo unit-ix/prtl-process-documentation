@@ -74,7 +74,7 @@ src/data/adapters/
 
 Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
 
-Damit das trägt, muss der Port **alles** können, was ein echtes Backend später können soll — deshalb laufen Filtern, Sortieren und Paginieren schon im Mock-Prototyp serverseitig durch `list()`. Würde man sie erst am Fork nachrüsten, wäre der Fork keine Datei, sondern eine Signatur-Änderung an Port, allen Adaptern, allen Hooks und jeder Listen-UI. Was eine Entität dafür deklariert: [`prototype-patterns.md`](../.claude/docs/prototype-patterns.md) → Data-Seam.
+Damit das trägt, muss der Port **alles** können, was ein echtes Backend später können soll — deshalb laufen Filtern, Sortieren und Paginieren schon im Mock-Prototyp serverseitig durch `list()`. Würde man sie erst am Fork nachrüsten, wäre der Fork keine Datei, sondern eine Signatur-Änderung an Port, allen Adaptern, allen Hooks und jeder Listen-UI. Was eine Entität dafür deklariert: [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) → Data-Seam.
 
 Details: [`prototype-manifest.md`](prototype-manifest.md)
 
@@ -101,7 +101,7 @@ Kanonische Beschreibung: [`.claude/CLAUDE.md`](../.claude/CLAUDE.md).
 
 | Immer | bei `mock` | bei `supabase` | bei `dataverse` |
 | --- | --- | --- | --- |
-| [`naming-conventions.md`](../.claude/docs/naming-conventions.md) | [`prototype-patterns.md`](../.claude/docs/prototype-patterns.md) | [`supabase-patterns.md`](../.claude/docs/supabase-patterns.md) | [`code-app-patterns.md`](../.claude/docs/code-app-patterns.md) |
+| [`naming-conventions.md`](../.claude/docs/naming-conventions.md) | [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) | [`patterns-supabase.md`](../.claude/docs/patterns-supabase.md) | [`patterns-code-app.md`](../.claude/docs/patterns-code-app.md) |
 | [`lean-coding.md`](../.claude/docs/lean-coding.md) | Mock ok, `fetch` ok | **RLS Pflicht** | CSP, Dataverse-only |
 
 Der teure Fehler ist der **falsche Regelsatz**: Supabase-Code in eine CSP-gesperrte Code App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `backend`-Feld, nie am Branch.
@@ -129,4 +129,4 @@ Details, Secrets und die drei Umgebungen: [`hosting.md`](hosting.md).
 
 ## Wann ist der Prototyp fertig?
 
-Wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, 404, Confirm-vor-Löschen) und der Kunde OK sagt. Die vollständige Checkliste: [`prototype-patterns.md` → Definition of Done](../.claude/docs/prototype-patterns.md#definition-of-done).
+Wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, 404, Confirm-vor-Löschen) und der Kunde OK sagt. Die vollständige Checkliste: [`patterns-prototype.md` → Definition of Done](../.claude/docs/patterns-prototype.md#definition-of-done).
