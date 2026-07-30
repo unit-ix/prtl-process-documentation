@@ -15,7 +15,7 @@
 
 - **localhost-first:** entwickelt und reviewt wird am laufenden `pnpm dev` im Browser gegen den Mock-Adapter, nicht über einen Deploy. Geteilt wird der Prototyp über Cloudflare Pages ([`docs/hosting.md`](docs/hosting.md)); die Power-Platform-Toolchain ist erst am `dataverse`-Fork relevant.
 - Neue Features spiegeln [`src/features/_example`](src/features/_example) — der Build muss nach jedem Schritt grün bleiben.
-- `pnpm verify` (`lint && knip && build`, wobei `build` = `tsc --noEmit && vite build`) muss vor jedem Commit grün sein. Das Gate sitzt pro Phase in `/execute`.
+- `pnpm verify` (`check:env && lint && knip && build`, wobei `build` = `tsc --noEmit && vite build`) muss vor jedem Commit grün sein. Das Gate sitzt pro Phase in `/execute`.
 
 ## Projekt-Doku
 
