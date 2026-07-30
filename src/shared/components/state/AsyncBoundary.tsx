@@ -6,10 +6,10 @@ import { ErrorState } from './ErrorState';
 interface AsyncBoundaryProps {
     isLoading: boolean;
     error?: unknown;
-    /** true, wenn erfolgreich geladen wurde, das Ergebnis aber leer ist. */
+    /** True when the load succeeded but returned nothing. */
     isEmpty?: boolean;
     onRetry?: () => void;
-    /** Überschreibt den Default-Skeleton bzw. den Default-EmptyState. */
+    /** Overrides the default skeleton / empty state. */
     loadingFallback?: ReactNode;
     emptyFallback?: ReactNode;
     children: ReactNode;
@@ -25,9 +25,6 @@ function DefaultLoading() {
     );
 }
 
-// Orchestriert die vier Lade-abhängigen DoD-Zustände um ein TanStack-Query-Ergebnis:
-// Loading → Error → Empty → Inhalt. Feature-Hooks reichen `isLoading/error/isEmpty`
-// durch, statt die Reihenfolge in jeder Page neu zu erfinden.
 export function AsyncBoundary({
     isLoading,
     error,

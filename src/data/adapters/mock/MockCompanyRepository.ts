@@ -1,15 +1,15 @@
-// PROTOTYPE-ONLY — In-Memory-Implementierung des CompanyRepository-Ports.
-// Am Fork ersetzt durch SupabaseCompanyRepository (R4) bzw. DataverseCompanyRepository (R5).
+// PROTOTYPE-ONLY — replaced at the fork by SupabaseCompanyRepository / DataverseCompanyRepository.
 import type { Company } from '@/domain/Company';
-import type { CompanyCreate, CompanyRepository } from '../../ports/CompanyRepository';
+import { companyQuerySpec, type CompanyCreate, type CompanyQuery, type CompanyRepository } from '../../ports/CompanyRepository';
+import type { Page } from '../../ports/Query';
+import { applyQuery } from './query';
 import { db, nextId } from './store';
 
-// Flach kopieren, damit Aufrufer nicht versehentlich den Store mutieren.
 const clone = (company: Company): Company => ({ ...company });
 
 export class MockCompanyRepository implements CompanyRepository {
-    async list(): Promise<Company[]> {
-        return db.companies.map(clone);
+    async list(query?: CompanyQuery): Promise<Page<Company>> {
+        return applyQuery(db.companies, query, companyQuerySpec, clone);
     }
 
     async get(id: string): Promise<Company | null> {

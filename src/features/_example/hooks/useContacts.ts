@@ -1,34 +1,34 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { contactRepository } from '@/data';
-import type { ContactCreate } from '@/data/ports/ContactRepository';
+import type { ContactCreate, ContactQuery } from '@/data/ports/ContactRepository';
 
-// Query-Key-Factory — EINE Quelle fuer alle Contact-Keys, nie Inline-String-Arrays in
-// Komponenten. Hierarchisch, damit `invalidateQueries({ queryKey: contactKeys.lists() })`
-// alle Listen-Varianten (Filter/Suche) auf einmal trifft.
+// The cursor is useInfiniteQuery's pageParam, not part of the query key — in the key every page
+// would get its own cache entry and loading more would do nothing.
+export type ContactListQuery = Omit<ContactQuery, 'cursor'>;
+
 export const contactKeys = {
     all: ['contacts'] as const,
     lists: () => [...contactKeys.all, 'list'] as const,
-    // simulateError geht in den Key ein → Toggle refetcht sauber (PROTOTYPE-ONLY-Demo).
-    list: (simulateError: boolean) => [...contactKeys.lists(), { simulateError }] as const,
+    list: (query: ContactListQuery, simulateError: boolean) =>
+        [...contactKeys.lists(), query, simulateError] as const,
     details: () => [...contactKeys.all, 'detail'] as const,
     detail: (id: string) => [...contactKeys.details(), id] as const,
 };
 
-// Liste. `simulateError` erzwingt den DoD-Error-Zustand fuer die Demo — im echten Feature
-// entfaellt der Parameter ersatzlos.
-export function useContacts(options?: { simulateError?: boolean }) {
-    const simulateError = options?.simulateError ?? false;
-    return useQuery({
-        queryKey: contactKeys.list(simulateError),
-        queryFn: async () => {
-            // PROTOTYPE-ONLY: erzwingt einen Ladefehler fuer den DoD-Error-Zustand.
-            if (simulateError) throw new Error('Simulierter Ladefehler (Prototyp-Demo).');
-            return contactRepository.list();
+// PROTOTYPE-ONLY — `simulateError` demonstrates the DoD error state without a UI trigger, see
+// `?debugError=1` in useContactsController. Dropped once a feature has a real failure path.
+export function useContacts(query: ContactListQuery, simulateError = false) {
+    return useInfiniteQuery({
+        queryKey: contactKeys.list(query, simulateError),
+        queryFn: ({ pageParam }) => {
+            if (simulateError) throw new Error('Simulated load failure (?debugError=1).');
+            return contactRepository.list({ ...query, cursor: pageParam });
         },
+        initialPageParam: null as string | null,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
     });
 }
 
-// Detail. `enabled` verhindert die Query, solange keine id vorliegt.
 export function useContact(id: string | undefined) {
     return useQuery({
         queryKey: contactKeys.detail(id ?? ''),
@@ -41,8 +41,6 @@ export function useCreateContact() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (input: ContactCreate) => contactRepository.create(input),
-        // invalidate-on-success statt optimistic update: der Store bleibt die Wahrheit,
-        // die Liste re-fetcht ehrlich. Optimistic updates sind bewusst NICHT der Default.
         onSuccess: () => queryClient.invalidateQueries({ queryKey: contactKeys.lists() }),
     });
 }

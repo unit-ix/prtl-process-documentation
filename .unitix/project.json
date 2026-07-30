@@ -1,5 +1,5 @@
 {
   "name": "code-apps-template",
-  "target": "mock",
-  "hosting": "cloudflare"
+  "backend": "mock",
+  "frontend": "cloudflare"
 }

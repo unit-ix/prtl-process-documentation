@@ -1,7 +1,4 @@
-// _example — das kanonische Referenz-Feature. „Mirror this, then delete."
-// Kopiere die Struktur (hooks/ um den Port, pages/ mit AsyncBoundary + fuenf DoD-Zustaenden
-// + canSee/canEdit), benenne pro echtem PRD-Feature um und loesche dieses Verzeichnis,
-// sobald das erste echte Feature steht.
+// PROTOTYPE-ONLY — reference feature, mirror this structure then delete this directory.
 export { ContactsPage } from './pages/ContactsPage';
 export {
     contactKeys,
@@ -11,3 +8,4 @@ export {
     useDeleteContact,
     useUpdateContact,
 } from './hooks/useContacts';
+export { useContactsController } from './hooks/useContactsController';

@@ -4,20 +4,15 @@
     "project": ["src/**/*.{ts,tsx}"],
     "ignore": ["src/shared/components/ui/**"],
 
-    // Bewusste Template-Vorhaltung, KEINE Leichen: date-fns (Datum) und zod (Validierung) sind in
-    // fast jedem echten Projekt sofort nötig und stehen deshalb als Golden-Template-Batterie in
-    // package.json. Im leeren _example-Prototyp werden sie noch nicht importiert — ohne dieses ignore
-    // würde knip sie fälschlich als ungenutzt rot flaggen. Beim ersten echten Import aus src/ diesen
-    // Eintrag entfernen; dann greift die lean-coding-Zusage „knip blockt ungenutzte Deps" wieder voll.
+    // Template-Vorhaltung, keine Leichen: date-fns und zod sind in fast jedem echten Projekt
+    // sofort nötig. Beim ersten Import aus src/ diesen Eintrag entfernen.
     "ignoreDependencies": ["date-fns", "zod"],
 
     "ignoreExportsUsedInFile": true,
     "rules": {
-        // exports/types bewusst "off": das Referenz-Feature src/features/_example/ exportiert seine
-        // öffentliche API (index.ts) als Muster für echte Features — diese Exports sind per Definition
-        // (noch) ungenutzt und wären sonst Dauer-Rauschen im Report. Der Tote-Files-Schutz
-        // (entry/project/ignore) + der Deps-Check bleiben aktiv; nur die Export-Granularität ist für
-        // das Referenz-Template gelockert. In einem echten Projekt ohne _example kann exports wieder an.
+        // Das Referenz-Feature src/features/_example/ exportiert seine öffentliche API als Muster
+        // für echte Features — diese Exports sind per Definition (noch) ungenutzt. In einem echten
+        // Projekt ohne _example kann "exports" wieder an.
         "exports": "off",
         "types": "off",
         "nsExports": "off",

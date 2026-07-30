@@ -1,16 +1,13 @@
-// PROTOTYPE-ONLY — deterministische Mock-Daten. Wird am supabase/dataverse-Fork ersetzt.
-// Mock lebt am DATEN-Layer (Port-Implementierung), nicht am Netzwerk-Layer (MSW ist unter
-// der Code-App-CSP tot). faker ist HIER erlaubt — nirgends sonst in src/.
+// PROTOTYPE-ONLY — replaced by real backend data at the fork.
 import { fakerDE as faker } from '@faker-js/faker';
 import type { Company, CompanyStatus, Industry } from '@/domain/Company';
 import type { Contact, ContactRole } from '@/domain/Contact';
 
 const SEED = 42;
-// Fixe Referenz-Zeit → faker.date.* ist deterministisch ueber beliebig viele Laeufe.
 const REF_DATE = new Date('2026-01-01T00:00:00.000Z');
 
-const COMPANY_COUNT = 8;
-const CONTACT_COUNT = 10;
+const COMPANY_COUNT = 12;
+const CONTACT_COUNT = 60;
 
 const INDUSTRIES: readonly Industry[] = [
     'technology',
@@ -23,7 +20,6 @@ const INDUSTRIES: readonly Industry[] = [
 const COMPANY_STATUSES: readonly CompanyStatus[] = ['prospect', 'active', 'inactive'];
 const CONTACT_ROLES: readonly ContactRole[] = ['decision_maker', 'influencer', 'user', 'other'];
 
-// Referenz-Integritaet: waehlt eine REALE id aus einem bereits erzeugten Pool.
 function pickRef<T extends { id: string }>(pool: readonly T[]): string {
     return faker.helpers.arrayElement(pool).id;
 }
@@ -33,12 +29,12 @@ export interface SeedData {
     contacts: Contact[];
 }
 
-// Re-seedet faker bei jedem Aufruf → identisches Ergebnis (inkl. Dates) ueber alle Laeufe.
+// Call order is part of the contract: reordering these generator calls shifts every id and
+// value that follows.
 export function buildSeed(): SeedData {
     faker.seed(SEED);
     faker.setDefaultRefDate(REF_DATE);
 
-    // Companies ZUERST, damit Contacts danach reale ids referenzieren koennen.
     const companies: Company[] = Array.from({ length: COMPANY_COUNT }, () => ({
         id: faker.string.uuid(),
         name: faker.company.name(),

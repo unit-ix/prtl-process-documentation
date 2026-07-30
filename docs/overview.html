@@ -1,334 +1,1236 @@
 <!doctype html>
 <html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vom Kundengespräch zur fertigen App — Prototype-First Golden Template</title>
-<!--
-  Visuelle Fassung von overview.md. QUELLE IST overview.md — bei Änderungen dort zuerst editieren,
-  dann diese Datei nachziehen. Bewusst self-contained: kein Build, keine externen Requests, offline
-  lauffähig, Light/Dark. Dieses Repo hat keinen HTML-Generator (der SharePoint-Skill baut Kunden-Decks
-  und ist hier nicht zuständig) — diese Datei wird von Hand gepflegt.
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Vom Kundengespräch zur fertigen App — Prototype-First Golden Template</title>
+        <!--
+  Visuelle Fassung des Onboardings. Kein 1:1-Rendering von overview.md, sondern die
+  Diagramm-Ebene: Achsen-Matrix, Branch-Graph, Data-Seam, Zustands-Wireframes.
+  overview.md bleibt die lesbare Referenz (GitHub) und die Quelle der FAKTEN — weichen
+  beide voneinander ab, gewinnt overview.md bzw. die dort verlinkte kanonische Datei.
+  Self-contained: kein Build, keine externen Requests, offline lauffähig, Light/Dark, druckbar.
+  Wird von Hand gepflegt.
 -->
-<style>
-  :root {
-    --bg: oklch(1 0 0);
-    --fg: oklch(0.145 0 0);
-    --muted: oklch(0.556 0 0);
-    --line: oklch(0.922 0 0);
-    --card: oklch(0.985 0 0);
-    --accent: oklch(0.45 0.13 250);
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: oklch(0.145 0 0); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0);
-      --line: oklch(0.269 0 0); --card: oklch(0.205 0 0); --accent: oklch(0.72 0.12 250);
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: oklch(0.145 0 0); --fg: oklch(0.985 0 0); --muted: oklch(0.708 0 0);
-    --line: oklch(0.269 0 0); --card: oklch(0.205 0 0); --accent: oklch(0.72 0.12 250);
-  }
-  :root[data-theme="light"] {
-    --bg: oklch(1 0 0); --fg: oklch(0.145 0 0); --muted: oklch(0.556 0 0);
-    --line: oklch(0.922 0 0); --card: oklch(0.985 0 0); --accent: oklch(0.45 0.13 250);
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--fg);
-    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 6rem; }
-  h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 .5rem; }
-  h2 {
-    font-size: 1.25rem; letter-spacing: -0.01em; margin: 3.5rem 0 1rem;
-    padding-top: 1.5rem; border-top: 1px solid var(--line);
-  }
-  h3 { font-size: 1rem; margin: 2rem 0 .5rem; }
-  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 2rem; }
-  .muted { color: var(--muted); }
-  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-  code {
-    font-family: var(--mono); font-size: .87em;
-    background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: .1em .35em;
-  }
-  pre {
-    font-family: var(--mono); font-size: .82rem; line-height: 1.6;
-    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-    padding: 1rem; overflow-x: auto; margin: 1rem 0;
-  }
-  pre code { background: none; border: 0; padding: 0; font-size: inherit; }
-  .wrap { overflow-x: auto; margin: 1rem 0; }
-  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-weight: 600; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
-  blockquote {
-    margin: 1.5rem 0; padding: .9rem 1.1rem; background: var(--card);
-    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
-    font-size: .93rem;
-  }
-  blockquote p { margin: 0; }
-  #theme {
-    position: fixed; top: 1rem; right: 1rem; z-index: 10;
-    background: var(--card); color: var(--muted); border: 1px solid var(--line);
-    border-radius: 999px; padding: .4rem .8rem; font: inherit; font-size: .8rem; cursor: pointer;
-  }
-  #theme:hover { color: var(--fg); }
-  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
-  @media print { #theme { display: none; } }
-</style>
-</head>
-<body>
-<button id="theme" type="button">Theme</button>
-<main>
+        <style>
+            :root {
+                --bg: oklch(1 0 0);
+                --fg: oklch(0.145 0 0);
+                --muted: oklch(0.52 0 0);
+                --line: oklch(0.9 0 0);
+                --card: oklch(0.978 0 0);
+                --card2: oklch(0.955 0 0);
+                --accent: oklch(0.45 0.13 250);
+                --mock: oklch(0.55 0.02 250);
+                --mock-bg: oklch(0.95 0.008 250);
+                --supa: oklch(0.48 0.11 155);
+                --supa-bg: oklch(0.94 0.035 155);
+                --dv: oklch(0.48 0.13 300);
+                --dv-bg: oklch(0.945 0.03 300);
+                --gate: oklch(0.52 0.13 60);
+                --gate-bg: oklch(0.95 0.05 75);
+                --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: oklch(0.145 0 0);
+                    --fg: oklch(0.97 0 0);
+                    --muted: oklch(0.68 0 0);
+                    --line: oklch(0.3 0 0);
+                    --card: oklch(0.2 0 0);
+                    --card2: oklch(0.25 0 0);
+                    --accent: oklch(0.75 0.12 250);
+                    --mock: oklch(0.75 0.03 250);
+                    --mock-bg: oklch(0.26 0.015 250);
+                    --supa: oklch(0.78 0.13 155);
+                    --supa-bg: oklch(0.26 0.04 155);
+                    --dv: oklch(0.78 0.13 300);
+                    --dv-bg: oklch(0.27 0.04 300);
+                    --gate: oklch(0.82 0.13 75);
+                    --gate-bg: oklch(0.28 0.05 75);
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: oklch(0.145 0 0);
+                --fg: oklch(0.97 0 0);
+                --muted: oklch(0.68 0 0);
+                --line: oklch(0.3 0 0);
+                --card: oklch(0.2 0 0);
+                --card2: oklch(0.25 0 0);
+                --accent: oklch(0.75 0.12 250);
+                --mock: oklch(0.75 0.03 250);
+                --mock-bg: oklch(0.26 0.015 250);
+                --supa: oklch(0.78 0.13 155);
+                --supa-bg: oklch(0.26 0.04 155);
+                --dv: oklch(0.78 0.13 300);
+                --dv-bg: oklch(0.27 0.04 300);
+                --gate: oklch(0.82 0.13 75);
+                --gate-bg: oklch(0.28 0.05 75);
+            }
+            :root[data-theme='light'] {
+                --bg: oklch(1 0 0);
+                --fg: oklch(0.145 0 0);
+                --muted: oklch(0.52 0 0);
+                --line: oklch(0.9 0 0);
+                --card: oklch(0.978 0 0);
+                --card2: oklch(0.955 0 0);
+                --accent: oklch(0.45 0.13 250);
+                --mock: oklch(0.55 0.02 250);
+                --mock-bg: oklch(0.95 0.008 250);
+                --supa: oklch(0.48 0.11 155);
+                --supa-bg: oklch(0.94 0.035 155);
+                --dv: oklch(0.48 0.13 300);
+                --dv-bg: oklch(0.945 0.03 300);
+                --gate: oklch(0.52 0.13 60);
+                --gate-bg: oklch(0.95 0.05 75);
+            }
 
-<h1>Vom Kundengespräch zur fertigen App</h1>
-<p class="lede">
-  Das Handbuch zum Prototype-First Golden Template — der rote Faden in ~10&nbsp;Minuten.
-</p>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--fg);
+                font:
+                    16px/1.6 system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    sans-serif;
+                -webkit-font-smoothing: antialiased;
+            }
+            main {
+                max-width: 58rem;
+                margin: 0 auto;
+                padding: 3rem 1.25rem 6rem;
+            }
+            h1 {
+                font-size: clamp(1.8rem, 4vw, 2.4rem);
+                line-height: 1.15;
+                letter-spacing: -0.025em;
+                margin: 0 0 0.6rem;
+            }
+            h2 {
+                font-size: 1.3rem;
+                letter-spacing: -0.015em;
+                margin: 4rem 0 0.4rem;
+            }
+            h2 .num {
+                color: var(--muted);
+                font-variant-numeric: tabular-nums;
+                margin-right: 0.5rem;
+                font-weight: 400;
+            }
+            h3 {
+                font-size: 0.82rem;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--muted);
+                margin: 2rem 0 0.75rem;
+            }
+            p {
+                margin: 0.85rem 0;
+                max-width: 44rem;
+            }
+            .lede {
+                color: var(--muted);
+                font-size: 1.1rem;
+                margin: 0 0 1.5rem;
+                max-width: 40rem;
+            }
+            .sub {
+                color: var(--muted);
+                margin: 0 0 1.5rem;
+                max-width: 44rem;
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .small {
+                font-size: 0.87rem;
+            }
+            a {
+                color: var(--accent);
+                text-underline-offset: 2px;
+            }
+            code {
+                font-family: var(--mono);
+                font-size: 0.86em;
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 4px;
+                padding: 0.08em 0.32em;
+            }
+            hr {
+                border: 0;
+                border-top: 1px solid var(--line);
+                margin: 0;
+            }
 
-<blockquote><p>
-  <strong>Diese Seite dupliziert keine Regeln.</strong> Sie zeigt, wie die Teile zusammenhängen, und verlinkt
-  die kanonischen Quellen. Bei Widerspruch gewinnt immer die verlinkte Quelle, nie diese Seite.
-  Quelle dieses Dokuments: <code>docs/overview.md</code>.
-</p></blockquote>
+            /* ---------- Figur-Rahmen ---------- */
+            figure {
+                margin: 1.5rem 0;
+            }
+            figcaption {
+                color: var(--muted);
+                font-size: 0.85rem;
+                margin-top: 0.7rem;
+                max-width: 44rem;
+            }
+            .scroll {
+                overflow-x: auto;
+                padding-bottom: 0.25rem;
+            }
+            /* Auf schmalen Viewports scrollen die Diagramme horizontal — das ist ohne
+               Hinweis nicht erkennbar, weil der Rand hart abschneidet. */
+            .swipe {
+                display: none;
+            }
+            @media (max-width: 52rem) {
+                .swipe {
+                    display: block;
+                    font-size: 0.75rem;
+                    color: var(--muted);
+                    margin-top: 0.45rem;
+                    letter-spacing: 0.02em;
+                }
+            }
+            @media print {
+                .swipe {
+                    display: none;
+                }
+            }
 
-<h2>Worum es geht</h2>
-<p>
-  Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Er arbeitet mit
-  erfundenen Daten (kein Backend) — <strong>wir entwickeln ihn auf localhost</strong> (<code>pnpm dev</code>),
-  und für die <strong>Abstimmung mit dem Kunden liegt er auf Cloudflare</strong> (immer noch Mock-Daten,
-  standardmäßig auf unserem UNIT-IX-Tenant, beim Kunden nur wenn schon entschieden). <strong>Erst nach dem
-  OK</strong> bekommt er ein echtes Backend — der Umzug geht von der Cloudflare-Fassung aus.
-</p>
-<p>
-  Warum: Ein Konzept auf Papier diskutiert man drei Runden lang. Ein klickbarer Prototyp beantwortet dieselben
-  Fragen in einer. Und weil er echter Code ist, ist er kein Wegwerf-Mockup — er <em>wird</em> die App.
-</p>
-<p>
-  Die zentrale Idee, die das ermöglicht: die App weiß nicht, woher ihre Daten kommen. Sie fragt einen
-  <strong>Port</strong>; dahinter steckt ein austauschbarer <strong>Adapter</strong>. Am Anfang liefert der
-  Mock-Adapter erfundene Daten, später ein echtes Backend. Für die Oberfläche ändert sich dabei <strong>nichts</strong>.
-</p>
+            /* ---------- 1. Pipeline: der Weg ---------- */
+            .flow {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+                gap: 0.4rem;
+                min-width: 46rem;
+                align-items: stretch;
+            }
+            .step {
+                position: relative;
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 0.8rem 0.85rem;
+            }
+            .step + .step::before {
+                content: '';
+                position: absolute;
+                left: -0.4rem;
+                top: 50%;
+                width: 0.4rem;
+                height: 1px;
+                background: var(--line);
+            }
+            .step .k {
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--muted);
+                display: block;
+                margin-bottom: 0.35rem;
+            }
+            .step .t {
+                font-weight: 600;
+                font-size: 0.93rem;
+                display: block;
+                line-height: 1.3;
+            }
+            .step .d {
+                font-size: 0.8rem;
+                color: var(--muted);
+                display: block;
+                margin-top: 0.3rem;
+                line-height: 1.4;
+            }
+            .step code {
+                font-size: 0.78rem;
+            }
+            .band {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(8.5rem, 1fr));
+                gap: 0.4rem;
+                min-width: 46rem;
+                margin-top: 0.4rem;
+            }
+            .band .seg {
+                font-size: 0.74rem;
+                text-align: center;
+                padding: 0.3rem 0.4rem;
+                border-radius: 6px;
+                letter-spacing: 0.02em;
+            }
+            .band .mockband {
+                grid-column: 1 / 4;
+                background: var(--mock-bg);
+                color: var(--mock);
+                border: 1px dashed var(--mock);
+            }
+            .band .realband {
+                grid-column: 4 / 6;
+                background: var(--supa-bg);
+                color: var(--supa);
+                border: 1px dashed var(--supa);
+            }
 
-<h2>Die Landkarte</h2>
-<pre><code>Vertrieb/Workshop      Prototyp bauen       Prototyp abstimmen     Backend            Betrieb
-─────────────────      ──────────────       ──────────────────     ───────            ───────
-PRD + Konzepte    →    /prototype baut  →   Cloudflare-Link    →   Fork: Adapter  →   Kunden-App
-(SharePoint)           Mock, localhost      (Mock, UNIT-IX-        tauschen           (Cloudflare
-                       (unsere Dev)          Tenant)               ↓                   oder Microsoft)
-                                             ↓                     Datenmodell
-                                             Kunde klickt,         wird technisch
-                                             gibt Feedback</code></pre>
-<p>
-  Es gibt <strong>keine harte Übergabe</strong> zwischen „Konzept“ und „Entwicklung“. Der Prototyp wächst im
-  Fluss von ~70–75&nbsp;% auf 100&nbsp;% — wer gerade daran arbeitet, ist zweitrangig. Der Prozess ist bewusst
-  <strong>personenungebunden</strong> beschrieben.
-</p>
+            /* ---------- 2. Achsen-Matrix ---------- */
+            .matrix {
+                border-collapse: separate;
+                border-spacing: 0.35rem;
+                min-width: 44rem;
+            }
+            .matrix th {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--muted);
+                font-weight: 600;
+                text-align: left;
+                padding: 0 0.3rem 0.2rem;
+                vertical-align: bottom;
+            }
+            .matrix th.axis {
+                color: var(--fg);
+                font-size: 0.7rem;
+            }
+            .matrix td.rowh {
+                background: var(--card2);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 0.6rem 0.7rem;
+                width: 11rem;
+                vertical-align: middle;
+            }
+            .matrix td.rowh b {
+                font-family: var(--mono);
+                font-size: 0.84rem;
+                display: block;
+            }
+            .matrix td.rowh span {
+                font-size: 0.76rem;
+                color: var(--muted);
+                display: block;
+                margin-top: 0.15rem;
+                line-height: 1.35;
+            }
+            .cell {
+                border-radius: 8px;
+                padding: 0.6rem 0.7rem;
+                font-size: 0.82rem;
+                line-height: 1.4;
+                border: 1px solid var(--line);
+                background: var(--card);
+                vertical-align: middle;
+            }
+            .cell b {
+                display: block;
+                font-family: var(--mono);
+                font-size: 0.8rem;
+                margin-bottom: 0.15rem;
+            }
+            .cell.na {
+                background: transparent;
+                border-style: dashed;
+                color: var(--muted);
+                font-size: 0.78rem;
+                text-align: center;
+            }
+            .cell.c-mock {
+                background: var(--mock-bg);
+                border-color: var(--mock);
+            }
+            .cell.c-mock b {
+                color: var(--mock);
+            }
+            .cell.c-supa {
+                background: var(--supa-bg);
+                border-color: var(--supa);
+            }
+            .cell.c-supa b {
+                color: var(--supa);
+            }
+            .cell.c-dv {
+                background: var(--dv-bg);
+                border-color: var(--dv);
+            }
+            .cell.c-dv b {
+                color: var(--dv);
+            }
 
-<h2>Die zwei Achsen</h2>
-<p>Alles im Template hängt an genau zwei Schaltern. Sie sind <strong>unabhängig</strong> voneinander.</p>
+            /* ---------- 3. Branch-Graph ---------- */
+            .graph {
+                width: 100%;
+                min-width: 42rem;
+                height: auto;
+            }
+            .graph .ln {
+                fill: none;
+                stroke-width: 2;
+            }
+            .graph .l-proto {
+                stroke: var(--mock);
+            }
+            .graph .l-dev {
+                stroke: var(--accent);
+            }
+            .graph .l-main {
+                stroke: var(--supa);
+            }
+            .graph .l-feat {
+                stroke: var(--muted);
+                stroke-dasharray: 4 3;
+            }
+            .graph .seed {
+                stroke: var(--muted);
+                stroke-dasharray: 3 3;
+                fill: none;
+            }
+            .graph text {
+                font-family: system-ui, sans-serif;
+                font-size: 11px;
+                fill: var(--fg);
+            }
+            .graph text.lbl {
+                font-family: var(--mono);
+                font-size: 11.5px;
+            }
+            .graph text.note {
+                fill: var(--muted);
+                font-size: 10px;
+            }
+            .graph .node {
+                stroke: var(--bg);
+                stroke-width: 2;
+            }
+            .graph .freeze {
+                fill: var(--mock-bg);
+                stroke: var(--mock);
+                stroke-width: 1;
+            }
+            .graph .gatebox {
+                fill: var(--gate-bg);
+                stroke: var(--gate);
+                stroke-width: 1;
+            }
+            .graph text.gate {
+                fill: var(--gate);
+                font-size: 10px;
+                font-weight: 600;
+            }
 
-<h3>Stage = welcher Git-Branch</h3>
-<p>Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf:</p>
-<pre><code>Prototyp-Phase:  /prototype  →  prototype           (Feature-Checkpoints direkt auf prototype → Cloudflare, dann eingefroren)
-Übergabe:        /handoff:   prototype ─seed→ dev    (dev entsteht hier, einmalig)
-Produkt-Phase:   feature/*  →  dev  →  main          (prototype eingefroren, aus dem Pfad raus)</code></pre>
-<p><code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong> — in der Prototyp-Phase committet <code>/prototype</code> direkt auf <code>prototype</code>.</p>
-<div class="wrap"><table>
-  <tr><th>Branch</th><th>Bedeutung</th></tr>
-  <tr><td><code>feature/*</code></td><td>Arbeit an einem Feature (von <code>dev</code> abgezweigt, nur Produkt-Phase). Kein Deploy.</td></tr>
-  <tr><td><code>dev</code></td><td>Mutable Testbasis. <code>/execute</code> merged hierher. <strong>Testumgebung</strong> — deployt (target-aware) auf ein eigenes Cloudflare-Projekt <code>&lt;slug&gt;-dev</code>.</td></tr>
-  <tr><td><code>prototype</code></td><td><strong>Eingefroren</strong> — der abgestimmte Stand, den der Kunde sieht. In der Produkt-Phase <strong>aus dem Pfad raus</strong> (bewusst übersprungen). Deployt auf sein eigenes Cloudflare-Projekt <code>&lt;slug&gt;-prototype</code> (immer Mock).</td></tr>
-  <tr><td><code>main</code></td><td>Produktion. Deployt (target-aware) auf <code>&lt;slug&gt;</code> — Cloudflare (<code>mock</code>/<code>supabase</code>) <strong>oder</strong> Microsoft/Power Platform (<code>dataverse</code>).</td></tr>
-</table></div>
+            /* ---------- 4. Data-Seam ---------- */
+            .seam {
+                display: grid;
+                gap: 0;
+                max-width: 34rem;
+            }
+            .layer {
+                border: 1px solid var(--line);
+                background: var(--card);
+                padding: 0.7rem 0.9rem;
+                font-size: 0.87rem;
+            }
+            .layer:first-child {
+                border-radius: 10px 10px 0 0;
+            }
+            .layer:last-child {
+                border-radius: 0 0 10px 10px;
+            }
+            .layer + .layer {
+                border-top: 0;
+            }
+            .layer b {
+                font-family: var(--mono);
+                font-size: 0.83rem;
+            }
+            .layer span {
+                color: var(--muted);
+                font-size: 0.8rem;
+            }
+            .wall {
+                position: relative;
+                border: 0;
+                border-top: 2px solid var(--accent);
+                background: var(--bg);
+                padding: 0;
+                height: 0;
+                margin: 0;
+            }
+            .wall em {
+                position: absolute;
+                left: 0.9rem;
+                top: -0.72rem;
+                transform: none;
+                background: var(--bg);
+                color: var(--accent);
+                font-style: normal;
+                font-size: 0.7rem;
+                letter-spacing: 0.03em;
+                padding: 0 0.45rem;
+                white-space: nowrap;
+            }
+            .adapters {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.35rem;
+                padding: 0.55rem;
+                border: 1px solid var(--line);
+                border-top: 0;
+                background: var(--card2);
+            }
+            .adapters div {
+                border-radius: 6px;
+                padding: 0.45rem 0.5rem;
+                font-family: var(--mono);
+                font-size: 0.78rem;
+                text-align: center;
+                border: 1px solid var(--line);
+            }
+            .ad-mock {
+                background: var(--mock-bg);
+                border-color: var(--mock) !important;
+                color: var(--mock);
+            }
+            .ad-supa {
+                background: transparent;
+                border-style: dashed !important;
+                color: var(--muted);
+            }
+            .swap {
+                display: inline-block;
+                background: var(--gate-bg);
+                color: var(--gate);
+                border: 1px solid var(--gate);
+                border-radius: 999px;
+                font-size: 0.72rem;
+                padding: 0.1rem 0.5rem;
+                margin-left: 0.4rem;
+                white-space: nowrap;
+            }
 
-<h3>Target = woher die Daten kommen</h3>
-<p class="muted">Steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit dieser Achse.</p>
-<div class="wrap"><table>
-  <tr><th>Target</th><th>Bedeutung</th></tr>
-  <tr><td><code>mock</code></td><td>Erfundene Daten aus dem Seed. Kein Backend. Der Default eines frischen Templates.</td></tr>
-  <tr><td><code>supabase</code></td><td>Postgres + RLS + Auth. Bleibt auf Cloudflare. <strong>Strategisch der Haupt-Weg.</strong></td></tr>
-  <tr><td><code>dataverse</code></td><td>Microsoft Power Platform Code App.</td></tr>
-</table></div>
+            /* ---------- 5. Command-Kette ---------- */
+            .chain {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 0.35rem;
+                min-width: 46rem;
+                align-items: stretch;
+            }
+            .cmd {
+                flex: 1;
+                border: 1px solid var(--line);
+                border-radius: 9px;
+                background: var(--card);
+                padding: 0.7rem 0.75rem;
+                position: relative;
+            }
+            .cmd b {
+                font-family: var(--mono);
+                font-size: 0.83rem;
+                display: block;
+                margin-bottom: 0.3rem;
+            }
+            .cmd span {
+                font-size: 0.78rem;
+                color: var(--muted);
+                line-height: 1.4;
+                display: block;
+            }
+            .cmd.human {
+                background: var(--gate-bg);
+                border-color: var(--gate);
+            }
+            .cmd.human b {
+                color: var(--gate);
+            }
+            .autobar {
+                display: flex;
+                gap: 0.35rem;
+                min-width: 46rem;
+                margin-top: 0.4rem;
+            }
+            .autobar .a1 {
+                flex: 4;
+                font-size: 0.74rem;
+                text-align: center;
+                padding: 0.3rem;
+                border-radius: 6px;
+                background: var(--card2);
+                color: var(--muted);
+                border: 1px dashed var(--line);
+            }
+            .autobar .a2 {
+                flex: 1;
+                font-size: 0.74rem;
+                text-align: center;
+                padding: 0.3rem;
+                border-radius: 6px;
+                background: var(--gate-bg);
+                color: var(--gate);
+                border: 1px solid var(--gate);
+                font-weight: 600;
+            }
 
-<blockquote><p>
-  <strong>Richtung (Stand 2026-07-17):</strong> Neue Projekte entstehen als Code Apps, Canvas Apps laufen aus
-  (~95&nbsp;%, keine harte Deadline — sie sind nicht KI-ready). Produktiv geht es Richtung „mehr Supabase,
-  weniger Power Platform“. Bestehendes wird <strong>selektiv</strong> migriert, nicht per Hauruck. Azure ist
-  bewusst <strong>kein</strong> Bestandteil des Templates — es ist das Compliance-Argument („gleiche Leistung,
-  ca. 100–150&nbsp;EUR/Monat“) und belegt, dass wir nicht an einen Hersteller gekettet sind.
-</p></blockquote>
+            /* ---------- 6. Regelsatz-Selektor ---------- */
+            .rules {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+                gap: 0.6rem;
+            }
+            .rulecol {
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            .rulecol > .hd {
+                padding: 0.5rem 0.75rem;
+                font-family: var(--mono);
+                font-size: 0.82rem;
+                font-weight: 600;
+                border-bottom: 1px solid var(--line);
+            }
+            .rulecol.r-mock .hd {
+                background: var(--mock-bg);
+                color: var(--mock);
+            }
+            .rulecol.r-supa .hd {
+                background: var(--supa-bg);
+                color: var(--supa);
+            }
+            .rulecol.r-dv .hd {
+                background: var(--dv-bg);
+                color: var(--dv);
+            }
+            .rulecol ul {
+                margin: 0;
+                padding: 0.6rem 0.75rem;
+                list-style: none;
+                font-size: 0.8rem;
+            }
+            .rulecol li {
+                font-family: var(--mono);
+                font-size: 0.76rem;
+                padding: 0.16rem 0;
+            }
+            .rulecol li.always {
+                color: var(--muted);
+            }
+            .rulecol .why {
+                border-top: 1px solid var(--line);
+                padding: 0.5rem 0.75rem;
+                font-size: 0.78rem;
+                color: var(--muted);
+                background: var(--card);
+            }
 
-<h2>Der Fork ist eine Datei</h2>
-<p>
-  Wenn der Kunde OK sagt, wird aus dem Prototyp die echte App. Das ist <strong>kein Neubau</strong> — es wird
-  ein Adapter getauscht:
-</p>
-<pre><code>src/data/index.ts        ← der eine Swap-Punkt
-src/data/ports/          ← Interfaces. Ändern sich nie.
-src/data/adapters/
-    mock/                ← Seed-Daten
-    supabase/            ← echtes Backend
-    dataverse/           ← echtes Backend</code></pre>
-<p>
-  Die Regel, die das zusammenhält: <strong>UI und Hooks sprechen nur den Port an (<code>@/data</code>), nie
-  einen Adapter.</strong> Das ist mechanisch erzwungen (ESLint-Boundaries) — nicht nur eine Bitte.
-</p>
-<p>
-  Die Domain-Typen in <code>src/domain/</code> sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen
-  sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt <strong>nur</strong> im Adapter.
-</p>
-<p class="muted">Details: <a href="prototype-manifest.md">prototype-manifest.md</a></p>
+            /* ---------- 7. Fünf Zustände ---------- */
+            .states {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+                gap: 0.6rem;
+            }
+            .st {
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                overflow: hidden;
+                background: var(--card);
+            }
+            .st .wf {
+                height: 4.6rem;
+                background: var(--bg);
+                border-bottom: 1px solid var(--line);
+                padding: 0.55rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.3rem;
+                justify-content: center;
+                align-items: center;
+            }
+            .st .cap {
+                padding: 0.45rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            .st .cap b {
+                display: block;
+                font-size: 0.83rem;
+            }
+            .st .cap span {
+                color: var(--muted);
+                font-size: 0.74rem;
+            }
+            .bar {
+                height: 0.5rem;
+                border-radius: 3px;
+                background: var(--card2);
+                width: 100%;
+            }
+            .bar.w70 {
+                width: 70%;
+            }
+            .bar.w45 {
+                width: 45%;
+            }
+            .glyph {
+                font-size: 1.5rem;
+                line-height: 1;
+                color: var(--muted);
+            }
+            .glyph.err {
+                color: var(--gate);
+            }
+            .minibtn {
+                font-size: 0.62rem;
+                border: 1px solid var(--line);
+                border-radius: 4px;
+                padding: 0.12rem 0.35rem;
+                color: var(--muted);
+            }
+            .minibtn.danger {
+                border-color: var(--gate);
+                color: var(--gate);
+            }
+            .row {
+                display: flex;
+                gap: 0.3rem;
+                align-items: center;
+            }
 
-<h2>Der Command-Flow</h2>
-<p>Es gibt <strong>zwei Spuren</strong>. Welche gilt, hängt am Repo, nicht am Gefühl.</p>
+            /* ---------- Fakten-Liste ---------- */
+            .facts {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+                gap: 0.6rem;
+                margin: 1.25rem 0;
+            }
+            .fact {
+                border: 1px solid var(--line);
+                border-left: 3px solid var(--accent);
+                border-radius: 0 8px 8px 0;
+                background: var(--card);
+                padding: 0.6rem 0.8rem;
+                font-size: 0.85rem;
+            }
+            .fact b {
+                display: block;
+                margin-bottom: 0.2rem;
+            }
+            .fact span {
+                color: var(--muted);
+                font-size: 0.81rem;
+            }
 
-<h3>Kundenprojekt — zwei Phasen</h3>
-<pre><code>Prototyp-Phase (Consultant):
-/prototype &lt;projektordner&gt;   → baut den Mock-Prototyp autonom → prototype-Branch
-                               → Cloudflare → Kunde OK → prototype eingefroren
+            #theme {
+                position: fixed;
+                top: 1rem;
+                right: 1rem;
+                z-index: 10;
+                background: var(--card);
+                color: var(--muted);
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                padding: 0.4rem 0.8rem;
+                font: inherit;
+                font-size: 0.8rem;
+                cursor: pointer;
+            }
+            #theme:hover {
+                color: var(--fg);
+            }
+            footer {
+                margin-top: 4.5rem;
+                padding-top: 1.25rem;
+                border-top: 1px solid var(--line);
+                color: var(--muted);
+                font-size: 0.84rem;
+            }
 
-Übergabe:
-/handoff                     → seedet dev aus dem eingefrorenen prototype (einmalig)
+            @media (max-width: 40rem) {
+                h2 {
+                    margin-top: 3rem;
+                }
+            }
+            @media print {
+                #theme {
+                    display: none;
+                }
+                h2 {
+                    break-after: avoid;
+                }
+                figure,
+                .facts,
+                .states,
+                .rules {
+                    break-inside: avoid;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <button id="theme" type="button">Theme</button>
+        <main>
+            <h1>Vom Kundengespräch zur fertigen App</h1>
+            <p class="lede">
+                Wie das Prototype-First Golden Template funktioniert — in sieben Bildern.
+            </p>
+            <p class="sub small">
+                Wir bauen <strong>zuerst einen klickbaren Prototyp</strong>, nicht zuerst ein Backend. Ein Konzept auf
+                Papier diskutiert man drei Runden lang; ein klickbarer Prototyp beantwortet dieselben Fragen in einer.
+                Und weil er echter Code ist, ist er kein Wegwerf-Mockup — er <em>wird</em> die App.
+            </p>
 
-Produkt-Phase (Developer):
-/plan &lt;slug&gt;                 → Interview + Plan-File + feature/-Branch (von dev)
-/execute &lt;plan&gt;              → Autopilot-Default: committet nach jeder Phase, pusht
-                               auf Draft-PR gegen dev, merged am Ende autonom → dev
-                               (Autopilot: false → Per-Phasen-Stopp)
-# Tests laufen auf dev
-/ship                        → Produktions-Promotion dev → main (gegatet)</code></pre>
-<p><code>/commit</code> ist <strong>kein</strong> Customer-Schritt mehr — <code>/execute</code> committet selbst.</p>
+            <hr />
 
-<h3>Werkzeug-Repo (<code>code-apps-template</code> / <code>code-apps-context</code>)</h3>
-<pre><code>/dev-plan &lt;slug&gt;     → lean, kein Interview, kein Branch
-/dev-execute &lt;plan&gt;  → arbeitet ab + committet + pusht direkt auf main. Kein PR.</code></pre>
-<p class="muted">Kanonische Beschreibung: <code>.claude/CLAUDE.md</code> → „Workflow-Skills“.</p>
+            <h2><span class="num">1</span>Der Weg</h2>
+            <p class="sub small">
+                Fünf Stationen. Die ersten drei laufen komplett auf erfundenen Daten — ein echtes Backend kommt erst,
+                wenn der Kunde zugestimmt hat.
+            </p>
+            <figure>
+                <div class="scroll">
+                    <div class="flow">
+                        <div class="step">
+                            <span class="k">Vertrieb / Workshop</span>
+                            <span class="t">PRD + Konzepte</span>
+                            <span class="d">Liegen in SharePoint, read-only</span>
+                        </div>
+                        <div class="step">
+                            <span class="k">Bauen</span>
+                            <span class="t"><code>/prototype</code></span>
+                            <span class="d">Baut autonom Feature für Feature, lokal prüfbar</span>
+                        </div>
+                        <div class="step">
+                            <span class="k">Abstimmen</span>
+                            <span class="t">Cloudflare-Link</span>
+                            <span class="d">Der Kunde klickt und gibt Feedback</span>
+                        </div>
+                        <div class="step">
+                            <span class="k">Nach dem OK</span>
+                            <span class="t">Fork: Adapter tauschen</span>
+                            <span class="d">Eine Datei, kein Neubau</span>
+                        </div>
+                        <div class="step">
+                            <span class="k">Betrieb</span>
+                            <span class="t">Kunden-App</span>
+                            <span class="d">Cloudflare oder Microsoft</span>
+                        </div>
+                    </div>
+                    <div class="band">
+                        <div class="seg mockband">erfundene Daten (Mock) — kein Backend</div>
+                        <div class="seg realband">echtes Backend</div>
+                    </div>
+                </div>
+                <p class="swipe">→ horizontal scrollen</p>
+                <figcaption>
+                    Es gibt <strong>keine harte Übergabe</strong> zwischen „Konzept“ und „Entwicklung“. Der Prototyp
+                    wächst im Fluss von ~70–75&nbsp;% auf 100&nbsp;%; wer gerade daran arbeitet, ist zweitrangig.
+                </figcaption>
+            </figure>
 
-<h2>Die Regeln — und wo sie stehen</h2>
-<p>
-  <strong>Vor jedem Task liest die KI zwei Dateien immer</strong> und <strong>genau eine</strong> target-abhängig:
-</p>
-<div class="wrap"><table>
-  <tr><th>Immer</th><th>bei <code>mock</code></th><th>bei <code>supabase</code></th><th>bei <code>dataverse</code></th></tr>
-  <tr>
-    <td><code>naming-conventions.md</code><br><code>lean-coding.md</code></td>
-    <td><code>prototype-patterns.md</code><br><span class="muted">Mock ok, <code>fetch</code> ok</span></td>
-    <td><code>supabase-patterns.md</code><br><span class="muted"><strong>RLS Pflicht</strong></span></td>
-    <td><code>code-app-patterns.md</code><br><span class="muted">CSP, Dataverse-only</span></td>
-  </tr>
-</table></div>
-<p>
-  Der teure Fehler ist der <strong>falsche Regelsatz</strong>: Supabase-Code in eine CSP-gesperrte Code App
-  bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten
-  <code>target</code>-Feld — nie am Branch.
-</p>
+            <h2><span class="num">2</span>Die zwei Achsen</h2>
+            <p class="sub small">
+                Alles hängt an genau zwei Schaltern, und sie sind <strong>unabhängig</strong>: <em>welcher Branch</em>
+                (Reifegrad) und <em>welches Backend</em> (Datenquelle). Die Matrix zeigt, was in jeder Kombination
+                deployt wird — und wo es gar keine Kombination gibt.
+            </p>
+            <figure>
+                <div class="scroll">
+                    <table class="matrix">
+                        <tr>
+                            <th class="axis">Stage ↓ · Backend →</th>
+                            <th><code>mock</code></th>
+                            <th><code>supabase</code></th>
+                            <th><code>dataverse</code></th>
+                        </tr>
+                        <tr>
+                            <td class="rowh">
+                                <b>feature/*</b>
+                                <span>Arbeit an einem Feature, von <code>dev</code> abgezweigt</span>
+                            </td>
+                            <td class="cell na" colspan="3">deployt nie — Build-Minuten sind ein Budget</td>
+                        </tr>
+                        <tr>
+                            <td class="rowh">
+                                <b>prototype</b>
+                                <span>Nach dem Kunden-OK eingefroren</span>
+                            </td>
+                            <td class="cell c-mock">
+                                <b>&lt;slug&gt;-prototype</b>
+                                Der Stand, den der Kunde sieht
+                            </td>
+                            <td class="cell na" colspan="2">
+                                existiert nicht — <code>prototype</code> ist per Definition Mock
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="rowh">
+                                <b>dev</b>
+                                <span>Mutable Testbasis, hier testet das Team</span>
+                            </td>
+                            <td class="cell c-mock"><b>&lt;slug&gt;-dev</b>Cloudflare</td>
+                            <td class="cell c-supa"><b>&lt;slug&gt;-dev</b>Cloudflare + Postgres</td>
+                            <td class="cell c-dv"><b>Power Platform</b>kein Cloudflare-Deploy</td>
+                        </tr>
+                        <tr>
+                            <td class="rowh">
+                                <b>main</b>
+                                <span>Produktion</span>
+                            </td>
+                            <td class="cell c-mock"><b>&lt;slug&gt;</b>Cloudflare</td>
+                            <td class="cell c-supa"><b>&lt;slug&gt;</b>Cloudflare + Postgres</td>
+                            <td class="cell c-dv"><b>Power Platform</b>Microsoft-Hosting</td>
+                        </tr>
+                    </table>
+                </div>
+                <p class="swipe">→ horizontal scrollen</p>
+                <figcaption>
+                    Das aktive Backend steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit dieser
+                    Achse, nie aus dem Branch abgeleitet. <code>mock</code> ist der Default eines frischen Templates,
+                    <code>supabase</code> strategisch der Haupt-Weg.
+                </figcaption>
+            </figure>
 
-<h3>DB-Naming ist systemabhängig</h3>
-<p class="muted">Kein Versehen, sondern Beschluss.</p>
-<div class="wrap"><table>
-  <tr><th></th><th>Supabase / SQL</th><th>Dataverse / Canvas</th></tr>
-  <tr><td>Tabelle</td><td><code>service_tickets</code><br><span class="muted">snake_case, plural, <strong>kein</strong> Präfix</span></td><td><code>unitix_tblServiceTicket</code></td></tr>
-  <tr><td>Spalte</td><td><code>customer_name</code><br><span class="muted"><strong>kein</strong> Datentyp-Präfix</span></td><td><code>strCustomerName</code></td></tr>
-</table></div>
-<p>
-  Begründung: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ein Präfix dupliziert ihn
-  nur. Bei Canvas Apps ist er sichtbar sinnvoll, weil der Typ im Code fehlt.
-</p>
+            <h2><span class="num">3</span>Das Branch-Modell</h2>
+            <p class="sub small">
+                Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf. Der abgestimmte Prototyp wird
+                eingefroren und in der Produkt-Phase bewusst <em>übersprungen</em> — er bleibt Referenz, nicht
+                Zwischenschritt.
+            </p>
+            <figure>
+                <div class="scroll">
+                    <svg class="graph" viewBox="0 0 660 320" role="img" aria-labelledby="gtitle">
+                        <title id="gtitle">
+                            Branch-Graph: prototype wird eingefroren, dev wird daraus geseedet, feature-Branches
+                            zweigen von dev ab und münden zurück, dev wird per /ship nach main promotet
+                        </title>
 
-<h3>Was ESLint hart erzwingt</h3>
-<p>
-  <code>pnpm lint</code> — kein <code>fetch</code> außerhalb von Adaptern · kein <code>localStorage</code>/<code>sessionStorage</code> ·
-  max. <strong>300 Zeilen</strong> pro Datei · Layer-Grenzen (Feature → Port → Adapter → Domain) · Rules of Hooks.
-</p>
+                        <!-- Phasen-Beschriftung -->
+                        <text class="note" x="8" y="14">PROTOTYP-PHASE</text>
+                        <text class="note" x="300" y="14">ÜBERGABE</text>
+                        <text class="note" x="430" y="14">PRODUKT-PHASE</text>
+                        <line x1="290" y1="22" x2="290" y2="305" stroke="var(--line)" stroke-dasharray="3 4" />
+                        <line x1="420" y1="22" x2="420" y2="305" stroke="var(--line)" stroke-dasharray="3 4" />
 
-<h3>Design</h3>
-<p>
-  Ausschließlich Design-Tokens + die shadcn-Komponenten in <code>src/shared/components/ui/</code>.
-  <strong>Kein eigenes CSS-File, keine Inline-Farben.</strong> Tokens (oklch) leben in <code>src/index.css</code>.
-</p>
+                        <!-- prototype -->
+                        <text class="lbl" x="8" y="60" fill="var(--mock)">prototype</text>
+                        <path class="ln l-proto" d="M 80 56 H 280" />
+                        <circle class="node" cx="110" cy="56" r="4.5" fill="var(--mock)" />
+                        <circle class="node" cx="150" cy="56" r="4.5" fill="var(--mock)" />
+                        <circle class="node" cx="190" cy="56" r="4.5" fill="var(--mock)" />
+                        <circle class="node" cx="230" cy="56" r="4.5" fill="var(--mock)" />
+                        <text class="note" x="86" y="76">Checkpoint je Feature</text>
+                        <rect class="freeze" x="264" y="42" width="88" height="28" rx="6" />
+                        <text x="272" y="60" fill="var(--mock)" style="font-size: 10.5px; font-weight: 600">
+                            EINGEFROREN
+                        </text>
+                        <path class="ln l-proto" d="M 352 56 H 650" stroke-dasharray="2 5" opacity="0.4" />
+                        <text class="note" x="452" y="48">bleibt als Kunden-Referenz stehen</text>
 
-<h2>Teilen und Deployen</h2>
-<ul>
-  <li><strong>Wir entwickeln auf localhost</strong> (<code>pnpm dev</code>) und machen dort unseren internen Review — nicht über einen Deploy.</li>
-  <li><strong>Der Kunde stimmt auf Cloudflare ab.</strong> Der abgestimmte Stand liegt auf dem <code>prototype</code>-Branch, deployt auf Cloudflare (Default UNIT-IX-Tenant, Kunden-Tenant wenn schon entschieden) — immer noch Mock-Daten.</li>
-  <li><strong>Der Kunden-Link</strong> entsteht über <strong>GitHub Actions</strong>, ausgelöst durch eine Promotion auf <code>prototype</code>. Nicht jeder Commit deployt — Build-Minuten sind ein echtes Budget.</li>
-</ul>
-<blockquote><p>
-  Der Deploy braucht Ollis Cloudflare-Token (siehe „Noch offen“). <strong>Bis der da ist</strong>, ist das
-  Kunden-Artefakt interimsweise der lokale <code>pnpm dev</code> + der PDF-Report; der Cloudflare-Link wird
-  eingesteckt, sobald der Token steht.
-</p></blockquote>
-<p class="muted">
-  Details, Secrets und warum es <em>nicht</em> der Dashboard-Weg (git-connect) ist: <a href="hosting.md">hosting.md</a>.
-</p>
+                        <!-- Seed prototype → dev -->
+                        <path class="seed" d="M 308 74 V 130 H 336" />
+                        <text class="note" x="316" y="100">/handoff seedet</text>
 
-<h2>Wann ist der Prototyp fertig?</h2>
-<p>
-  Kurzfassung: wenn er das PRD abdeckt, die fünf Pflicht-Zustände zeigt (Laden, Leer, Fehler, Erfolg,
-  Keine-Rechte) und der Kunde OK sagt. Ab dann darf das Backend dran.
-</p>
-<p>
-  Die belastbaren Fertig-Kriterien und das Go-Gate vor dem großen <code>/prototype</code>-Lauf sind
-  <strong>noch in Arbeit</strong> (Team-Aufgabe, Stand 2026-07-17). Die DoD-Checkliste im Detail:
-  <code>.claude/docs/prototype-patterns.md</code>.
-</p>
+                        <!-- dev -->
+                        <text class="lbl" x="8" y="134" fill="var(--accent)">dev</text>
+                        <path class="ln l-dev" d="M 336 130 H 652" />
+                        <circle class="node" cx="400" cy="130" r="4.5" fill="var(--accent)" />
+                        <circle class="node" cx="500" cy="130" r="4.5" fill="var(--accent)" />
+                        <circle class="node" cx="580" cy="130" r="4.5" fill="var(--accent)" />
 
-<h2>Noch offen</h2>
-<div class="wrap"><table>
-  <tr><th>Thema</th><th>Stand</th></tr>
-  <tr><td>Cloudflare-Token + Account-ID</td><td>bei Olli — einziger Blocker für den echten Cloudflare-Link. Bis dahin interim: localhost + PDF</td></tr>
-  <tr><td>Fertig-Kriterien + Go-Gate vor dem <code>/prototype</code>-Lauf</td><td>Team</td></tr>
-  <tr><td>Rollenname „Technical Consultant“ + Verantwortungsbereich</td><td>Team</td></tr>
-  <tr><td>SharePoint-Live-Read (Pointer statt <code>docs/</code>-Snapshot; SharePoint-Master als Single Source of Truth)</td><td>geplant, eigene Runde</td></tr>
-  <tr><td>Automatischer Datenmodell-Sync</td><td>zurückgestellt</td></tr>
-</table></div>
+                        <!-- feature/* zweigt von dev ab und mündet zurück -->
+                        <text class="lbl" x="8" y="202" fill="var(--muted)">feature/*</text>
+                        <path class="ln l-feat" d="M 400 130 C 418 130 418 198 440 198 H 462 C 484 198 484 130 500 130" />
+                        <path class="ln l-feat" d="M 500 130 C 518 130 518 198 540 198 H 558 C 578 198 578 130 580 130" />
+                        <circle class="node" cx="450" cy="198" r="4" fill="var(--muted)" />
+                        <circle class="node" cx="549" cy="198" r="4" fill="var(--muted)" />
+                        <text class="note" x="424" y="226">/plan → /execute, merged selbst</text>
 
-<h2>Diese Seite pflegen</h2>
-<p>
-  <code>overview.md</code> ist die <strong>Quelle</strong> — dort wird editiert. Diese HTML-Fassung ist die
-  visuelle Variante fürs Meeting und wird <strong>von Hand</strong> nachgezogen (dieses Repo hat bewusst keinen
-  HTML-Generator; der SharePoint-Skill baut Kunden-Decks und ist hier nicht zuständig).
-</p>
-<p>
-  Wenn sich am Template etwas ändert — Commands, Architektur, Regelsätze, Branching, Hosting —, gehört die
-  betroffene Stelle hier nachgezogen. <strong>Kanonische Quellen gewinnen immer</strong> gegen diese Seite:
-  <code>.claude/CLAUDE.md</code> · <code>.claude/commands/*</code> ·
-  <code>.claude/docs/prototype-first-architecture.md</code> · <code>eslint.config.js</code> ·
-  <code>src/index.css</code> · <a href="hosting.md">hosting.md</a>.
-</p>
-<p>
-  Und die Regel, die dieses Dokument kurz hält: <strong>nicht duplizieren, verlinken.</strong> Eine Info, die
-  hier und in der kanonischen Quelle steht, ist eine Info, die irgendwann auseinanderläuft.
-</p>
+                        <!-- main: existiert, bekommt aber erst mit /ship Inhalt -->
+                        <text class="lbl" x="8" y="284" fill="var(--supa)">main</text>
+                        <path class="ln l-main" d="M 80 280 H 628" stroke-dasharray="2 5" opacity="0.5" />
+                        <path class="ln l-main" d="M 604 130 C 624 130 624 280 636 280" />
+                        <circle class="node" cx="640" cy="280" r="4.5" fill="var(--supa)" />
+                        <path class="ln l-main" d="M 644 280 H 652" />
+                        <text class="note" x="86" y="298">existiert von Anfang an, bekommt aber erst mit /ship Inhalt</text>
+                        <rect class="gatebox" x="528" y="244" width="78" height="22" rx="11" />
+                        <text class="gate" x="536" y="259">/ship · GATE</text>
+                    </svg>
+                </div>
+                <p class="swipe">→ horizontal scrollen</p>
+                <figcaption>
+                    <code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong>. Der
+                    einzige bewusst von einem Menschen freigegebene Schritt ist <code>/ship</code> —
+                    <code>dev → main</code>.
+                </figcaption>
+            </figure>
 
-<footer>
-  UNIT&nbsp;IX · Prototype-First Golden Template · Quelle: <code>docs/overview.md</code>
-</footer>
+            <h2><span class="num">4</span>Warum der Fork nur eine Datei ist</h2>
+            <p class="sub small">
+                Die App weiß nicht, woher ihre Daten kommen. Sie fragt einen <strong>Port</strong>; dahinter steckt ein
+                austauschbarer <strong>Adapter</strong>. Die blaue Linie ist keine Bitte, sondern eine
+                ESLint-Regel — ein Feature, das direkt einen Adapter importiert, lässt den Build rot werden.
+            </p>
+            <figure>
+                <div class="seam">
+                    <div class="layer">
+                        <b>src/features/…</b> <span>— UI, Hooks, TanStack Query</span>
+                    </div>
+                    <div class="wall"><em>ESLint-Boundary: feature → nur Port</em></div>
+                    <div class="layer">
+                        <b>src/data/ports/</b> <span>— Interfaces + Query-Vertrag. Ändern sich nicht mehr am Fork.</span>
+                    </div>
+                    <div class="layer">
+                        <b>src/data/index.ts</b> <span>— der eine Swap-Punkt</span>
+                        <span class="swap">hier passiert der Fork</span>
+                    </div>
+                    <div class="adapters">
+                        <div class="ad-mock">mock/</div>
+                        <div class="ad-supa">supabase/</div>
+                        <div class="ad-supa">dataverse/</div>
+                    </div>
+                    <div class="layer">
+                        <b>src/domain/</b> <span>— reine Typen, kennen kein Backend</span>
+                    </div>
+                </div>
+                <figcaption>
+                    Die Domain-Typen sind der Vertrag: <strong>eine Entität = eine künftige Tabelle</strong>. Stimmen
+                    sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming
+                    (<code>unitix_tbl…</code>, <code>snake_case</code>) lebt ausschließlich im Adapter. Details:
+                    <a href="prototype-manifest.md">prototype-manifest.md</a>
+                </figcaption>
+            </figure>
 
-</main>
-<script>
-  // Theme-Toggle: folgt dem System, bis der Nutzer einmal klickt — dann gewinnt die Wahl (localStorage).
-  (function () {
-    var root = document.documentElement;
-    var btn = document.getElementById('theme');
-    try {
-      var saved = localStorage.getItem('overview-theme');
-      if (saved) root.setAttribute('data-theme', saved);
-    } catch (e) { /* privater Modus: dann eben nur System-Theme */ }
-    btn.addEventListener('click', function () {
-      var current = root.getAttribute('data-theme');
-      if (!current) {
-        current = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-      var next = current === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      try { localStorage.setItem('overview-theme', next); } catch (e) { /* egal */ }
-    });
-  })();
-</script>
-</body>
+            <h2><span class="num">5</span>Die Command-Kette</h2>
+            <p class="sub small">
+                Fünf Kommandos. Autonom bis <code>dev</code> — der einzige Punkt, an dem ein Mensch bewusst zustimmt,
+                ist die Produktions-Promotion.
+            </p>
+            <figure>
+                <div class="scroll">
+                    <div class="chain">
+                        <div class="cmd">
+                            <b>/prototype</b>
+                            <span>Liest PRD, baut den Mock-Prototyp autonom, prüft sich per Screenshot selbst</span>
+                        </div>
+                        <div class="cmd">
+                            <b>/handoff</b>
+                            <span>Seedet <code>dev</code> aus dem eingefrorenen <code>prototype</code>. Einmalig</span>
+                        </div>
+                        <div class="cmd">
+                            <b>/plan</b>
+                            <span>Interview, Plan-File, <code>feature/</code>-Branch von <code>dev</code></span>
+                        </div>
+                        <div class="cmd">
+                            <b>/execute</b>
+                            <span>Committet pro Phase, PR gegen <code>dev</code>, merged selbst</span>
+                        </div>
+                        <div class="cmd human">
+                            <b>/ship</b>
+                            <span>Promotion nach <code>main</code> — bewusst gegatet</span>
+                        </div>
+                    </div>
+                    <div class="autobar">
+                        <div class="a1">autonom — Gate ist das grüne <code>pnpm verify</code> pro Phase</div>
+                        <div class="a2">Mensch</div>
+                    </div>
+                </div>
+                <p class="swipe">→ horizontal scrollen</p>
+                <figcaption>
+                    Bei UNIT&nbsp;IX gibt es keinen klassischen Code-Review — die spätere Kunden-Testphase ist das
+                    Safety-Net. Am Tooling selbst (<code>code-apps-template</code> / <code>code-apps-context</code>)
+                    gibt es keine Kette: dort wird direkt auf <code>main</code> gearbeitet.
+                </figcaption>
+            </figure>
+
+            <h2><span class="num">6</span>Welcher Regelsatz gilt</h2>
+            <p class="sub small">
+                Vor jedem Task liest die KI <strong>zwei Dateien immer</strong> und <strong>genau eine</strong>
+                backend-abhängig. Der teure Fehler ist der falsche Regelsatz — Supabase-Code in eine CSP-gesperrte
+                Code App bauen, oder einen gesunden Prototyp rot flaggen.
+            </p>
+            <figure>
+                <div class="rules">
+                    <div class="rulecol r-mock">
+                        <div class="hd">backend: mock</div>
+                        <ul>
+                            <li class="always">naming-conventions.md</li>
+                            <li class="always">lean-coding.md</li>
+                            <li>+ prototype-patterns.md</li>
+                        </ul>
+                        <div class="why">
+                            Mock erlaubt, <code>fetch</code> ok, public Hosting, kein DB-Zwang. Data-Seam Pflicht.
+                        </div>
+                    </div>
+                    <div class="rulecol r-supa">
+                        <div class="hd">backend: supabase</div>
+                        <ul>
+                            <li class="always">naming-conventions.md</li>
+                            <li class="always">lean-coding.md</li>
+                            <li>+ supabase-patterns.md</li>
+                        </ul>
+                        <div class="why">
+                            anon-Key public, <strong>RLS Pflicht</strong>, Auth via OAuth/PKCE, Secrets nur in Edge
+                            Functions.
+                        </div>
+                    </div>
+                    <div class="rulecol r-dv">
+                        <div class="hd">backend: dataverse</div>
+                        <ul>
+                            <li class="always">naming-conventions.md</li>
+                            <li class="always">lean-coding.md</li>
+                            <li>+ code-app-patterns.md</li>
+                            <li>+ naming-dataverse.md</li>
+                        </ul>
+                        <div class="why">
+                            CSP <code>connect-src 'none'</code>, Dataverse-only, HashRouter, keine Secrets im Bundle.
+                        </div>
+                    </div>
+                </div>
+                <figcaption>
+                    Grau = immer, farbig = backend-abhängig. Der Regelsatz hängt am expliziten
+                    <code>backend</code>-Feld, <strong>nie am Branch</strong> — Branches sind mutabel, und man ist
+                    schnell auf dem falschen.
+                </figcaption>
+            </figure>
+
+            <h2><span class="num">7</span>Die fünf Pflicht-Zustände</h2>
+            <p class="sub small">
+                Jede Liste und jede Detailansicht zeigt <strong>alle fünf</strong> — kein Screen ohne. Das ist der
+                harte Teil der Definition of Done und der häufigste Grund, warum ein Prototyp zurückgeht.
+            </p>
+            <figure>
+                <div class="states">
+                    <div class="st">
+                        <div class="wf">
+                            <div class="bar"></div>
+                            <div class="bar w70"></div>
+                            <div class="bar w45"></div>
+                        </div>
+                        <div class="cap"><b>Loading</b><span>Skeleton, kein leerer Screen</span></div>
+                    </div>
+                    <div class="st">
+                        <div class="wf"><span class="glyph">◌</span></div>
+                        <div class="cap"><b>Empty</b><span>Titel + Beschreibung</span></div>
+                    </div>
+                    <div class="st">
+                        <div class="wf">
+                            <span class="glyph err">⚠</span>
+                            <span class="minibtn">Erneut versuchen</span>
+                        </div>
+                        <div class="cap"><b>Error</b><span>Nie ein stiller Fehlschlag</span></div>
+                    </div>
+                    <div class="st">
+                        <div class="wf"><span class="glyph">404</span></div>
+                        <div class="cap"><b>404</b><span>catch-all Route mit Rückweg</span></div>
+                    </div>
+                    <div class="st">
+                        <div class="wf">
+                            <div class="bar w70"></div>
+                            <div class="row">
+                                <span class="minibtn">Abbrechen</span>
+                                <span class="minibtn danger">Löschen</span>
+                            </div>
+                        </div>
+                        <div class="cap"><b>Confirm</b><span>Nie löschen ohne Rückfrage</span></div>
+                    </div>
+                </div>
+                <figcaption>
+                    Die Primitives liegen in <code>src/shared/components/state/</code>; das Referenz-Feature
+                    <code>src/features/_example</code> zeigt alle fünf im Zusammenspiel. Vollständige Checkliste:
+                    <code>.claude/docs/prototype-patterns.md</code> → Definition of Done.
+                </figcaption>
+            </figure>
+
+            <h2><span class="num">8</span>Was mechanisch erzwungen ist</h2>
+            <p class="sub small">
+                Diese Regeln stehen nicht in einer Doku, die man lesen müsste — sie brechen den Build.
+                <code>pnpm verify</code> läuft lokal und in CI identisch.
+            </p>
+            <div class="facts">
+                <div class="fact">
+                    <b>Kein <code>fetch</code> außerhalb von Adaptern</b>
+                    <span>Daten laufen ausschließlich über den Port <code>@/data</code>.</span>
+                </div>
+                <div class="fact">
+                    <b>Kein <code>localStorage</code>/<code>sessionStorage</code></b>
+                    <span>Der Build ist public — kein State, keine Secrets im Browser-Storage.</span>
+                </div>
+                <div class="fact">
+                    <b>Kein <code>BrowserRouter</code>, kein Next.js/SSR</b>
+                    <span>Das Template ist eine statische SPA; HashRouter überlebt den Dataverse-iframe.</span>
+                </div>
+                <div class="fact">
+                    <b>Layer-Grenzen</b>
+                    <span>Feature → Port → Adapter → Domain. Rückwärts-Imports sind Fehler.</span>
+                </div>
+                <div class="fact">
+                    <b>Max. 300 Zeilen pro Datei</b>
+                    <span>Plus <code>knip</code> gegen tote Files, Exports und Dependencies.</span>
+                </div>
+                <div class="fact">
+                    <b>Keine Secrets in <code>.env</code></b>
+                    <span>Vite kompiliert jede <code>VITE_*</code>-Variable ins public Bundle.</span>
+                </div>
+            </div>
+            <p class="small muted">
+                <strong>Design:</strong> ausschließlich Design-Tokens (oklch, in <code>src/index.css</code>) + die
+                shadcn-Komponenten in <code>src/shared/components/ui/</code>. Kein eigenes CSS-File, keine
+                Inline-Farben. Inventar: <code>COMPONENTS.md</code>.
+            </p>
+
+            <h2><span class="num">9</span>Teilen und Deployen</h2>
+            <div class="facts">
+                <div class="fact">
+                    <b>Entwicklung + interner Review</b>
+                    <span><code>pnpm dev</code> auf localhost gegen den Mock-Adapter. Nie über einen Deploy.</span>
+                </div>
+                <div class="fact">
+                    <b>Kunden-Abstimmung</b>
+                    <span>Cloudflare-Deploy des <code>prototype</code>-Branches — weiterhin Mock-Daten.</span>
+                </div>
+                <div class="fact">
+                    <b>Der Link entsteht über GitHub Actions</b>
+                    <span>Nicht jeder Commit deployt. Build-Minuten sind ein echtes Budget.</span>
+                </div>
+            </div>
+            <p class="small muted">
+                Details, Secrets und die drei Umgebungen: <a href="hosting.md">hosting.md</a> · Kanonische
+                Beschreibung aller Commands und Regelsätze: <code>.claude/CLAUDE.md</code> · Lesbare Langfassung
+                dieser Seite: <a href="overview.md">overview.md</a>
+            </p>
+
+            <footer>
+                UNIT&nbsp;IX · Prototype-First Golden Template · Visuelle Fassung des Onboardings. Fakten-Quelle ist
+                <code>docs/overview.md</code> bzw. die dort verlinkten kanonischen Dateien.
+            </footer>
+        </main>
+        <script>
+            // Theme-Toggle: folgt dem System, bis der Nutzer einmal klickt — dann gewinnt die Wahl (localStorage).
+            (function () {
+                var root = document.documentElement;
+                var btn = document.getElementById('theme');
+                try {
+                    var saved = localStorage.getItem('overview-theme');
+                    if (saved) root.setAttribute('data-theme', saved);
+                } catch (e) {
+                    /* privater Modus: dann eben nur System-Theme */
+                }
+                btn.addEventListener('click', function () {
+                    var current = root.getAttribute('data-theme');
+                    if (!current) {
+                        current = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    }
+                    var next = current === 'dark' ? 'light' : 'dark';
+                    root.setAttribute('data-theme', next);
+                    try {
+                        localStorage.setItem('overview-theme', next);
+                    } catch (e) {
+                        /* egal */
+                    }
+                });
+            })();
+        </script>
+    </body>
 </html>

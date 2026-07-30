@@ -6,7 +6,7 @@
 /* Token-Contract (Prototype-First Golden Template).
  * EINZIGE Quelle für Farben/Radius. Komponenten referenzieren NUR die semantischen
  * Aliases (bg-background, text-muted-foreground, border-border, bg-sidebar …) —
- * nie Roh-Hex/px. Jakobs Design-Registry (Roadmap R3) tauscht diese Werte später.
+ * nie Roh-Hex/px. Eine spaetere Design-Registry tauscht diese Werte aus.
  * Werte in oklch (shadcn new-york / baseColor neutral). Vokabular ist in COMPONENTS.md dokumentiert. */
 :root {
     --radius: 0.625rem;

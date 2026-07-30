@@ -19,8 +19,6 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { PERSONAS, type Persona, useRole } from '@/shared/lib/role/RoleContext';
 
-// Statische Tag-1-Navigation. Die /prototype-Engine (Part E) hängt hier pro Feature
-// eine react-router-NavLink-Zeile ein; A4 verdrahtet das _example-Feature.
 const NAV_ITEMS = [{ label: 'Übersicht', icon: LayoutDashboard, active: true }] as const;
 
 const PERSONA_LABELS: Record<Persona, string> = {
@@ -29,8 +27,7 @@ const PERSONA_LABELS: Record<Persona, string> = {
     employee: 'Mitarbeiter',
 };
 
-// PROTOTYPE-ONLY: Persona-Wechsel per UI. Produktion leitet die Persona aus dem
-// Host-User ab (siehe RoleProvider) — dieser Switcher fällt dann weg.
+// PROTOTYPE-ONLY — production derives the persona from the host user, see RoleProvider.
 function RoleSwitcher() {
     const { persona, setPersona } = useRole();
     return (
@@ -53,8 +50,7 @@ function RoleSwitcher() {
     );
 }
 
-// Die eine App-Shell: linke Sidebar (Header/Content/Footer/Rail) + SidebarInset für
-// den Seiteninhalt. Feature-Seiten rendern als `children` in den Inset-Bereich.
+
 export function AppShell({ children }: { children: ReactNode }) {
     return (
         <SidebarProvider>

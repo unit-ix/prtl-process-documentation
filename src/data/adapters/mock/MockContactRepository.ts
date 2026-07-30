@@ -1,18 +1,17 @@
-// PROTOTYPE-ONLY — In-Memory-Implementierung des ContactRepository-Ports.
-// Am Fork ersetzt durch SupabaseContactRepository (R4) bzw. DataverseContactRepository (R5).
+// PROTOTYPE-ONLY — replaced at the fork by SupabaseContactRepository / DataverseContactRepository.
 import type { Contact } from '@/domain/Contact';
-import type { ContactCreate, ContactRepository } from '../../ports/ContactRepository';
+import { contactQuerySpec, type ContactCreate, type ContactQuery, type ContactRepository } from '../../ports/ContactRepository';
+import type { Page } from '../../ports/Query';
+import { applyQuery } from './query';
 import { db, nextId } from './store';
 
-// company ist ein Lookup-Objekt → mitkopieren, damit der Store isoliert bleibt.
 const clone = (contact: Contact): Contact => ({ ...contact, company: { ...contact.company } });
 
-// fullName ist berechnet/read-only → immer aus dem finalen Namen ableiten, nie durchreichen.
 const fullNameOf = (firstName: string, lastName: string): string => `${firstName} ${lastName}`;
 
 export class MockContactRepository implements ContactRepository {
-    async list(): Promise<Contact[]> {
-        return db.contacts.map(clone);
+    async list(query?: ContactQuery): Promise<Page<Contact>> {
+        return applyQuery(db.contacts, query, contactQuerySpec, clone);
     }
 
     async get(id: string): Promise<Contact | null> {

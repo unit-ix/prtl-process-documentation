@@ -1,7 +1,4 @@
-# Die EINE Pipeline (konsolidiert 2026-07-17, Hosting-Stack-Review): verify + deploy als zwei Jobs
-# in einer Datei statt zwei Workflows, die auseinanderdriften. Der frühere deploy-prototype.yml
-# lief auf Node 20 / checkout@v4, während ci.yml auf Node 24 / checkout@v6 stand — genau die Art
-# Drift, die Jakobs "wir müssen dann pnpm als Standard festlegen" adressiert.
+# Die EINE Pipeline: verify + deploy als zwei Jobs in einer Datei, damit sie nicht auseinanderdriften.
 name: CI
 
 on:
@@ -25,8 +22,8 @@ jobs:
                   submodules: recursive
                   # token: ${{ secrets.SUBMODULE_TOKEN }}
 
-            # Guard: vor dem Lovable-Import gibt es noch keine materialisierte Toolchain
-            # (kein package.json/Lockfile). Dann sauber skippen statt an `--frozen-lockfile` zu sterben.
+            # Guard: in einem noch nicht materialisierten Repo (kein package.json/Lockfile) sauber
+            # skippen statt an `--frozen-lockfile` zu sterben.
             - id: toolchain
               shell: bash
               run: |
@@ -34,7 +31,7 @@ jobs:
                       echo "ready=true" >> "$GITHUB_OUTPUT"
                   else
                       echo "ready=false" >> "$GITHUB_OUTPUT"
-                      echo "::notice::Toolchain noch nicht materialisiert (package.json/pnpm-lock.yaml fehlt) — verify übersprungen. Greift nach Lovable-Import + 'pnpm install'."
+                      echo "::notice::Toolchain noch nicht materialisiert (package.json/pnpm-lock.yaml fehlt) — verify übersprungen."
                   fi
 
             - if: steps.toolchain.outputs.ready == 'true'
@@ -52,24 +49,17 @@ jobs:
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm install --frozen-lockfile
 
-            # Single Source of Truth: exakt derselbe Lauf wie lokal — pnpm verify = lint && knip && build
-            # (build = tsc --noEmit && vite build, deckt den Typecheck mit ab). Keine separaten
-            # Lint/Typecheck/Build-Steps mehr, damit CI nie von der lokalen Definition abweicht.
+            # Exakt derselbe Lauf wie lokal: pnpm verify = check:env && lint && knip && build
+            # (build = tsc --noEmit && vite build). Keine separaten Steps, damit CI nie abweicht.
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm verify
 
-    # Cloudflare-Pages-Deploy. GEGATET + standardmäßig AUS — läuft erst, wenn Olli den Token
-    # provisioniert hat und die Repo-Variable gesetzt ist. Bis dahin dokumentiert, aber inert.
+    # Cloudflare-Pages-Deploy. GEGATET + standardmäßig AUS: läuft erst mit gesetzter Repo-Variable
+    # CLOUDFLARE_DEPLOY_ENABLED und vorhandenen Secrets. Bis dahin dokumentiert, aber inert.
     #
-    # Deploy-Weg = GitHub Actions (entschieden 2026-07-17, Hosting-Stack-Review): der git-connect-/
-    # Worker-Build-Weg bindet pro Cloudflare-Account nur EINEN GitHub-Account und ist damit aus einer
-    # Agentur-Org nicht in Kunden-Cloudflare-Accounts deploybar. Dieser Weg läuft über Token + Account-ID
-    # und bedient alle drei Ownership-Fälle. Siehe docs/hosting.md.
-    #
-    # Build-Minuten-Disziplin: nur die drei Umgebungs-Branches deployen (prototype/dev/main), NIE
-    # feature/*. Drei Cloudflare-Projekte pro Kundenprojekt (2026-07-22): <slug>-prototype (eingefrorene
-    # Kunden-Referenz), <slug>-dev (Testumgebung), <slug> (Produktion). Das Script ist target-aware —
-    # bei target=dataverse überspringt es dev/main sauber (Power Platform), prototype deployt immer.
+    # Nur die drei Umgebungs-Branches deployen (prototype/dev/main), NIE feature/* — Build-Minuten
+    # sind ein reales Budget. Das Script ist backend-aware: bei dataverse überspringt es dev/main
+    # sauber (Power Platform), prototype deployt immer. Siehe docs/hosting.md.
     deploy:
         runs-on: ubuntu-latest
         needs: verify
@@ -98,11 +88,10 @@ jobs:
             - run: pnpm install --frozen-lockfile
             - run: pnpm build
 
-            # Ruft bewusst DAS Script statt die Deploy-Logik zu duplizieren (Review Jakob, A3):
-            # sonst nimmt CI den Repo-Namen und das Script .unitix/project.json als Slug-Quelle →
-            # zwei Pages-Projekte mit zwei URLs. Das Script sanitized den Slug und legt das Projekt
-            # bei Bedarf an (wrangler täte das sonst nur interaktiv → erster CI-Deploy failt).
-            # --branch bestimmt Umgebung + Ziel-Projekt; wrangler liest beide Env-Vars nativ.
+            # Ruft bewusst DAS Script statt die Deploy-Logik zu duplizieren: sonst nimmt CI den
+            # Repo-Namen und das Script .unitix/project.json als Slug-Quelle → zwei Pages-Projekte
+            # mit zwei URLs. Das Script sanitized den Slug und legt das Projekt bei Bedarf an
+            # (wrangler täte das nur interaktiv). --branch bestimmt Umgebung + Ziel-Projekt.
             - run: node scripts/deploy.mjs --branch=${{ github.ref_name }}
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
