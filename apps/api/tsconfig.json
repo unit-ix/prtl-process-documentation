@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+        "target": "ES2023",
+        // KEIN "DOM" — der Punkt der Package-Trennung. Mit DOM in lib würde `document.…` in
+        // Server-Code durchkompilieren und erst zur Laufzeit auffallen.
+        "lib": ["ES2023"],
+        "types": ["node"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "skipLibCheck": true,
+
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "moduleDetection": "force",
+
+        // Anders als apps/web: die API wird emittiert (zip-Deploy braucht JS, kein tsx).
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "sourceMap": true,
+
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
+    },
+    "include": ["src"]
+}

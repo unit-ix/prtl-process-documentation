@@ -6,7 +6,7 @@ Es gibt **einen** automatisierten Weg: **GitHub Actions**. Der Deploy sitzt im G
 
 ## Der Deploy-Weg
 
-Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy.mjs`](../scripts/deploy.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik**; welches Cloudflare-Projekt getroffen wird, bestimmt der Branch (`--branch=${{ github.ref_name }}`, lokal der aktuelle Checkout).
+Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `apps/web/dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy.mjs`](../scripts/deploy.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik**; welches Cloudflare-Projekt getroffen wird, bestimmt der Branch (`--branch=${{ github.ref_name }}`, lokal der aktuelle Checkout).
 
 Er ist **gegatet und standardmäßig aus** und läuft nur, wenn *beides* zutrifft:
 
@@ -43,16 +43,16 @@ GitHub Actions läuft über Cloudflare-URL + API-Token (Env-Vars) und ist deshal
 ## Lokaler Ad-hoc-Deploy
 
 ```bash
-pnpm build               # erzeugt dist/
+pnpm build               # erzeugt apps/web/dist/
 pnpm deploy              # = node scripts/deploy.mjs — Umgebung = aktueller Git-Branch
 pnpm deploy -- --env=dev # oder explizit (prototype|dev|main)
 ```
 
-- Ruft `pnpm dlx wrangler pages deploy dist --project-name=<projekt>` auf (Direct Upload).
+- Ruft `pnpm dlx wrangler pages deploy apps/web/dist --project-name=<projekt>` auf (Direct Upload).
 - Die **Umgebung** (`--env=` / `--branch=` / aktueller Branch) bestimmt Ziel-Projekt und production-branch. `feature/*` deployt nicht.
 - **Legt das Pages-Projekt vorher explizit an** und toleriert ein bereits existierendes — `wrangler` würde ein fehlendes Projekt beim Deploy nur *interaktiv* anlegen, sonst failt der allererste CI-Lauf.
 - **Basis-Slug** (`--project-name`): Priorität `Argument` > `.unitix/project.json` (`name`) > `package.json` (`name`), normalisiert auf einen gültigen Cloudflare-Slug (`a-z0-9-`, max. 58, kein führender/abschließender Bindestrich). Das Umgebungs-Suffix hängt das Script an. `.unitix/project.json` ist die vorgesehene Quelle, damit CI und lokal **denselben** Slug treffen.
-- **Fail loud:** fehlt bei einem tatsächlichen Deploy `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder `dist/`, bricht das Script mit klarer Meldung ab.
+- **Fail loud:** fehlt bei einem tatsächlichen Deploy `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder `apps/web/dist/`, bricht das Script mit klarer Meldung ab.
 
 ## Benötigte Secrets
 
@@ -65,7 +65,7 @@ pnpm deploy -- --env=dev # oder explizit (prototype|dev|main)
 
 ## Voraussetzung: das Template ist eine SPA
 
-Der Deploy lädt ein **statisches `dist/`** hoch. Das Golden Template **ist** per Design eine SPA — der HashRouter ist ein irreversibler Constraint (Pflicht für den späteren Dataverse-iframe, funktioniert auf Cloudflare, macht `_redirects` überflüssig) und mechanisch über ESLint erzwungen.
+Der Deploy lädt ein **statisches `apps/web/dist/`** hoch. Das Golden Template **ist** per Design eine SPA — der HashRouter ist ein irreversibler Constraint (Pflicht für den späteren Dataverse-iframe, funktioniert auf Cloudflare, macht `_redirects` überflüssig) und mechanisch über ESLint erzwungen.
 
 **SSR-Projekte laufen nicht über diesen Pfad.** Bestehende Prototypen auf TanStack Router/SSR sind Wegwerf-Referenz für Konzepte, kein Migrationsziel — sie sind keine Golden-Template-Projekte. Das ist eine bewusste Grenze: der Deploy wird nicht für einen Nicht-Template-Fall verbogen.
 
@@ -73,7 +73,7 @@ Der Deploy lädt ein **statisches `dist/`** hoch. Das Golden Template **ist** pe
 
 - **Cloudflare Pages:** für unseren Bedarf **kostenlos** — unbegrenzte statische Requests/Bandwidth, kein Bandbreiten-Bill-Shock. Das Free-Tier erlaubt **kommerzielle Nutzung** (Vercel verbietet sie).
 - **Supabase:** ca. **25 USD/Monat** (Pro-Tier), sobald ein echtes Backend dranhängt.
-- Direct Upload verbraucht **keine** Cloudflare-Build-Minuten — gebaut wird in der GitHub-CI, hochgeladen wird nur `dist/`. Das relevante Budget ist deshalb das von GitHub Actions.
+- Direct Upload verbraucht **keine** Cloudflare-Build-Minuten — gebaut wird in der GitHub-CI, hochgeladen wird nur `apps/web/dist/`. Das relevante Budget ist deshalb das von GitHub Actions.
 
 ## Was gehört wohin
 

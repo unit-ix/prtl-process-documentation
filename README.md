@@ -26,12 +26,12 @@ Die beiden Achsen sind unabhängig. Das aktive Backend steht in [`.unitix/projec
 Die App weiß nicht, woher ihre Daten kommen. Sie fragt einen **Port**; dahinter steckt ein austauschbarer **Adapter**:
 
 ```
-src/data/index.ts        ← der eine Swap-Punkt
-src/data/ports/          ← Interfaces, backend-agnostisch
-src/data/adapters/mock/  ← faker-Seed-Store (später: supabase/ oder dataverse/)
+apps/web/src/data/index.ts        ← der eine Swap-Punkt
+apps/web/src/data/ports/          ← Interfaces, backend-agnostisch
+apps/web/src/data/adapters/mock/  ← faker-Seed-Store (später: supabase/ oder dataverse/)
 ```
 
-**UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen via `eslint-plugin-boundaries`, nicht nur als Bitte. Die Domain-Typen in `src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt ausschließlich im Adapter.
+**UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen via `eslint-plugin-boundaries`, nicht nur als Bitte. Die Domain-Typen in `apps/web/src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt ausschließlich im Adapter.
 
 Das ist nicht Architektur-Geschmack, sondern das Einlösen eines Vertriebs-Versprechens: wir bauen von vornherein umstöpselbar, damit wir nicht an einen Hersteller gekettet sind. Der Fork ist deshalb ein Ein-Datei-Swap statt eines Neubaus. Was am Fork wegfällt, listet [`docs/prototype-manifest.md`](docs/prototype-manifest.md).
 
@@ -52,9 +52,12 @@ pnpm install
 ## Dev-Loop — localhost-first
 
 ```bash
-pnpm dev      # Vite Dev-Server, Mock-Adapter, kein Backend nötig
-pnpm verify   # lint + knip + build  (build = tsc --noEmit && vite build)
+pnpm dev      # Vite Dev-Server (apps/web), Mock-Adapter, kein Backend nötig
+pnpm dev:api  # Node-API (apps/api) — im Mock-Prototyp nicht nötig
+pnpm verify   # check:env + lint + knip + build (build fächert über apps/*)
 ```
+
+Alle Befehle laufen **an der Repo-Root**, nicht im Package — die Root ist der Orchestrator.
 
 `pnpm verify` ist das eine Gate, muss vor jedem Commit grün sein und wird von CI 1:1 gespiegelt. Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` im Browser, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft über den Cloudflare-Deploy des `prototype`-Branches.
 
@@ -71,17 +74,26 @@ Kanonische Beschreibung aller Commands und Regelsätze: [`.claude/CLAUDE.md`](.c
 ## Repo-Struktur
 
 ```
-.claude/              Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, commands/, settings.json)
-.github/workflows/    CI — spiegelt pnpm verify, plus gegateter Cloudflare-Deploy
-.unitix/              project.json — Backend- + Hosting-Achse (Single Source of Truth)
-docs/                 Projekt-Doku (PRD + Datenmodell als SharePoint-Snapshots, hosting, manifest)
-src/app/              Einstieg (main.tsx, App.tsx) — Provider, Router, QueryClient
-src/domain/           Reine Domänen-Typen (kennen kein Backend)
-src/data/             Data-Seam: ports/ · index.ts (Swap-Punkt) · adapters/
-src/features/         Feature-Module (_example = kanonisches Referenz-Feature)
-src/shared/           components/ (ui = shadcn), lib/, hooks/
-eslint.config.js      Hard-Rules + Lean-Coding-Gates + Layer-Boundaries
-COMPONENTS.md         Design-Vokabular: welche Komponente wann
+.claude/                  Geteiltes UNIT-IX Claude-Submodul (CLAUDE.md, docs/, commands/, settings.json)
+.github/workflows/        CI — spiegelt pnpm verify, plus gegateter Cloudflare-Deploy
+.unitix/                  project.json — Backend- + Hosting-Achse (Single Source of Truth)
+docs/                     Projekt-Doku (PRD + Datenmodell als SharePoint-Snapshots, hosting, manifest)
+scripts/                  Projektweites Node-Tooling (deploy, check:env)
+pnpm-workspace.yaml       Workspace: apps/* — die Root ist reiner Orchestrator, kein Package
+eslint.config.js          Hard-Rules + Lean-Coding-Gates + Layer-Boundaries (deckt beide Apps)
+knip.jsonc                Dead-Code-Gate, ein Eintrag pro Workspace
+COMPONENTS.md             Design-Vokabular: welche Komponente wann
+
+apps/web/                 Die SPA — wird statisch deployt (Cloudflare Pages bzw. SWA)
+  src/app/                Einstieg (main.tsx, App.tsx) — Provider, Router, QueryClient
+  src/domain/             Reine Domänen-Typen (kennen kein Backend)
+  src/data/               Data-Seam: ports/ · index.ts (Swap-Punkt) · adapters/
+  src/features/           Feature-Module (_example = kanonisches Referenz-Feature)
+  src/shared/             components/ (ui = shadcn), lib/, hooks/
+
+apps/api/                 Node-API. Im mock-Prototyp ein /health-Skelett ohne Dependencies —
+                          der Fork füllt sie. Existiert immer, damit das Layout backend-
+                          unabhängig bleibt und der Fork ein Swap statt eines Umbaus ist.
 ```
 
 ## Was wohin gehört
@@ -97,7 +109,7 @@ COMPONENTS.md         Design-Vokabular: welche Komponente wann
 ## Fork: mock → supabase/dataverse
 
 1. `backend` in [`.unitix/project.json`](.unitix/project.json) umstellen.
-2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `src/data/index.ts` um den Zweig ergänzen.
+2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `apps/web/src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 

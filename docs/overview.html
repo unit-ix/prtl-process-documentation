@@ -975,14 +975,14 @@
             <figure>
                 <div class="seam">
                     <div class="layer">
-                        <b>src/features/…</b> <span>— UI, Hooks, TanStack Query</span>
+                        <b>apps/web/src/features/…</b> <span>— UI, Hooks, TanStack Query</span>
                     </div>
                     <div class="wall"><em>ESLint-Boundary: feature → nur Port</em></div>
                     <div class="layer">
-                        <b>src/data/ports/</b> <span>— Interfaces + Query-Vertrag. Ändern sich nicht mehr am Fork.</span>
+                        <b>apps/web/src/data/ports/</b> <span>— Interfaces + Query-Vertrag. Ändern sich nicht mehr am Fork.</span>
                     </div>
                     <div class="layer">
-                        <b>src/data/index.ts</b> <span>— der eine Swap-Punkt</span>
+                        <b>apps/web/src/data/index.ts</b> <span>— der eine Swap-Punkt</span>
                         <span class="swap">hier passiert der Fork</span>
                     </div>
                     <div class="adapters">
@@ -991,7 +991,7 @@
                         <div class="ad-supa">dataverse/</div>
                     </div>
                     <div class="layer">
-                        <b>src/domain/</b> <span>— reine Typen, kennen kein Backend</span>
+                        <b>apps/web/src/domain/</b> <span>— reine Typen, kennen kein Backend</span>
                     </div>
                 </div>
                 <figcaption>
@@ -1137,8 +1137,8 @@
                     </div>
                 </div>
                 <figcaption>
-                    Die Primitives liegen in <code>src/shared/components/state/</code>; das Referenz-Feature
-                    <code>src/features/_example</code> zeigt alle fünf im Zusammenspiel. Vollständige Checkliste:
+                    Die Primitives liegen in <code>apps/web/src/shared/components/state/</code>; das Referenz-Feature
+                    <code>apps/web/src/features/_example</code> zeigt alle fünf im Zusammenspiel. Vollständige Checkliste:
                     <code>.claude/docs/prototype-patterns.md</code> → Definition of Done.
                 </figcaption>
             </figure>
@@ -1175,8 +1175,8 @@
                 </div>
             </div>
             <p class="small muted">
-                <strong>Design:</strong> ausschließlich Design-Tokens (oklch, in <code>src/index.css</code>) + die
-                shadcn-Komponenten in <code>src/shared/components/ui/</code>. Kein eigenes CSS-File, keine
+                <strong>Design:</strong> ausschließlich Design-Tokens (oklch, in <code>apps/web/src/index.css</code>) + die
+                shadcn-Komponenten in <code>apps/web/src/shared/components/ui/</code>. Kein eigenes CSS-File, keine
                 Inline-Farben. Inventar: <code>COMPONENTS.md</code>.
             </p>
 
