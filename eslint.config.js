@@ -3,6 +3,7 @@
 //   - kein localStorage/sessionStorage, kein direktes fetch (Ausnahme: data/adapters/**)
 //   - kein BrowserRouter, kein Next.js/SSR — das Template ist eine statische SPA
 //   - Lean-Gates (max-lines, complexity, …) auf handgeschriebenem App-Code, nicht auf shadcn/Generiertem
+//   - apps/api ist Server-Code: Lean-Gates ja, SPA-Regeln (fetch/Router) nein — Block unten
 //   - Layer-Boundaries: feature → port|domain · port → adapter|domain · adapter → port|domain · domain → ∅
 //   - react-hooks/rules-of-hooks auf dem gesamten src-Baum
 import js from '@eslint/js'
@@ -51,18 +52,18 @@ const forbiddenSpaImports = {
 
 const dependencyZones = [
     {
-        target: './src/shared',
-        from: './src/features',
+        target: './apps/web/src/shared',
+        from: './apps/web/src/features',
         message: 'shared/ darf nicht aus features/ importieren (bricht die Modularität — Dependency-Direction).',
     },
     {
-        target: './src/generated',
-        from: './src/features',
+        target: './apps/web/src/generated',
+        from: './apps/web/src/features',
         message: 'generated/ ist autark und kennt keine App-Domänen — kein Import aus features/.',
     },
     {
-        target: './src/generated',
-        from: './src/shared',
+        target: './apps/web/src/generated',
+        from: './apps/web/src/shared',
         message: 'generated/ ist autark — kein Import aus shared/.',
     },
 ]
@@ -79,17 +80,21 @@ const leanRules = {
 
 // Layer-Elemente für eslint-plugin-boundaries. Reihenfolge = Priorität: der spezifischere
 // adapter-Pfad muss VOR dem generischen port-Pfad (src/data) stehen.
+// Die Patterns tragen das apps/web/-Präfix, weil eslint-plugin-boundaries sie gegen den Pfad
+// relativ zum cwd (= Repo-Root) matcht. ACHTUNG: matcht ein Pattern nicht, ist das Element
+// unbekannt und die Regel SCHWEIGT — sie failt nicht. Nach jeder Pfadänderung hier den
+// Negativtest fahren (feature → adapter muss einen Fehler geben).
 const boundaryElements = [
-    { type: 'domain', pattern: 'src/domain', mode: 'folder' },
-    { type: 'adapter', pattern: 'src/data/adapters/*', mode: 'folder', capture: ['backend'] },
-    { type: 'port', pattern: 'src/data', mode: 'folder' },
-    { type: 'feature', pattern: 'src/features/*', mode: 'folder', capture: ['feature'] },
+    { type: 'domain', pattern: 'apps/web/src/domain', mode: 'folder' },
+    { type: 'adapter', pattern: 'apps/web/src/data/adapters/*', mode: 'folder', capture: ['backend'] },
+    { type: 'port', pattern: 'apps/web/src/data', mode: 'folder' },
+    { type: 'feature', pattern: 'apps/web/src/features/*', mode: 'folder', capture: ['feature'] },
 ]
 
 export default tseslint.config(
     // .claude/** = Submodul mit eigenem Repo, scripts/** = Node-Tooling (kein App-Code).
     // Beide haben eigene Lint-Hoheit und sind aus der App-Config genommen.
-    { ignores: ['dist/**', 'src/generated/**', 'node_modules/**', '.claude/**', 'scripts/**'] },
+    { ignores: ['**/dist/**', 'apps/web/src/generated/**', '**/node_modules/**', '.claude/**', 'scripts/**'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
@@ -104,16 +109,29 @@ export default tseslint.config(
     // Backend-Adapter-Override: GENAU hier (und nur hier) darf ein Adapter fetchen — er ist die
     // eine Stelle, die mit einem echten Backend spricht. localStorage/sessionStorage bleiben tabu.
     {
-        files: ['src/data/adapters/**/*.{ts,tsx}'],
+        files: ['apps/web/src/data/adapters/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-globals': ['error', 'localStorage', 'sessionStorage'],
             'no-restricted-syntax': 'off',
         },
     },
+    // apps/api = Server-Code. Die SPA-Regeln gelten hier NICHT: fetch ist serverseitig ein
+    // legitimes Werkzeug (Foundry, Blob), BrowserRouter/Next sind kein denkbarer Import.
+    // Was bleibt: die Lean-Gates (handgeschriebener Code) und das Browser-Storage-Verbot,
+    // das serverseitig ohnehin nur ein Tippfehler sein könnte.
+    {
+        files: ['apps/api/src/**/*.ts'],
+        rules: {
+            ...leanRules,
+            'no-restricted-globals': ['error', 'localStorage', 'sessionStorage'],
+            'no-restricted-syntax': 'off',
+            'no-restricted-imports': 'off',
+        },
+    },
     // Rules of Hooks — auf ALLEM App-Code inkl. shared/ui: ein Hook-Verstoß ist ein echter
     // Laufzeit-Bug, kein Stil-Thema. Bewusst breiter gescopt als die Lean-Gates.
     {
-        files: ['src/**/*.{ts,tsx}'],
+        files: ['apps/web/src/**/*.{ts,tsx}'],
         plugins: { 'react-hooks': reactHooks },
         rules: {
             'react-hooks/rules-of-hooks': 'error',
@@ -126,20 +144,20 @@ export default tseslint.config(
     // Lean-Gates NUR auf handgeschriebenem App-Code.
     {
         files: [
-            'src/features/**/*.{ts,tsx}',
-            'src/domain/**/*.{ts,tsx}',
-            'src/data/ports/**/*.{ts,tsx}',
+            'apps/web/src/features/**/*.{ts,tsx}',
+            'apps/web/src/domain/**/*.{ts,tsx}',
+            'apps/web/src/data/ports/**/*.{ts,tsx}',
         ],
         rules: leanRules,
     },
     // Layer-Boundaries (Dependency Direction als echte Grenze, resolver-basiert).
     {
-        files: ['src/**/*.{ts,tsx}'],
+        files: ['apps/web/src/**/*.{ts,tsx}'],
         plugins: { boundaries },
         settings: {
             'boundaries/elements': boundaryElements,
             'import/resolver': {
-                typescript: { project: './tsconfig.json', alwaysTryTypes: true },
+                typescript: { project: './apps/web/tsconfig.json', alwaysTryTypes: true },
             },
         },
         rules: {
@@ -177,7 +195,7 @@ export default tseslint.config(
     // Nur für shared/ (das einzige aus features/ verbotene, tatsächlich gelintete Verzeichnis).
     // Die SPA-Restriktionen werden mitgeführt, weil diese Rule-Config die globale ersetzt.
     {
-        files: ['src/shared/**/*.{ts,tsx}'],
+        files: ['apps/web/src/shared/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': [
                 'error',

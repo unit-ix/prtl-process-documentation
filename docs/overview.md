@@ -64,15 +64,15 @@ Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI
 Wenn der Kunde OK sagt, wird aus dem Prototyp die echte App. Das ist **kein Neubau** — es wird ein Adapter getauscht:
 
 ```
-src/data/index.ts        ← der eine Swap-Punkt
-src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich nicht mehr AM FORK.
-src/data/adapters/
+apps/web/src/data/index.ts        ← der eine Swap-Punkt
+apps/web/src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich nicht mehr AM FORK.
+apps/web/src/data/adapters/
     mock/                ← Seed-Daten
     supabase/            ← echtes Backend
     dataverse/           ← echtes Backend
 ```
 
-Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
+Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `apps/web/src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
 
 Damit das trägt, muss der Port **alles** können, was ein echtes Backend später können soll — deshalb laufen Filtern, Sortieren und Paginieren schon im Mock-Prototyp serverseitig durch `list()`. Würde man sie erst am Fork nachrüsten, wäre der Fork keine Datei, sondern eine Signatur-Änderung an Port, allen Adaptern, allen Hooks und jeder Listen-UI. Was eine Entität dafür deklariert: [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) → Data-Seam.
 
@@ -117,7 +117,7 @@ Grund: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ei
 
 **Was ESLint hart erzwingt** ([`eslint.config.js`](../eslint.config.js)): kein `fetch` außerhalb von Adaptern · kein `localStorage`/`sessionStorage` · kein `BrowserRouter`, kein Next.js/SSR · max. 300 Zeilen pro Datei · Layer-Grenzen (Feature → Port → Adapter → Domain) · Rules of Hooks.
 
-**Design:** ausschließlich Design-Tokens + die shadcn-Komponenten in `src/shared/components/ui/`. **Kein eigenes CSS-File, keine Inline-Farben.** Tokens (oklch) leben in [`src/index.css`](../src/index.css), das Inventar in [`COMPONENTS.md`](../COMPONENTS.md).
+**Design:** ausschließlich Design-Tokens + die shadcn-Komponenten in `apps/web/src/shared/components/ui/`. **Kein eigenes CSS-File, keine Inline-Farben.** Tokens (oklch) leben in [`apps/web/src/index.css`](../apps/web/src/index.css), das Inventar in [`COMPONENTS.md`](../COMPONENTS.md).
 
 ## Teilen und Deployen
 

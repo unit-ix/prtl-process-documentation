@@ -17,10 +17,11 @@
 // Legt das Pages-Projekt bei Bedarf vorher explizit an (in CI unverzichtbar — wrangler würde sonst
 // interaktiv nachfragen und der allererste Deploy failt) und printet die `*.pages.dev`-URL.
 //
-// SPA-only: hochgeladen wird ein statisches `dist/`. SSR-Projekte laufen nicht über diesen Pfad.
+// SPA-only: hochgeladen wird das statische `apps/web/dist/`. SSR-Projekte laufen nicht über diesen
+// Pfad, und apps/api deployt dieses Script (noch) nicht — das trägt der Azure-Fork ein.
 //
 // Voraussetzungen (fail loud): CLOUDFLARE_API_TOKEN (Scope Account > Cloudflare Pages > Edit),
-// CLOUDFLARE_ACCOUNT_ID, und ein gebautes `dist/`. Beide Env-Namen liest wrangler nativ.
+// CLOUDFLARE_ACCOUNT_ID, und ein gebautes `apps/web/dist/`. Beide Env-Namen liest wrangler nativ.
 //
 // Umgebung: --env=prototype|dev|main  ODER  --branch=<name>  ODER  aktueller Git-Branch.
 // Basis-Slug (`--project-name`): arg > .unitix/project.json (name/slug) > package.json name.
@@ -32,6 +33,10 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+
+// Build-Output der SPA. Seit dem Workspace-Umbau liegt die SPA in apps/web/ — dieses Script
+// bleibt an der Root, weil es projektweit ist (Slug aus .unitix/project.json, Branch-Mapping).
+const WEB_DIST = 'apps/web/dist'
 
 // Branch → { Projekt-Suffix, Cloudflare-production-branch, deployt-immer }.
 // prototype ist immer mock → alwaysDeploy; dev/main sind backend-aware (siehe shouldDeploy).
@@ -145,7 +150,7 @@ function assertPrerequisites() {
         'Ohne Token bleibt der Prototyp localhost-first (pnpm dev). Details: docs/hosting.md.',
     )
   }
-  if (!existsSync(resolve(repoRoot, 'dist'))) fail('Kein dist/ gefunden — zuerst `pnpm build` ausführen.')
+  if (!existsSync(resolve(repoRoot, WEB_DIST))) fail(`Kein ${WEB_DIST}/ gefunden — zuerst \`pnpm build\` ausführen.`)
 }
 
 // wrangler liest CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID selbst aus der Env — process.env
@@ -193,8 +198,8 @@ function main() {
   }
 
   // --- Deploy (Direct Upload) ---
-  console.log(`→ Deploy dist/ nach Cloudflare Pages (Projekt: ${projectName}) …`)
-  const result = wrangler(['pages', 'deploy', 'dist', `--project-name=${projectName}`])
+  console.log(`→ Deploy ${WEB_DIST}/ nach Cloudflare Pages (Projekt: ${projectName}) …`)
+  const result = wrangler(['pages', 'deploy', WEB_DIST, `--project-name=${projectName}`])
   if (result.status !== 0) fail(`wrangler beendete mit Code ${result.status}.`)
 
   console.log(`\n✓ Deploy fertig. Die *.pages.dev-URL steht oben in der wrangler-Ausgabe (Projekt: ${projectName}).`)

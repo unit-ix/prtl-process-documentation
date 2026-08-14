@@ -1,4 +1,4 @@
-import projectConfigData from '../../../.unitix/project.json';
+import projectConfigData from '@unitix/project.json';
 
 /** `mock` = seed-based prototype (default), `supabase`/`dataverse` = forks after customer sign-off. */
 export type Backend = 'mock' | 'supabase' | 'dataverse';

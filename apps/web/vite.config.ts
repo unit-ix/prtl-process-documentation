@@ -14,6 +14,10 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
+            // Die Backend-Achse ist projektweit, nicht app-lokal — .unitix/ liegt deshalb an der
+            // Repo-Root, zwei Ebenen über diesem Package. Als Alias statt '../../../../../': der
+            // Pfad bricht sonst still, sobald jemand eine Datei im src-Baum verschiebt.
+            '@unitix': fileURLToPath(new URL('../../.unitix', import.meta.url)),
         },
     },
 });
