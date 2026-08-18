@@ -32,6 +32,9 @@
 // Der Block wird bewusst NICHT in apps/web/src/shared/lib/projectConfig.ts aufgenommen: er ist
 // Deploy-Konfiguration und hat im SPA-Bundle nichts zu suchen.
 //
+// Was NICHT mitgeht: project.json und jede .env. Die Laufzeit-Konfiguration kommt in Azure aus den
+// App Settings (docs/azure-setup.md, Schritt 3); assertNoEnvFiles() unten hält das fest.
+//
 // Voraussetzungen (fail loud): Azure CLI installiert und `az login` gelaufen (dieselbe Sitzung, die
 // auch db:migrate als DB-Passwort-Ersatz nutzt), `zip` bzw. auf Windows PowerShell.
 //
@@ -95,6 +98,21 @@ function resolveTarget() {
   return { resourceGroup, appName }
 }
 
+// pg.user IST der Name der Web App: Azure benennt die Managed Identity nach ihr, und dieser Name ist
+// die DB-Rolle. Weichen sie ab, endet in Azure jeder Query mit `permission denied for table`.
+function warnOnIdentityMismatch() {
+    const config = readJson('.unitix/project.json') ?? {}
+    const appName = (config.azure ?? {}).apiAppName
+    const pgUser = (config.pg ?? {}).user
+    if (appName && pgUser && appName !== pgUser) {
+      console.log(
+        `⚠ .unitix/project.json: pg.user ("${pgUser}") weicht von azure.apiAppName ("${appName}") ab.\n` +
+          '  In Azure ist PGUSER der Name der Web App — die DB-Rolle heisst so wie die Managed Identity.\n' +
+          '  Bleibt das so, endet jeder Query mit "permission denied for table".',
+      )
+    }
+}
+
 function assertAzLogin() {
   const r = spawnSync('az', ['account', 'show'], { cwd: repoRoot, stdio: 'pipe', encoding: 'utf8' })
   if (r.error) {
@@ -117,6 +135,29 @@ function collectSymlinks(absDir, rel = '', found = []) {
     else if (entry.isDirectory()) collectSymlinks(resolve(absDir, entry.name), relPath, found)
   }
   return found
+}
+
+// Letzte Linie gegen einen .env-Leak ins ZIP: `pnpm deploy` kopiert Dotfiles mit, `zip -r .` nimmt
+// sie auf. node_modules/ ist ausgenommen — dort liegen .env-Fixtures fremder Pakete.
+function collectEnvFiles(absDir, rel = '', found = []) {
+  for (const entry of readdirSync(absDir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules') continue
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name
+    if (entry.isFile() && entry.name.startsWith('.env')) found.push(relPath)
+    else if (entry.isDirectory()) collectEnvFiles(resolve(absDir, entry.name), relPath, found)
+  }
+  return found
+}
+
+function assertNoEnvFiles() {
+  const found = collectEnvFiles(resolve(repoRoot, DEPLOY_DIR))
+  if (found.length === 0) return
+  fail(
+    `${found.length} .env-Datei(en) in ${DEPLOY_DIR}/ — die dürfen nicht ins ZIP:\n` +
+      found.map((f) => `  ${f}`).join('\n') +
+      '\nIn Azure kommt die Konfiguration aus den App Settings — eine mitgelieferte .env liefert Werte,\n' +
+      'die dort fehlen, und trägt lokale Werte in ein Produktions-Artefakt.',
+  )
 }
 
 function assertFlatNodeModules() {
@@ -157,6 +198,7 @@ function main() {
     console.log(`⚠ .unitix/project.json → backend=${backend ?? '(fehlt)'} — die API deployt trotzdem.`)
   }
 
+  warnOnIdentityMismatch()
   assertAzLogin()
 
   console.log('→ 1/4 apps/api bauen …')
@@ -174,6 +216,9 @@ function main() {
     'deploy',
     DEPLOY_DIR,
   ])
+  rmSync(resolve(repoRoot, DEPLOY_DIR, '.env'), { force: true })
+  rmSync(resolve(repoRoot, DEPLOY_DIR, '.env.example'), { force: true })
+  assertNoEnvFiles()
   assertFlatNodeModules()
 
   console.log(`→ 3/4 ${ZIP_FILE} packen …`)

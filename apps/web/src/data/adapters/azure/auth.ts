@@ -3,10 +3,17 @@
 import { InteractionRequiredAuthError, PublicClientApplication } from '@azure/msal-browser';
 import { entra } from '@/shared/lib/projectConfig';
 
+// Spiegelt REQUIRED_SCOPE in apps/api/src/auth/verify.ts — Packages können keine Konstante teilen.
+const API_SCOPE_NAME = 'access_as_user';
+
+// Aus dem Audience-GUID gebaut statt gespeichert (Application ID URI bleibt `api://<appId>`, siehe
+// docs/azure-setup.md, Schritt 1). Funktion, damit die Pflichtfeld-Prüfung in client() zuerst greift.
+const apiScope = (): string => `api://${entra.apiAudience}/${API_SCOPE_NAME}`;
+
 function client(): PublicClientApplication {
     // Fail loud statt `clientId: undefined`: ein frischer Klon ohne ausgefüllten entra-Block würde
     // sonst eine SPA bauen, die erst im Browser mit einer MSAL-Meldung scheitert.
-    const missing = (['tenantId', 'clientId', 'apiScope'] as const).filter((key) => !entra[key]);
+    const missing = (['tenantId', 'clientId', 'apiAudience'] as const).filter((key) => !entra[key]);
     if (missing.length > 0) {
         throw new Error(`.unitix/project.json → entra: ${missing.join(', ')} fehlt (siehe docs/azure-setup.md).`);
     }
@@ -47,7 +54,7 @@ export async function ensureSignedIn(): Promise<void> {
     const account = redirectResult?.account ?? instance.getAllAccounts()[0];
 
     if (!account) {
-        await instance.loginRedirect({ scopes: [entra.apiScope] });
+        await instance.loginRedirect({ scopes: [apiScope()] });
         return;
     }
 
@@ -59,11 +66,11 @@ export async function ensureSignedIn(): Promise<void> {
 export async function accessToken(): Promise<string> {
     if (!msal) throw new Error('Nicht angemeldet — ensureSignedIn() läuft vor dem ersten Render.');
     try {
-        const result = await msal.acquireTokenSilent({ scopes: [entra.apiScope] });
+        const result = await msal.acquireTokenSilent({ scopes: [apiScope()] });
         return result.accessToken;
     } catch (error) {
         if (error instanceof InteractionRequiredAuthError) {
-            await msal.acquireTokenRedirect({ scopes: [entra.apiScope] });
+            await msal.acquireTokenRedirect({ scopes: [apiScope()] });
         }
         throw error;
     }

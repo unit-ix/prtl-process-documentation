@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 // Tailwind v4 läuft über das Vite-Plugin, es gibt kein tailwind.config — Tokens leben in
 // src/index.css. Das Power-Platform-Overlay kommt erst am dataverse-Fork dazu.
 
-/** Muss zu PORT in apps/api/.env passen. */
+/** Muss zum PORT-Default in apps/api/src/env.ts passen. */
 const API_PORT = 3000;
 
 export default defineConfig({

@@ -4,10 +4,13 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { db, pool } from './client.js';
+import { dbTarget } from '../env.js';
 
 const migrationsFolder = resolve(dirname(fileURLToPath(import.meta.url)), '../../drizzle');
 
 async function main(): Promise<void> {
+    // Ziel vor dem Lauf: der Befehl spielt jede Migration im Arbeitsverzeichnis ein, auch gegen PROD.
+    console.log(`→ Ziel: ${dbTarget()}`);
     console.log(`→ Migrationen aus ${migrationsFolder} …`);
     await migrate(db, { migrationsFolder });
     console.log('✓ Migrationen aktuell.');

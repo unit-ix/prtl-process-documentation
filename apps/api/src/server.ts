@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
-import { allowedOrigins, serverEnv } from './env.js';
+import { allowedOrigins, dbTarget, serverEnv } from './env.js';
 import { toProblem } from './http/errors.js';
 import { handle } from './router/handle.js';
 
@@ -64,5 +64,7 @@ app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
 
     return status === 204 ? reply.status(204).send() : reply.status(status).send(body);
 });
+
+app.log.info(`Datenbank-Ziel: ${dbTarget()}`);
 
 await app.listen({ port: env.PORT, host: '0.0.0.0' });

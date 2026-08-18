@@ -1,12 +1,20 @@
 // Env-Vertrag der API — eine fehlende Variable knallt beim Start, nicht beim ersten Request.
+//
+// Zwei Quellen: explizite Umgebungsvariablen gewinnen, `.unitix/project.json` liefert die Defaults.
+// Lokal deckt die Datei alles ausser PGUSER; in Azure wird sie nicht mitgeliefert, dort sind die
+// gleichnamigen App Settings Pflicht (docs/azure-setup.md, Schritt 3).
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 // Kein Passwort: die Anmeldung läuft über Entra (siehe db/client.ts).
 const dbSchema = z.object({
     PGHOST: z.string().min(1),
     PGPORT: z.coerce.number().int().positive().default(5432),
-    PGDATABASE: z.string().min(1),
-    /** Lokal dein UPN, in Azure der Name der Managed Identity. */
+    /** Feste Konvention, siehe docs/azure-setup.md, Schritt 2. */
+    PGDATABASE: z.string().min(1).default('app'),
+    /** Lokal dein UPN (Root-`.env`), in Azure der Name der Managed Identity. */
     PGUSER: z.string().min(1),
 });
 
@@ -15,7 +23,7 @@ const serverSchema = z.object({
 
     /** Bestimmt JWKS und erwarteten `iss`. */
     ENTRA_TENANT_ID: z.string().min(1),
-    /** Erwarteter `aud`: Client-id der API-App-Registrierung bzw. `api://<id>`. */
+    /** Erwarteter `aud`: die nackte Client-id der API-App-Registrierung, nicht die `api://…`-URI. */
     ENTRA_API_AUDIENCE: z.string().min(1),
 
     // Optional: leer = workforce Entra ID. Gesetzt = Entra External ID (CIAM) — `iss` und
@@ -30,14 +38,56 @@ const serverSchema = z.object({
     BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(65536),
 });
 
+// Derselbe Pfad aus src/ (tsx) wie aus dist/ (node).
+const PROJECT_JSON = resolve(dirname(fileURLToPath(import.meta.url)), '../../../.unitix/project.json');
+
+/** Fehlende Datei = Normalfall in Azure. Vorhandene, aber kaputte Datei muss laut scheitern. */
+function projectConfigDefaults(): Record<string, string> {
+    let raw: string;
+    try {
+        raw = readFileSync(PROJECT_JSON, 'utf8');
+    } catch {
+        return {};
+    }
+
+    let config: { pg?: Record<string, string>; entra?: Record<string, string> };
+    try {
+        config = JSON.parse(raw);
+    } catch (error) {
+        throw new Error(
+            `${PROJECT_JSON} ist kein gültiges JSON: ${error instanceof Error ? error.message : String(error)}`,
+        );
+    }
+
+    const { pg = {}, entra = {} } = config;
+    return Object.fromEntries(
+        Object.entries({
+            PGHOST: pg.host,
+            PGDATABASE: pg.database,
+            PGUSER: pg.user,
+            ENTRA_TENANT_ID: entra.tenantId,
+            ENTRA_API_AUDIENCE: entra.apiAudience,
+            ENTRA_SUBDOMAIN: entra.subdomain,
+        }).filter(([, value]) => typeof value === 'string' && value !== ''),
+    ) as Record<string, string>;
+}
+
 function parse<S extends z.ZodTypeAny>(schema: S, label: string): z.infer<S> {
-    const result = schema.safeParse(process.env);
+    // process.env zuletzt: eine gesetzte Variable schlägt den Default aus project.json.
+    const result = schema.safeParse({ ...projectConfigDefaults(), ...process.env });
     if (result.success) return result.data;
     const details = result.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
-    throw new Error(`Ungültige ${label}-Konfiguration:\n${details}`);
+    throw new Error(
+        `Ungültige ${label}-Konfiguration:\n${details}\n` +
+            `Lokal aus .unitix/project.json, in Azure aus den App Settings — docs/azure-setup.md, Schritt 3.`,
+    );
 }
 
 export const dbEnv = parse(dbSchema, 'Datenbank');
+
+/** Beim Serverstart und vor jeder Migration protokolliert — die Werte haben Defaults, das Ziel
+ * steht also nicht mehr zwangsläufig im Befehl. */
+export const dbTarget = (): string => `${dbEnv.PGUSER}@${dbEnv.PGHOST}/${dbEnv.PGDATABASE}`;
 
 export type ServerEnv = z.infer<typeof serverSchema>;
 

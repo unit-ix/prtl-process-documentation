@@ -60,9 +60,17 @@ weil die Registrierungen in beiden Mandanten gleich aussehen.
 **a) API-Registrierung** anlegen: Name `<projekt> API`, Redirect-URI **leer lassen** → _Register_.
 Danach in der frisch angelegten Registrierung:
 
-1. _Expose an API_ → **Application ID URI** → Vorschlag `api://<appId>` übernehmen
-2. _Expose an API_ → **Add a scope**: Name `access_as_user`, _Admins and users_
+1. _Expose an API_ → **Application ID URI** → Vorschlag `api://<appId>` übernehmen — **unverändert
+   lassen**, nicht auf eine eigene Domain umstellen
+2. _Expose an API_ → **Add a scope**: Name **genau** `access_as_user`, _Admins and users_
 3. _Manifest_ → `requestedAccessTokenVersion` auf **`2`** → Save
+
+> **Beide Formen sind festgelegt, nicht frei wählbar.** Die SPA baut den Scope aus der Client-ID
+> zusammen (`api://<client-id>/access_as_user`, siehe
+> [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts)), und die API prüft den Scope-Namen als
+> Konstante ([`verify.ts`](../apps/api/src/auth/verify.ts)). Wer die URI-Form oder den Scope-Namen
+> ändert, muss beide Stellen im Code mitändern — dafür trägt die Konfiguration keinen redundanten
+> Scope-String, der stillschweigend zur Client-ID driften könnte.
 
 > **Schritt 3 wird übersehen.** Ohne ihn kommen v1-Token, deren `iss` nicht auf `/v2.0` endet —
 > jede Prüfung schlägt fehl, obwohl das Token echt ist.
@@ -83,23 +91,22 @@ _Expose an API → Add a client application_ die SPA-Client-ID eintragen (erspar
 [`.unitix/project.json`](../.unitix/project.json) (committet — es sind öffentliche
 Identifikatoren, kein Secret), die beiden API-Werte werden Umgebungsvariablen der Node-API:
 
-| Wert                                   | wo im Portal zu finden                                         | wohin                                                                                                                      |
-| -------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Directory (tenant) ID                  | _Overview_ beider Registrierungen (gleich)                     | `project.json → entra.tenantId` · App setting `ENTRA_TENANT_ID` ([Schritt 3](#3-app-service)) · _optional_ `apps/api/.env` |
-| Application (client) ID der **SPA**    | SPA-Registrierung → _Overview_                                 | `project.json → entra.clientId`                                                                                            |
-| `api://<appId-der-API>/access_as_user` | SPA → _API permissions_, Spalte _Admin consent required_-Zeile | `project.json → entra.apiScope`                                                                                            |
-| Application (client) ID der **API**    | **API**-Registrierung → _Overview_                             | App setting `ENTRA_API_AUDIENCE` ([Schritt 3](#3-app-service)) · _optional_ `apps/api/.env`                                |
+| Wert                                | wo im Portal zu finden                     | wohin                            |
+| ----------------------------------- | ------------------------------------------ | -------------------------------- |
+| Directory (tenant) ID               | _Overview_ beider Registrierungen (gleich) | `project.json → entra.tenantId`  |
+| Application (client) ID der **SPA** | SPA-Registrierung → _Overview_             | `project.json → entra.clientId`  |
+| Application (client) ID der **API** | **API**-Registrierung → _Overview_         | `project.json → entra.apiAudience` |
 
-_optional_ = nur nötig, wenn du die API **lokal** laufen lässt ([Lokal entwickeln](#lokal-entwickeln));
-`pnpm dev` und [Schritt 4](#4-datenbank-füllen) kommen ohne `.env` aus. Beide Orte existieren, weil
-eine `.env` nie deployed wird.
+Drei Werte, drei _Overview_-Seiten — nichts muss unter _API permissions_ zusammengesucht werden. Alle
+drei stehen **nur** in `project.json`; die API bekommt sie in Azure als App settings mit **denselben
+Namen** ([Schritt 3](#3-app-service)), lokal liest sie sie direkt aus der Datei.
 
-Bei **External ID** werden dieselben vier Werte befüllt, nur aus den Registrierungen des externen
+Bei **External ID** werden dieselben drei Werte befüllt, nur aus den Registrierungen des externen
 Mandanten — dazu kommt eine weitere: die **Subdomain** des externen Mandanten
-(`entra.subdomain` in `project.json`, `ENTRA_SUBDOMAIN` als App setting), siehe
+(`entra.subdomain` in `project.json`), siehe
 [Die eine zusätzliche Angabe](#die-eine-zusätzliche-angabe).
 
-> `ENTRA_API_AUDIENCE` ist die **Client-ID der API-Registrierung** — nicht die der SPA, und mit
+> `entra.apiAudience` ist die **Client-ID der API-Registrierung** — nicht die der SPA, und mit
 > `requestedAccessTokenVersion: 2` auch nicht die `api://…`-URI: v2-Token tragen die reine GUID im
 > `aud`. [`verify.ts`](../apps/api/src/auth/verify.ts) vergleicht exakt. Nimmt man den falschen
 > Wert, meldet man sich erfolgreich an und bekommt trotzdem `401`.
@@ -140,10 +147,14 @@ Monitoring: Application Insights **No**.
 
 Danach in der Web App:
 
-- **Name der Web App, Resource Group und Server-Name der DB** in den `azure`-Block von
-  [`.unitix/project.json`](../.unitix/project.json) eintragen (`apiAppName` / `resourceGroup` /
-  `dbServerName`) — von dort nehmen `pnpm deploy:api` ([Schritt 6](#6-deployen)) und
-  [`pnpm db:firewall`](#firewall-der-db-auf-die-api-ips-abgleichen) ihr Ziel
+- **Name der Web App und Resource Group** in den `azure`-Block von
+  [`.unitix/project.json`](../.unitix/project.json) eintragen (`apiAppName` / `resourceGroup`) — von
+  dort nehmen `pnpm deploy:api` ([Schritt 6](#6-deployen)) und
+  [`pnpm db:firewall`](#firewall-der-db-auf-die-api-ips-abgleichen) ihr Ziel. Den Server-Namen der DB
+  leitet `db:firewall` aus `pg.host` ab, er braucht kein eigenes Feld
+- **Denselben Namen der Web App auch als `pg.user`** eintragen — Azure benennt die Managed Identity
+  nach der Web App, und dieser Name ist die DB-Rolle aus [Schritt 4](#4-datenbank-füllen).
+  `pnpm deploy:api` warnt, wenn die beiden auseinanderlaufen
 - **Identity → System assigned → On** → die **Object (principal) ID** notieren (Schritt 4)
 - **Configuration → General settings:** `Always On` → **On** (Default aus — sonst Kaltstart nach
   20 Min Leerlauf), `FTP state` → **Disabled** (Default `FTP + FTPS` = zweiter Deploy-Weg offen)
@@ -151,23 +162,44 @@ Danach in der Web App:
 - Kein Startup Command nötig — `apps/api/package.json` hat `"start": "node dist/server.js"`, und
   `pnpm deploy` legt `dist/` flach im ZIP ab.
 
-**Environment variables → App settings (nicht Connection strings!):**
+### Environment variables → App settings (nicht Connection strings!)
 
-| Name                             | Wert                                                                          |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `WEBSITE_RUN_FROM_PACKAGE`       | `1` (ZIP read-only mounten statt entpacken)                                   |
-| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `false` (kein Oryx-Rebuild, das ZIP ist fertig)                               |
-| `PGHOST`                         | `<psql-name>.postgres.database.azure.com`                                     |
-| `PGDATABASE`                     | `app`                                                                         |
-| `PGUSER`                         | **der Name der Web App** (= Rollenname der Managed Identity, kein Tippfehler) |
-| `ENTRA_TENANT_ID`                | Directory (tenant) ID                                                         |
-| `ENTRA_API_AUDIENCE`             | Client-ID der **API**-Registrierung                                           |
+**Ein Wert, ein Name.** Jede Variable heißt hier genauso wie ihr Feld in
+[`.unitix/project.json`](../.unitix/project.json) — Regel: `<block>.<key>` → `<BLOCK>_<KEY>`. Es gibt
+nichts herzuleiten, nur zu kopieren.
+
+| in `project.json` | App setting          | Wert                                              |
+| ----------------- | -------------------- | ------------------------------------------------- |
+| `pg.host`         | `PGHOST`             | `<psql-name>.postgres.database.azure.com`         |
+| `pg.database`     | `PGDATABASE`         | `app`                                             |
+| `pg.user`         | `PGUSER`             | der Name der Web App (= Rolle der Managed Identity) |
+| `entra.tenantId`  | `ENTRA_TENANT_ID`    | Directory (tenant) ID                             |
+| `entra.apiAudience` | `ENTRA_API_AUDIENCE` | Client-ID der **API**-Registrierung             |
+| `entra.subdomain` | `ENTRA_SUBDOMAIN`    | _nur_ bei External ID, sonst weglassen            |
+
+Dazu zwei Plattform-Schalter ohne Gegenstück in `project.json` — einmal setzen, nie wieder anfassen:
+
+| App setting                      | Wert                                            |
+| -------------------------------- | ----------------------------------------------- |
+| `WEBSITE_RUN_FROM_PACKAGE`       | `1` (ZIP read-only mounten statt entpacken)     |
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `false` (kein Oryx-Rebuild, das ZIP ist fertig) |
+
+> **Warum kopieren und nicht generieren?** Weil `project.json` **nicht** mitdeployed wird: in Azure
+> gibt es keine Datei, aus der die API lesen könnte, und das ist Absicht — die Konfiguration einer
+> laufenden Instanz gehört in ihre Umgebung, nicht in ihr Artefakt. Lokal liest
+> [`env.ts`](../apps/api/src/env.ts) dieselben Werte direkt aus der Datei, weshalb dort **nur** `PGUSER`
+> in der `.env` steht (dein UPN statt der Managed Identity). Ein gesetztes App setting schlägt immer
+> den Wert aus der Datei — dieselbe Vorrangregel auf beiden Seiten.
 
 `PORT`, `PGPORT`, `RATE_LIMIT_MAX`, `BODY_LIMIT_BYTES` und `ALLOWED_ORIGIN` haben in
-[`env.ts`](../apps/api/src/env.ts) Defaults und bleiben ungesetzt. Bei `ALLOWED_ORIGIN` heißt der
-Default „keine Cross-Origin-Requests" — richtig, solange die SWA `/api/*` same-origin proxied. Nur
-wenn Web und API auf getrennten Origins laufen, gehört die Web-Origin hier rein: genau eine, kein
-Wildcard.
+[`env.ts`](../apps/api/src/env.ts) Defaults und bleiben ungesetzt — sie stehen deshalb auch nicht in
+`project.json`. Bei `ALLOWED_ORIGIN` heißt der Default „keine Cross-Origin-Requests" — richtig, solange
+die SWA `/api/*` same-origin proxied. Nur wenn Web und API auf getrennten Origins laufen, gehört die
+Web-Origin hier rein: genau eine, kein Wildcard.
+
+> **Gegenprobe, ob es wirklich die App settings sind:** die API loggt beim Start
+> `Datenbank-Ziel: <user>@<host>/<db>`. Steht dort etwas anderes als erwartet, ist ein App setting
+> falsch oder fehlt — und nicht irgendeine mitgereiste Datei.
 
 ### Firewall der DB auf die API-IPs abgleichen
 
@@ -237,19 +269,22 @@ Der `PGHOST=… pnpm …`-Prefix ist zsh/bash-Syntax und setzt die Variablen nur
 Aufruf. In PowerShell gibt es das nicht — dort vorher je Zeile `$env:PGHOST='…'` setzen und danach
 `pnpm db:migrate` allein aufrufen.
 
-**Warum nicht aus `apps/api/.env`?** Die zeigt auf den **DEV**-Server; hier richtest du womöglich
-PROD ein. Inline geschrieben steht das Ziel sichtbar im Befehl, statt still aus einer Datei zu
+**Warum inline und nicht aus `project.json`?** Die Datei zeigt auf den **DEV**-Server; hier richtest du
+womöglich PROD ein. Inline geschrieben steht das Ziel sichtbar im Befehl, statt still aus einer Datei zu
 kommen — dieselbe Vorsicht, die die Warnung unten meint.
 
-Richtest du **DEV** ein und deine `.env` zeigt schon dorthin, kannst du die `PG*`-Prefixe weglassen —
-`pnpm db:migrate` allein genügt. Beides mischt sich gefahrlos: eine vorhandene `.env` wird von
-Inline-Werten überschrieben, nicht umgekehrt (`--env-file-if-exists` lässt bereits gesetzte
-Variablen stehen). Merksatz: **`.env` für DEV, Inline für jede andere Umgebung.**
+Richtest du **DEV** ein, zeigt `pg.host` schon dorthin und du kannst die `PG*`-Prefixe weglassen:
+`pnpm db:migrate` allein genügt. Beides mischt sich gefahrlos, weil Inline-Werte die Defaults aus
+`project.json` überschreiben und nicht umgekehrt. Merksatz: **Default für DEV, Inline für jede andere
+Umgebung.**
 
-`API_IDENTITY_NAME`/`API_IDENTITY_OBJECT_ID` bleiben davon unberührt und gehören **nicht** in die
-`.env`: sie gelten dem einen `db:grant`-Lauf, beschreiben die Identity der Ziel-Web-App statt deiner
-Arbeitsumgebung, und [`env.ts`](../apps/api/src/env.ts) kennt sie nicht — die laufende API liest sie
-nie.
+Sicherheitsnetz für beide Fälle: `db:migrate` gibt vor dem Lauf `→ Ziel: <user>@<host>/<db>` aus. Das
+ist die Zeile, die man zweimal liest — sie steht auch da, wenn das Ziel aus der Datei kam.
+
+`API_IDENTITY_NAME`/`API_IDENTITY_OBJECT_ID` bleiben davon unberührt und gehören **weder** in die
+`.env` **noch** in `project.json`: sie gelten dem einen `db:grant`-Lauf, beschreiben die Identity der
+Ziel-Web-App statt deiner Arbeitsumgebung, und [`env.ts`](../apps/api/src/env.ts) kennt sie nicht — die
+laufende API liest sie nie.
 
 ```bash
 # 0. nur nach Änderungen an schema.ts — offline, ohne DB. Ergebnis gehört in den Commit.
@@ -347,7 +382,7 @@ API stehen einmalig im `azure`-Block von [`.unitix/project.json`](../.unitix/pro
 (Ressourcennamen sind keine Secrets — dasselbe Argument wie beim `entra`-Block):
 
 ```json
-"azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>", "dbServerName": "<psql-name>" }
+"azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>" }
 ```
 
 ```bash
@@ -357,17 +392,22 @@ export SWA_DEPLOYMENT_TOKEN='<token-aus-schritt-5>'   # nicht wörtlich in den B
 pnpm deploy:swa    # baut apps/web und lädt dist/ in die production-Umgebung der SWA
 ```
 
-Statt des `export` darf der Token auch dauerhaft in eine **Root-`.env`** (gitignored, Vorlage:
+Statt des `export` darf der Token auch dauerhaft in die **Root-`.env`** (gitignored, Vorlage:
 [`.env.example`](../.env.example)) — `pnpm deploy:swa` lädt sie über Nodes `--env-file-if-exists`:
 
 ```dotenv
 SWA_DEPLOYMENT_TOKEN=<token-aus-schritt-5>
+PGUSER=<dein-upn>          # für pnpm dev:full und pnpm db:*, siehe „Lokal entwickeln"
 ```
 
-Das ist unbedenklich, weil die Root-`.env` nichts mit dem Bundle zu tun hat: Vite lädt `.env`
-relativ zu `apps/web/`, und selbst dort landen nur `VITE_`-Variablen im Client-Code — genau das,
-was [`scripts/check-env-secrets.mjs`](../scripts/check-env-secrets.mjs) blockt. Serverseitige
-Variablen der API gehören weiterhin nach `apps/api/.env`, nicht hierhin.
+Das ist die **einzige** `.env` im Repo, und sie liegt bewusst im Root und nicht in einem Package:
+`pnpm deploy` kopiert das Package-Verzeichnis, eine `apps/api/.env` würde also im Deploy-ZIP landen und
+in Azure still Werte liefern, die dort aus den App settings kommen sollen.
+[`scripts/check-env-secrets.mjs`](../scripts/check-env-secrets.mjs) blockt sie deshalb im `verify`-Gate,
+und `pnpm deploy:api` bricht ab, falls doch eine im Staging-Verzeichnis auftaucht.
+
+Das Bundle erreicht die Datei nie: Vite lädt `.env` relativ zu `apps/web/`, und selbst dort landen nur
+`VITE_`-Variablen im Client-Code.
 
 Bewusst zwei Befehle statt einem Sammel-Deploy: die beiden haben unterschiedliche Voraussetzungen
 (`az login` vs. Deployment-Token) und werden selten gleichzeitig ausgerollt — ein gemeinsamer Befehl
@@ -382,6 +422,7 @@ vorher hier von Hand standen:
 # pnpm deploy:api
 pnpm --filter @app/api build
 pnpm --config.node-linker=hoisted --filter @app/api --prod --legacy deploy .artifacts/api
+rm -f .artifacts/api/.env .artifacts/api/.env.example   # gehören nicht ins Artefakt
 cd .artifacts/api && zip -r ../api.zip . && cd -
 az webapp deploy --resource-group <rg> --name <name-der-web-app> \
   --src-path .artifacts/api.zip --type zip
@@ -490,13 +531,16 @@ application** die **SPA**-Registrierung zuordnen.
 
 ### Die eine zusätzliche Angabe
 
-Statt der Werte-Tabelle aus Schritt 1 — `entra.tenantId`, `entra.clientId`, `entra.apiScope` und
-`ENTRA_API_AUDIENCE` werden **genauso** befüllt, nur aus den Registrierungen des externen Mandanten.
-Zusätzlich kommt dieser eine Wert dazu, wie in Schritt a notiert:
+Statt der Werte-Tabelle aus Schritt 1 — `entra.tenantId`, `entra.clientId` und `entra.apiAudience`
+werden **genauso** befüllt, nur aus den Registrierungen des externen Mandanten. Zusätzlich kommt dieser
+eine Wert dazu, wie in Schritt a notiert:
 
-| Wert      | wohin                                                                        |
-| --------- | ----------------------------------------------------------------------------- |
-| Subdomain | `project.json → entra.subdomain` **und** App setting `ENTRA_SUBDOMAIN`, z. B. `contoso` |
+| Wert      | wohin                                                       |
+| --------- | ----------------------------------------------------------- |
+| Subdomain | `project.json → entra.subdomain`, z. B. `contoso`           |
+
+Wie alle anderen folgt er dem Namens-Vertrag: in Azure heißt er `ENTRA_SUBDOMAIN`
+([Schritt 3](#environment-variables--app-settings-nicht-connection-strings)).
 
 Authority der SPA, erwarteter Aussteller (`iss`) und Schlüssel-Liste (`jwks_uri`) werden daraus
 automatisch gebildet — [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts) und
@@ -589,13 +633,24 @@ Zwei Modi, **keine lokale Datenbank** in beiden:
 pnpm dev          # backend: mock — kein Login, kein Backend, Seed-Adapter. Normalfall für UI-Arbeit.
 
 pnpm db:migrate   # backend: azure — Schema auf dem DEV-Server aus Schritt 2
-pnpm dev:full     # API :3000 + SPA :5173 — braucht apps/api/.env
+pnpm dev:full     # API :3000 + SPA :5173 — braucht PGUSER in der Root-.env
 ```
 
-**Nur der zweite Modus braucht `apps/api/.env`** (aus `.env.example` kopieren): sobald der
-Node-Prozess startet, verlangt [`env.ts`](../apps/api/src/env.ts) die `PG*`- und `ENTRA_*`-Werte und
-bricht sonst mit Klartext ab. `pnpm dev` startet gar keine API, `db:migrate`/`db:grant` brauchen nur
-die `PG*`-Werte — beides läuft ohne `.env`.
+**Eine Zeile Konfiguration, mehr nicht.** [`env.ts`](../apps/api/src/env.ts) liest `PG*` und `ENTRA_*`
+direkt aus [`.unitix/project.json`](../.unitix/project.json) — außer `PGUSER`: in Azure ist das die
+Managed Identity, lokal dein UPN. Deshalb steht genau dieser Wert in der Root-`.env` (Vorlage:
+[`.env.example`](../.env.example)) und überschreibt den Default aus der Datei:
+
+```dotenv
+PGUSER=<dein-upn>
+```
+
+`pnpm dev` startet gar keine API und braucht auch das nicht. Fehlt `PGUSER` bei `dev:full` oder
+`db:*`, zeigt die Ziel-Zeile beim Start (`→ Ziel: …`) den Namen der Web App statt deiner Adresse —
+daran ist es sofort zu erkennen.
+
+Eine `apps/api/.env` gibt es **nicht** und darf es nicht geben: `pnpm verify` bricht ab, wenn eine
+auftaucht (Begründung in [Schritt 6](#6-deployen)).
 
 Der azure-Modus läuft passwortlos gegen den Azure-DEV-Server (`az login` statt Passwort,
 Firewall-Regel für deine IP). Vorteil gegenüber lokalem Postgres: es testet dieselbe

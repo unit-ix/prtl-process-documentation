@@ -91,7 +91,8 @@ Backend-URL, und CORS greift im Normalbetrieb nie.
 | [`api/env.ts`](../apps/api/src/env.ts) | die Werte, die „unser Mandant / unsere API" bedeuten | — |
 | [`.unitix/project.json`](../.unitix/project.json) | `entra`-Block: dieselbe Angabe für die SPA-Seite | — |
 
-Der `entra`-Block trägt optional ein viertes Feld, `subdomain`. Bleibt es leer — der Normalfall —,
+Der `entra`-Block trägt neben `tenantId`, `clientId` und `apiAudience` optional das Feld `subdomain`.
+Bleibt es leer — der Normalfall —,
 ist der Mandant ein gewöhnlicher Firmen-Mandant. Gesetzt wird es nur, wenn sich firmenfremde Personen
 selbst registrieren sollen: dann liefert Microsoft dieselbe Anmeldung unter anderen Adressen aus
 (`*.ciamlogin.com`) — Authority, Aussteller und Schlüssel-Liste werden aus der Subdomain automatisch
@@ -112,9 +113,11 @@ davon wegfallen darf:
 | `exp` (Ablauf) | prüft `jose` automatisch | … ein einmal abgegriffener Ausweis ewig gelten |
 | `scp` (Berechtigung) | `toClaims()`, oberer Block | … ein reiner „ist eingeloggt"-Ausweis als „darf die API benutzen" durchgehen |
 
-Die drei Werte, die „unser Mandant, unsere API" bedeuten, stehen in
-[`api/.env.example`](../apps/api/.env.example) und kommen aus den zwei App-Registrierungen —
-angelegt in [Schritt 1 des Azure-Setups](azure-setup.md).
+Die Werte, die „unser Mandant, unsere API" bedeuten, stehen im `entra`-Block von
+[`.unitix/project.json`](../.unitix/project.json) und kommen aus den zwei App-Registrierungen —
+angelegt in [Schritt 1 des Azure-Setups](azure-setup.md). In Azure heißen sie als App settings
+genauso, nur in SCREAMING_SNAKE (`tenantId` → `ENTRA_TENANT_ID`); die Datei wird dorthin **nicht**
+mitdeployed.
 
 ## ⚠️ Was *nicht* geprüft wird
 
@@ -145,7 +148,7 @@ ist ein Drei-Zeilen-Schritt und steht bewusst nicht auf Vorrat da.
 | `ENTRA_API_AUDIENCE` in den App Settings | **Sofort jeder Request 401.** Der häufigste Selbstschuss. |
 | `ENTRA_SUBDOMAIN` | Leer = Firmen-Mandant. Aussteller und Schlüssel-Liste werden daraus automatisch gebildet — ein falscher Wert → **jeder Request 401**, obwohl der Login durchläuft. |
 | eine neue Redirect-URI (neue Domain, Testumgebung) | Login scheitert mit `AADSTS50011`, bis die URI **auch** in der SPA-Registrierung steht |
-| den `entra`-Block in `.unitix/project.json` | Wirkt erst nach **Rebuild + Redeploy** — Vite backt die Werte ins JS |
+| den `entra`-Block in `.unitix/project.json` | Wirkt für die **SPA** erst nach Rebuild + Redeploy (Vite backt die Werte ins JS) und für die **API** in Azure gar nicht — dort zählen die App settings. Lokal wirkt es sofort. |
 | einen Endpunkt zu `isPublic` in `server.ts` hinzugefügt | Er ist ab sofort **ohne jede Anmeldung** aus dem Internet erreichbar |
 | `RATE_LIMIT_MAX` | siehe [Drosselung](#drosselung) |
 | eine neue Tabelle in `registry.ts` | Nichts an der Anmeldung — sie ist automatisch genauso geschützt wie die anderen |
@@ -177,9 +180,9 @@ Entra meldet Fehler als `AADSTS`-Nummer — in der Fehlerseite oder in der Brows
 | `AADSTS9002326` — cross-origin token redemption | Die Plattform der SPA-Registrierung steht auf *Web* statt *Single-page application* | Plattform löschen und als *SPA* neu anlegen — umbenennen geht nicht |
 | `AADSTS65001` — consent required | Die SPA hat keine Freigabe für den API-Scope | *API permissions* → `access_as_user` hinzufügen |
 | `AADSTS700016` — application not found | Falsche `entra.clientId`, oder falscher Mandant | Werte gegen die *Overview*-Seite der Registrierung prüfen |
-| API antwortet **401**, Login lief aber durch | `ENTRA_API_AUDIENCE` passt nicht zum angeforderten Scope | Beide gegen [Schritt 1](azure-setup.md) prüfen |
+| API antwortet **401**, Login lief aber durch | Das App setting `ENTRA_API_AUDIENCE` in Azure passt nicht zu `entra.apiAudience` in `project.json` — die SPA fordert einen Scope für die eine, die API erwartet die andere App | Beide gegen die *Overview*-Seite der **API**-Registrierung prüfen ([Schritt 1](azure-setup.md)). Das Start-Log der API zeigt, mit welchen Werten sie tatsächlich läuft |
 | API antwortet **401**, `iss`-Fehler im Log | `requestedAccessTokenVersion` steht nicht auf `2` → Microsoft schickt Alt-Format-Ausweise | Manifest der **API**-Registrierung, Feld auf `2`, Save |
-| Token ohne Scope `access_as_user` | Die SPA hat ein „ist eingeloggt"-Token statt eines „darf die API"-Tokens geholt | `entra.apiScope` muss `api://<api-client-id>/access_as_user` sein, nicht die blanke Client-ID |
+| Token ohne Scope `access_as_user` | Die SPA hat ein „ist eingeloggt"-Token statt eines „darf die API"-Tokens geholt | `entra.apiAudience` muss die **blanke Client-ID der API**-Registrierung sein (kein `api://…`, nicht die der SPA). Den Scope baut [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts) daraus zusammen — steht dort die falsche id, fragt die SPA einen Scope an, den es nicht gibt |
 | API antwortet **429** | Drosselung, siehe oben | Kein Fehler — Client-Schleife suchen |
 | `endpoints_resolution_error` beim Start (nur External ID) | MSAL prüft den gemeldeten `iss` gegen die Authority und stolpert über einen Host-Unterschied | Sollte nicht mehr auftreten — `auth.ts` verwendet dafür automatisch die Tenant-ID als Host, siehe [azure-setup.md](azure-setup.md#optional-entra-external-id-statt-entra-id) |
 | Konsole meldet `Refused to connect`/`Refused to frame` (CSP) | Die Anmelde-Domain fehlt in der CSP | `connect-src` **und** `frame-src` in [`staticwebapp.config.json`](../apps/web/public/staticwebapp.config.json); `login.microsoftonline.com` und `*.ciamlogin.com` stehen bereits drin |

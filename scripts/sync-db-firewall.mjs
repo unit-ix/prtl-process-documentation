@@ -34,8 +34,9 @@
 //   pnpm db:firewall             # abgleichen
 //   pnpm db:firewall --dry-run   # nur zeigen, was passieren würde
 //
-// Ziel-Ressourcen kommen aus .unitix/project.json → azure (resourceGroup, apiAppName, dbServerName),
-// einmalig überschreibbar per --resource-group= / --app-name= / --db-server=.
+// Ziel-Ressourcen kommen aus .unitix/project.json: resourceGroup und apiAppName aus dem azure-Block,
+// der Servername aus pg.host (dort steht der FQDN, az will den Namen davor). Einmalig überschreibbar
+// per --resource-group= / --app-name= / --db-server=.
 //
 // Voraussetzung (fail loud): Azure CLI installiert und `az login` gelaufen — dieselbe Sitzung, die
 // auch db:migrate als DB-Passwort-Ersatz nutzt. Welche Flag-Belegung die installierte CLI für
@@ -102,16 +103,19 @@ function az(label, args, { json = false } = {}) {
 // Explizites Argument schlägt project.json — so gleicht man ohne Umschreiben der Config einmalig
 // eine andere Umgebung ab (DEV vs. PROD).
 function resolveTarget() {
-  const azure = (readJson('.unitix/project.json') ?? {}).azure ?? {}
+  const config = readJson('.unitix/project.json') ?? {}
+  const azure = config.azure ?? {}
   const resourceGroup = argValue('--resource-group') || azure.resourceGroup
   const appName = argValue('--app-name') || azure.apiAppName
-  const dbServer = argValue('--db-server') || azure.dbServerName
+  // Abgeleitet statt als zweites Feld gepflegt.
+  const dbServer = argValue('--db-server') || ((config.pg ?? {}).host ?? '').split('.')[0]
   if (!resourceGroup || !appName || !dbServer) {
     fail(
       'Ziel unbekannt. Bitte in .unitix/project.json ergänzen:\n' +
-        '  "azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>", "dbServerName": "<psql-name>" }\n' +
+        '  "azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>" }\n' +
+        '  "pg": { "host": "<psql-name>.postgres.database.azure.com", … }\n' +
         'Oder einmalig: pnpm db:firewall --resource-group=<rg> --app-name=<name> --db-server=<psql-name>\n' +
-        'Der DB-Name ist der Server-Name ohne .postgres.database.azure.com. Details: docs/azure-setup.md.',
+        '--db-server erwartet den Server-Namen ohne .postgres.database.azure.com. Details: docs/azure-setup.md.',
     )
   }
   return { resourceGroup, appName, dbServer }
