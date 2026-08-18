@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Azure-Stack im Überblick</title>
+        <!--
+  Visueller Überblick über den UNIT-IX-Azure-Stack (backend: azure): welche Dienste,
+  wie eine Anfrage läuft, wo Sicherheit durchgesetzt wird, was der Betrieb kostet.
+  Fakten-Quellen: Wissen/…/Azure/Stack.md (Dienste, SKUs), docs/azure-setup.md (Reihenfolge),
+  docs/auth.md (Anmeldung, die 5 Prüfungen). Weichen beide ab, gewinnen jene Dateien.
+  Self-contained: kein Build, keine externen Requests, offline lauffähig, Light/Dark, druckbar.
+  Wird von Hand gepflegt.
+-->
+        <style>
+            :root {
+                --bg: oklch(0.995 0.002 250);
+                --fg: oklch(0.16 0.01 255);
+                --muted: oklch(0.52 0.015 255);
+                --line: oklch(0.9 0.006 255);
+                --card: oklch(0.975 0.004 255);
+                --card2: oklch(0.95 0.006 255);
+                --accent: oklch(0.48 0.14 250);
+                --accent-bg: oklch(0.955 0.025 250);
+                --enforce: oklch(0.44 0.1 158);
+                --enforce-bg: oklch(0.955 0.03 158);
+                --client: oklch(0.52 0.12 62);
+                --client-bg: oklch(0.965 0.035 72);
+                --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: oklch(0.16 0.008 255);
+                    --fg: oklch(0.97 0.003 255);
+                    --muted: oklch(0.69 0.012 255);
+                    --line: oklch(0.31 0.012 255);
+                    --card: oklch(0.21 0.01 255);
+                    --card2: oklch(0.26 0.012 255);
+                    --accent: oklch(0.78 0.12 250);
+                    --accent-bg: oklch(0.27 0.04 250);
+                    --enforce: oklch(0.79 0.12 158);
+                    --enforce-bg: oklch(0.26 0.04 158);
+                    --client: oklch(0.82 0.12 75);
+                    --client-bg: oklch(0.205 0.013 72);
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: oklch(0.16 0.008 255);
+                --fg: oklch(0.97 0.003 255);
+                --muted: oklch(0.69 0.012 255);
+                --line: oklch(0.31 0.012 255);
+                --card: oklch(0.21 0.01 255);
+                --card2: oklch(0.26 0.012 255);
+                --accent: oklch(0.78 0.12 250);
+                --accent-bg: oklch(0.27 0.04 250);
+                --enforce: oklch(0.79 0.12 158);
+                --enforce-bg: oklch(0.26 0.04 158);
+                --client: oklch(0.82 0.12 75);
+                --client-bg: oklch(0.205 0.013 72);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--fg);
+                font:
+                    16px/1.6 system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    sans-serif;
+                -webkit-font-smoothing: antialiased;
+            }
+            main {
+                max-width: 58rem;
+                margin: 0 auto;
+                padding: 3.5rem 1.25rem 6rem;
+            }
+
+            /* ---------- Typo-Skala ---------- */
+            .eyebrow {
+                font-family: var(--mono);
+                font-size: 0.74rem;
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+                color: var(--accent);
+                margin: 0 0 0.9rem;
+            }
+            h1 {
+                font-size: clamp(1.9rem, 4.4vw, 2.6rem);
+                line-height: 1.1;
+                letter-spacing: -0.028em;
+                text-wrap: balance;
+                margin: 0 0 0.7rem;
+                max-width: 34rem;
+            }
+            .lede {
+                color: var(--muted);
+                font-size: 1.1rem;
+                line-height: 1.55;
+                margin: 0;
+                max-width: 40rem;
+            }
+            h2 {
+                font-size: 1.28rem;
+                letter-spacing: -0.016em;
+                margin: 0 0 0.3rem;
+            }
+            h3 {
+                font-family: var(--mono);
+                font-size: 0.76rem;
+                text-transform: uppercase;
+                letter-spacing: 0.09em;
+                color: var(--muted);
+                font-weight: 600;
+                margin: 0 0 0.8rem;
+            }
+            p {
+                margin: 0.8rem 0;
+                max-width: 44rem;
+            }
+            p:last-child {
+                margin-bottom: 0;
+            }
+            .sub {
+                color: var(--muted);
+                margin: 0 0 1.4rem;
+                max-width: 44rem;
+            }
+            .small {
+                font-size: 0.87rem;
+            }
+            .muted {
+                color: var(--muted);
+            }
+            code {
+                font-family: var(--mono);
+                font-size: 0.86em;
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 4px;
+                padding: 0.08em 0.32em;
+            }
+            h3.tight {
+                margin-top: 2.4rem;
+            }
+            p.note {
+                margin-top: -0.35rem;
+            }
+            section {
+                border-top: 1px solid var(--line);
+                margin-top: 3.2rem;
+                padding-top: 1.6rem;
+            }
+
+            /* ---------- Tabellen ---------- */
+            .scroll {
+                overflow-x: auto;
+                padding-bottom: 0.25rem;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                min-width: 36rem;
+                font-size: 0.9rem;
+            }
+            th {
+                font-family: var(--mono);
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--muted);
+                font-weight: 600;
+                text-align: left;
+                padding: 0 0.7rem 0.5rem;
+                border-bottom: 1px solid var(--line);
+            }
+            td {
+                padding: 0.62rem 0.7rem;
+                border-bottom: 1px solid var(--line);
+                vertical-align: top;
+                line-height: 1.45;
+            }
+            tbody tr:last-child td {
+                border-bottom: 0;
+            }
+            td.svc {
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            td.sku,
+            td.num,
+            th.num {
+                font-family: var(--mono);
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+            }
+            td.num,
+            th.num {
+                text-align: right;
+            }
+            tr.total td {
+                border-top: 1px solid var(--line);
+                font-weight: 600;
+            }
+            tr.opt td.svc {
+                color: var(--muted);
+                font-weight: 500;
+            }
+
+            /* ---------- Karten ---------- */
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+                gap: 0.75rem;
+                margin-top: 1.2rem;
+            }
+            .card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                padding: 0.95rem 1rem;
+            }
+            .card .k {
+                display: block;
+                font-family: var(--mono);
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                letter-spacing: 0.07em;
+                color: var(--muted);
+                margin-bottom: 0.4rem;
+            }
+            .card .t {
+                display: block;
+                font-weight: 600;
+                font-size: 0.97rem;
+                line-height: 1.35;
+                margin-bottom: 0.35rem;
+            }
+            .card .d {
+                display: block;
+                font-size: 0.86rem;
+                color: var(--muted);
+                line-height: 1.5;
+            }
+
+            /* ---------- Chips: die fünf Prüfungen ---------- */
+            .checks {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+                margin: 1.1rem 0 0;
+                padding: 0;
+                list-style: none;
+            }
+            .checks li {
+                background: var(--enforce-bg);
+                color: var(--enforce);
+                border: 1px solid color-mix(in oklch, var(--enforce) 35%, transparent);
+                border-radius: 999px;
+                padding: 0.3rem 0.7rem;
+                font-size: 0.83rem;
+                line-height: 1.3;
+            }
+            .checks li b {
+                font-family: var(--mono);
+                font-weight: 600;
+            }
+
+            /* ---------- Sicherheits-Gegenüberstellung ---------- */
+            .split {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+                gap: 0.75rem;
+                margin-top: 1.2rem;
+            }
+            .side {
+                border-radius: 12px;
+                padding: 1rem 1.1rem;
+            }
+            .side.cl {
+                background: var(--client-bg);
+                border: 1px dashed color-mix(in oklch, var(--client) 45%, transparent);
+            }
+            .side.en {
+                background: var(--enforce-bg);
+                border: 1px solid color-mix(in oklch, var(--enforce) 40%, transparent);
+            }
+            .side h4 {
+                margin: 0 0 0.5rem;
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .side.cl h4 {
+                color: var(--client);
+            }
+            .side.en h4 {
+                color: var(--enforce);
+            }
+            .side ul {
+                margin: 0;
+                padding-left: 1.1rem;
+                font-size: 0.89rem;
+                line-height: 1.55;
+            }
+            .side li + li {
+                margin-top: 0.35rem;
+            }
+            .side p {
+                margin: 0.6rem 0 0;
+                font-size: 0.86rem;
+            }
+
+            /* ---------- Figur ---------- */
+            figure {
+                margin: 1.6rem 0 0;
+                overflow-x: auto;
+            }
+            figure svg {
+                display: block;
+                width: 100%;
+                min-width: 45rem;
+                height: auto;
+                color: var(--fg);
+            }
+            figcaption {
+                color: var(--muted);
+                font-size: 0.85rem;
+                line-height: 1.55;
+                margin-top: 0.8rem;
+                max-width: 44rem;
+            }
+            .swipe {
+                display: none;
+            }
+            @media (max-width: 52rem) {
+                .swipe {
+                    display: block;
+                    font-size: 0.75rem;
+                    color: var(--muted);
+                    margin-top: 0.45rem;
+                    letter-spacing: 0.02em;
+                }
+            }
+
+            /* ---------- SVG-Rollen ---------- */
+            .b-fill {
+                fill: var(--card);
+            }
+            .b-line {
+                stroke: var(--line);
+            }
+            .band-cl {
+                fill: var(--client-bg);
+                stroke: color-mix(in oklch, var(--client) 45%, transparent);
+            }
+            .band-az {
+                fill: var(--accent-bg);
+                stroke: color-mix(in oklch, var(--accent) 30%, transparent);
+            }
+            .t-name {
+                font:
+                    600 13px var(--mono, monospace);
+                fill: var(--fg);
+            }
+            .t-role {
+                font: 11.5px system-ui, sans-serif;
+                fill: var(--muted);
+            }
+            .t-arrow {
+                font: 11px var(--mono, monospace);
+                fill: var(--muted);
+            }
+            .t-step {
+                font: 600 11px var(--mono, monospace);
+                fill: var(--accent);
+            }
+            .t-band {
+                font: 600 10.5px var(--mono, monospace);
+                letter-spacing: 0.1em;
+            }
+            .t-band-cl {
+                fill: var(--client);
+            }
+            .t-band-az {
+                fill: var(--accent);
+            }
+            .t-badge {
+                font: 600 10.5px var(--mono, monospace);
+                fill: var(--enforce);
+            }
+            .flow-line {
+                stroke: var(--fg);
+                stroke-width: 1.4;
+                fill: none;
+            }
+            .flow-line.dim {
+                stroke: var(--muted);
+                stroke-width: 1.2;
+                stroke-dasharray: 4 3;
+            }
+            .badge-fill {
+                fill: var(--enforce-bg);
+                stroke: color-mix(in oklch, var(--enforce) 40%, transparent);
+            }
+
+            @media print {
+                .swipe {
+                    display: none;
+                }
+                section {
+                    break-inside: avoid;
+                }
+            }
+            a {
+                color: var(--accent);
+                text-underline-offset: 2px;
+            }
+            a:focus-visible,
+            :focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: 2px;
+                border-radius: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <p class="eyebrow">UNIT-IX · backend: azure</p>
+            <h1>Vier Dienste, eine Anfrage, eine Grenze</h1>
+            <p class="lede">
+                Wie der Azure-Stack einer UNIT-IX-App heute aussieht — und was beim Klick eines
+                Nutzers tatsächlich passiert. Der ganze Stack besteht aus vier Pflicht-Diensten;
+                alles Weitere kommt erst dazu, wenn es gebraucht wird.
+            </p>
+
+            <!-- ============ 1. Der Stack ============ -->
+            <section>
+                <h2>Der Stack</h2>
+                <p class="sub">
+                    Vier Dienste sind unverzichtbar. Die Auswahl fällt nicht nach Preis, sondern
+                    nach je einer Eigenschaft, die die Alternativen nicht haben.
+                </p>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rolle</th>
+                                <th>Dienst</th>
+                                <th>SKU</th>
+                                <th class="num">€/Mon.</th>
+                                <th>Warum genau der</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Frontend</td>
+                                <td class="svc">Static Web Apps</td>
+                                <td class="sku">Standard</td>
+                                <td class="num">8</td>
+                                <td>
+                                    Bleibt bei Backend-Ausfall erreichbar; trägt auch
+                                    Frontend-only-Prototypen. Standard, weil Free keinen
+                                    <code>/api/*</code>-Proxy kann.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Backend</td>
+                                <td class="svc">App Service (Node)</td>
+                                <td class="sku">B1, Always&nbsp;On</td>
+                                <td class="num">12</td>
+                                <td>
+                                    Keine Kaltstarts (vs. Functions), kein Container-Build und keine
+                                    Registry (vs. Data API Builder).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Datenbank</td>
+                                <td class="svc">PostgreSQL Flexible Server</td>
+                                <td class="sku">B1ms → D2ds_v5</td>
+                                <td class="num">17 → 140</td>
+                                <td>
+                                    Row Level Security wird in der DB erzwungen, nicht in der
+                                    Anwendung. Anmeldung über Entra statt Passwort.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Login</td>
+                                <td class="svc">Entra ID</td>
+                                <td class="sku">interner Mandant</td>
+                                <td class="num">0</td>
+                                <td>Die Microsoft-Konten, die der Kunde ohnehin hat.</td>
+                            </tr>
+                            <tr class="opt">
+                                <td>Dokumente</td>
+                                <td class="svc">Blob Storage</td>
+                                <td class="sku">Hot, LRS</td>
+                                <td class="num">1–10</td>
+                                <td>Ersetzt SharePoint als Ablage — ohne dessen Upload-Grenze.</td>
+                            </tr>
+                            <tr class="opt">
+                                <td>Externe Nutzer</td>
+                                <td class="svc">Entra External ID</td>
+                                <td class="sku">externer Mandant</td>
+                                <td class="num">0</td>
+                                <td>
+                                    Für Nutzer ohne Microsoft-Konto. MFA inklusive, 50k aktive
+                                    Nutzer/Monat kostenfrei.
+                                </td>
+                            </tr>
+                            <tr class="opt">
+                                <td>Monitoring</td>
+                                <td class="svc">Application Insights</td>
+                                <td class="sku">—</td>
+                                <td class="num">0</td>
+                                <td>Fehler, Stacktraces, Traces der API. Kosten: eine Zeile Connection String.</td>
+                            </tr>
+                            <tr class="opt">
+                                <td>KI</td>
+                                <td class="svc">Azure AI Foundry</td>
+                                <td class="sku">nach Verbrauch</td>
+                                <td class="num">tbd</td>
+                                <td>KI-Funktionen, ohne die Subscription zu verlassen.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="small muted">
+                    Kräftig = Pflicht, gedämpft = optional. Kein Key Vault, per Design: der App
+                    Service erreicht die Datenbank über seine Managed Identity, es gibt kein Secret
+                    zu verwahren.
+                </p>
+            </section>
+
+            <!-- ============ 2. Der Weg einer Anfrage ============ -->
+            <section>
+                <h2>Was bei einem Klick passiert</h2>
+                <p class="sub">
+                    Sechs Schritte, zwei davon einmalig pro Sitzung. Die gestrichelte Zone links ist
+                    das Gerät des Nutzers — alles dort ist verhandelbar.
+                </p>
+
+                <figure>
+                    <svg
+                        viewBox="0 0 984 420"
+                        role="img"
+                        aria-label="Weg einer Anfrage: Der Browser holt einmalig ein Token bei Entra ID, schickt es mit jedem Aufruf an die Static Web App, die same-origin an den App Service proxied. Der App Service prüft das Token gegen Microsofts Schlüssel und fragt PostgreSQL per Managed Identity ab. Durchgesetzt wird ausschließlich rechts der Grenze — im App Service und in der Datenbank."
+                    >
+                        <defs>
+                            <marker
+                                id="ah"
+                                viewBox="0 0 10 10"
+                                refX="9"
+                                refY="5"
+                                markerWidth="7"
+                                markerHeight="7"
+                                orient="auto-start-reverse"
+                            >
+                                <path d="M0,1 L9,5 L0,9 z" fill="currentColor" />
+                            </marker>
+                            <marker
+                                id="ahd"
+                                viewBox="0 0 10 10"
+                                refX="9"
+                                refY="5"
+                                markerWidth="7"
+                                markerHeight="7"
+                                orient="auto-start-reverse"
+                            >
+                                <path d="M0,1 L9,5 L0,9 z" fill="currentColor" opacity="0.55" />
+                            </marker>
+                        </defs>
+
+                        <!-- Bänder: Vertrauensgrenze als Ort, nicht als Bildunterschrift -->
+                        <rect
+                            x="22"
+                            y="76"
+                            width="176"
+                            height="304"
+                            rx="14"
+                            class="band-cl"
+                            stroke-dasharray="5 4"
+                        />
+                        <rect x="266" y="76" width="704" height="304" rx="14" class="band-az" />
+                        <text x="30" y="62" class="t-band t-band-cl">
+                            CLIENT · UNSICHER
+                        </text>
+                        <text x="274" y="62" class="t-band t-band-az">
+                            AZURE · HIER WIRD DURCHGESETZT
+                        </text>
+
+                        <!-- Entra -->
+                        <rect
+                            x="546"
+                            y="96"
+                            width="152"
+                            height="60"
+                            rx="10"
+                            class="b-fill b-line"
+                        />
+                        <text x="622" y="121" class="t-name" text-anchor="middle">Entra ID</text>
+                        <text x="622" y="139" class="t-role" text-anchor="middle">
+                            stellt Ausweise aus
+                        </text>
+
+                        <!-- Browser -->
+                        <rect x="34" y="196" width="152" height="78" rx="10" class="b-fill b-line" />
+                        <text x="110" y="228" class="t-name" text-anchor="middle">Browser</text>
+                        <text x="110" y="247" class="t-role" text-anchor="middle">SPA (React)</text>
+                        <text x="110" y="263" class="t-role" text-anchor="middle">Login vor 1. Render</text>
+
+                        <!-- Static Web App -->
+                        <rect
+                            x="290"
+                            y="196"
+                            width="152"
+                            height="78"
+                            rx="10"
+                            class="b-fill b-line"
+                        />
+                        <text x="366" y="228" class="t-name" text-anchor="middle">Static Web App</text>
+                        <text x="366" y="247" class="t-role" text-anchor="middle">liefert das Bundle</text>
+                        <text x="366" y="263" class="t-role" text-anchor="middle">proxied /api/*</text>
+
+                        <!-- App Service -->
+                        <rect
+                            x="546"
+                            y="196"
+                            width="152"
+                            height="78"
+                            rx="10"
+                            class="b-fill b-line"
+                        />
+                        <text x="622" y="228" class="t-name" text-anchor="middle">App Service</text>
+                        <text x="622" y="247" class="t-role" text-anchor="middle">Node · Fastify</text>
+                        <text x="622" y="263" class="t-role" text-anchor="middle">Drizzle-ORM</text>
+
+                        <!-- PostgreSQL -->
+                        <rect
+                            x="802"
+                            y="196"
+                            width="152"
+                            height="78"
+                            rx="10"
+                            class="b-fill b-line"
+                        />
+                        <text x="878" y="228" class="t-name" text-anchor="middle">PostgreSQL</text>
+                        <text x="878" y="247" class="t-role" text-anchor="middle">Flexible Server</text>
+                        <text x="878" y="263" class="t-role" text-anchor="middle">Entra-Auth only</text>
+
+                        <!-- ① Login -->
+                        <polyline
+                            points="110,196 110,126 538,126"
+                            class="flow-line"
+                            marker-end="url(#ah)"
+                        />
+                        <text x="214" y="112" class="t-step">1 ·</text>
+                        <text x="238" y="112" class="t-arrow">
+                            Login → Token, gilt rund 1 Stunde
+                        </text>
+                        <text x="214" y="148" class="t-arrow" opacity="0.85">
+                            einmal beim Öffnen der App
+                        </text>
+
+                        <!-- ② Browser → SWA -->
+                        <polyline points="186,222 282,222" class="flow-line" marker-end="url(#ah)" />
+                        <text x="234" y="176" class="t-step" text-anchor="middle">2</text>
+                        <text x="234" y="190" class="t-arrow" text-anchor="middle">
+                            GET /api/… + Token
+                        </text>
+
+                        <!-- ③ SWA → App Service -->
+                        <polyline points="442,222 538,222" class="flow-line" marker-end="url(#ah)" />
+                        <text x="490" y="176" class="t-step" text-anchor="middle">3</text>
+                        <text x="490" y="190" class="t-arrow" text-anchor="middle">
+                            same-origin Proxy
+                        </text>
+
+                        <!-- ④ App Service → Entra (JWKS) -->
+                        <polyline points="622,196 622,164" class="flow-line dim" marker-end="url(#ahd)" />
+                        <text x="632" y="180" class="t-arrow">4 · JWKS</text>
+
+                        <!-- ⑤ App Service → PostgreSQL -->
+                        <polyline points="698,222 794,222" class="flow-line" marker-end="url(#ah)" />
+                        <text x="746" y="176" class="t-step" text-anchor="middle">5</text>
+                        <text x="746" y="190" class="t-arrow" text-anchor="middle">SQL, kein Passwort</text>
+
+                        <!-- Durchsetzungs-Badges -->
+                        <rect
+                            x="536"
+                            y="330"
+                            width="172"
+                            height="24"
+                            rx="12"
+                            class="badge-fill"
+                        />
+                        <text x="622" y="346" class="t-badge" text-anchor="middle">
+                            5 Prüfungen · sonst 401
+                        </text>
+                        <rect
+                            x="792"
+                            y="330"
+                            width="172"
+                            height="24"
+                            rx="12"
+                            class="badge-fill"
+                        />
+                        <text x="878" y="346" class="t-badge" text-anchor="middle">
+                            RLS · nur eigene Firma
+                        </text>
+
+                        <!-- ⑥ Antwort -->
+                        <polyline
+                            points="622,274 622,308 110,308 110,282"
+                            class="flow-line"
+                            marker-end="url(#ah)"
+                        />
+                        <text x="366" y="300" class="t-arrow" text-anchor="middle">
+                            6 · JSON — oder 401
+                        </text>
+                    </svg>
+                    <p class="swipe">← seitlich scrollen →</p>
+                    <figcaption>
+                        Schritt 1 und 4 laufen einmal, 2 bis 6 bei jeder Anfrage — Schritt 4 holt
+                        Microsofts öffentliche Signaturschlüssel (JWKS) und cacht sie danach. Weil
+                        die Static Web App <code>/api/*</code> auf dieselbe Adresse proxied, steht im
+                        Frontend nirgends eine Backend-URL und CORS greift im Normalbetrieb nie.
+                        Lokal macht Vite genau dasselbe.
+                    </figcaption>
+                </figure>
+
+                <h3 class="tight">Die fünf Prüfungen am Token</h3>
+                <p class="small muted note">
+                    Rund 45 Zeilen in <code>apps/api/src/auth/verify.ts</code>. Fällt eine durch,
+                    antwortet die API mit <code>401</code> und tut sonst nichts. Einzige Ausnahme:
+                    <code>/health</code>, damit Azure den Server prüfen kann.
+                </p>
+                <ul class="checks">
+                    <li><b>Signatur</b> — kommt der Ausweis von Microsoft?</li>
+                    <li><b>iss</b> — von unserem Mandanten?</li>
+                    <li><b>aud</b> — für unsere API?</li>
+                    <li><b>exp</b> — noch gültig?</li>
+                    <li><b>scp</b> — darf der Inhaber die API benutzen?</li>
+                </ul>
+            </section>
+
+            <!-- ============ 3. Warum so ============ -->
+            <section>
+                <h2>Drei Entscheidungen, die den Stack erklären</h2>
+                <div class="cards">
+                    <div class="card">
+                        <span class="k">Keine Secrets</span>
+                        <span class="t">Die Maschine hat einen eigenen Ausweis</span>
+                        <span class="d">
+                            Der App Service meldet sich per Managed Identity an der Datenbank an.
+                            Kein DB-Passwort, deshalb kein Key Vault, deshalb nichts, was
+                            rotiert oder leaken kann. Die Identity wird nicht Server-Admin, sondern
+                            bekommt Lesen/Schreiben auf genau einer Datenbank.
+                        </span>
+                    </div>
+                    <div class="card">
+                        <span class="k">Keine zweite Wahrheit</span>
+                        <span class="t">Dieselbe Anmeldung lokal wie in Produktion</span>
+                        <span class="d">
+                            Auch die lokale Entwicklung läuft passwortlos gegen den Azure-DEV-Server
+                            — <code>az login</code> statt Passwort. Es gibt im Code gar keinen
+                            zweiten Anmeldeweg, der in Produktion überraschen könnte.
+                        </span>
+                    </div>
+                    <div class="card">
+                        <span class="k">Keine Kaltstarts</span>
+                        <span class="t">Ein schlanker Server statt Funktionen</span>
+                        <span class="d">
+                            App Service B1 mit <code>Always On</code>: keine Wartezeit beim ersten
+                            Aufruf, kein Container-Build, keine Registry. Auf den Server wandert nur,
+                            was aus Sicherheitsgründen dorthin muss — Fachlogik bleibt raus.
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ 4. Die Grenze ============ -->
+            <section>
+                <h2>Warum Berechtigungen serverseitig liegen müssen</h2>
+                <p class="sub">
+                    Der Punkt, an dem die meisten Missverständnisse hängen — und der Grund, warum die
+                    Server-Schicht der größte Aufwandsblock jedes Umzugs ist.
+                </p>
+                <div class="split">
+                    <div class="side cl">
+                        <h4>Im Browser — Bedienkomfort</h4>
+                        <ul>
+                            <li>ausgegraute Schaltflächen</li>
+                            <li>ausgeblendete Menüpunkte</li>
+                            <li>Rollen-Umschalter im Prototyp</li>
+                        </ul>
+                        <p>
+                            Die App läuft auf einem Gerät, das dem Nutzer gehört. Der Ausweis liegt
+                            im Browser, und damit lassen sich mit gängigen Werkzeugen beliebige
+                            Anfragen stellen — vorbei an jeder Bildschirmmaske. Nichts hiervon
+                            verhindert einen einzigen Request.
+                        </p>
+                    </div>
+                    <div class="side en">
+                        <h4>Auf dem Server — Sicherheit</h4>
+                        <ul>
+                            <li>Trennung der Kundenfirmen — doppelt: in der API <em>und</em> per RLS in der DB</li>
+                            <li>Vier-Augen-Prinzip: wer bearbeitet, gibt nicht frei</li>
+                            <li>Audit-Trail: schreibbar, nicht änderbar, nicht löschbar</li>
+                        </ul>
+                        <p>
+                            Sicherheit entsteht nur dort, wo der Nutzer nicht hinkommt. Selbst bei
+                            einem Programmierfehler in der Anwendung liefert die Datenbank keine
+                            fremden Daten aus.
+                        </p>
+                    </div>
+                </div>
+                <p>
+                    <strong>Was die API heute bewusst nicht tut:</strong> Sie prüft, <em>wer</em>
+                    jemand ist — nicht, <em>was</em> er darf. Jeder angemeldete Mitarbeiter mit dem
+                    Scope <code>access_as_user</code> darf über die API alles. Solange alle Nutzer
+                    intern sind und ohnehin alles sehen dürfen, ist das in Ordnung. Sobald der erste
+                    Kunde „Sachbearbeiter dürfen nicht löschen“ sagt, ist das ein Feature in der
+                    <strong>API</strong> — nicht im UI.
+                </p>
+                <p class="small muted">
+                    Nebeneffekt, der sich lohnt: Holt eine Alt-App an vielen Stellen alle Datensätze
+                    und filtert erst im Browser, erledigt die RLS-Umstellung deren Absicherung
+                    automatisch — ohne dass eine einzige Abfrage angefasst werden muss. Was bleibt,
+                    ist reine Geschwindigkeit.
+                </p>
+            </section>
+
+            <!-- ============ 5. Kosten & Betrieb ============ -->
+            <section>
+                <h2>Kosten &amp; Betrieb</h2>
+                <p class="sub">
+                    Größenordnungen, keine Angebote: Microsoft-Listenpreise in Euro, Rechenzentrum
+                    Frankfurt, Stand 06.08.2026. Eine getrennte DEV-Umgebung ist in allen Zeilen
+                    enthalten.
+                </p>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Phase</th>
+                                <th>Was das ist</th>
+                                <th class="num">€/Monat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="svc">Pilot</td>
+                                <td>
+                                    Aufbau, interne Tests, erster Pilotkunde. Kleine Datenbank, ohne
+                                    Verfügbarkeitszusage.
+                                </td>
+                                <td class="num">≈ 44</td>
+                            </tr>
+                            <tr>
+                                <td class="svc">Live, bis 400 Nutzer</td>
+                                <td>Produktive Datenbank mit 24/7-Microsoft-Support.</td>
+                                <td class="num">≈ 167</td>
+                            </tr>
+                            <tr>
+                                <td class="svc">Live, bis 1.000 Nutzer</td>
+                                <td>Nur die Server-Größe wächst, sonst identisch.</td>
+                                <td class="num">≈ 183</td>
+                            </tr>
+                            <tr class="opt">
+                                <td class="svc">Obergrenze</td>
+                                <td>
+                                    Falls Hochverfügbarkeit und Updates im laufenden Betrieb dazukommen.
+                                </td>
+                                <td class="num">≈ 357</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cards">
+                    <div class="card">
+                        <span class="k">Der größte Posten</span>
+                        <span class="t">Die Datenbank — und zwar nicht wegen Leistung</span>
+                        <span class="d">
+                            Die günstige SKU (rund 13 €) reicht technisch völlig. Microsoft schließt
+                            sie für den Produktivbetrieb aber aus: kein 24/7-Support, keine
+                            Fehleranalyse im Störungsfall. Die teurere Variante kauft die Zusage,
+                            dass im Ernstfall jemand hilft. Umschalten zum Livegang ist ein Klick mit
+                            ein bis zwei Minuten Unterbrechung.
+                        </span>
+                    </div>
+                    <div class="card">
+                        <span class="k">DEV-Umgebung · ≈ 8 €</span>
+                        <span class="t">Acht Euro dafür, dass nie an Echtdaten geprobt wird</span>
+                        <span class="d">
+                            So günstig, weil sie außerhalb der Arbeitszeiten abschaltet und ohne
+                            Verfügbarkeitszusage läuft. Zweiter Nutzen: sie bekommt jedes
+                            Microsoft-Update mindestens 7 Tage früher — Probleme fallen dort auf.
+                        </span>
+                    </div>
+                    <div class="card">
+                        <span class="k">Betrieb</span>
+                        <span class="t">99,5 % Verfügbarkeit, 7 Tage rückwirkend</span>
+                        <span class="d">
+                            Rechnerisch bis zu ~3,6 h Ausfall im Monat, real deutlich weniger.
+                            Wartung etwa monatlich, 1–2 Minuten, Fenster auf Sonntag 02:00.
+                            Datensicherung taggenau wiederherstellbar — unabhängig von
+                            Hochverfügbarkeit, die kein Backup ist.
+                        </span>
+                    </div>
+                </div>
+                <p class="small muted">
+                    <strong>Ehrlich bleiben muss:</strong> Der DB-Endpunkt ist öffentlich auflösbar,
+                    und die Outbound-IPs des App Service gehören der Scale Unit, nicht exklusiv
+                    dieser App. Die Absicherung trägt die Entra-only-Authentifizierung, nicht die
+                    IP-Liste. Ein Private Endpoint ist für rund 8 €/Monat nachrüstbar. Noch nicht
+                    automatisiert: Provisioning und CI/CD — letzteres dann per OIDC, nie per
+                    Client-Secret.
+                </p>
+            </section>
+
+            <section>
+                <h3>Wo die Details stehen</h3>
+                <p class="small">
+                    Reihenfolge zum Nachklicken:
+                    <a href="azure-setup.md">docs/azure-setup.md</a> · Anmeldung ohne Vorwissen,
+                    inkl. <code>AADSTS</code>-Fehlertabelle:
+                    <a href="auth.md">docs/auth.md</a> · Regelsatz:
+                    <a href="../.claude/docs/patterns-azure.md">.claude/docs/patterns-azure.md</a>.
+                    Weicht diese Seite von ihnen ab, gewinnen sie.
+                </p>
+            </section>
+        </main>
+    </body>
+</html>

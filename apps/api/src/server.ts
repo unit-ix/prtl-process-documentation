@@ -1,29 +1,68 @@
-// API-Skelett — bewusst `node:http` ohne Framework.
-//
-// Im mock-Prototyp gibt es keine API: die Daten kommen aus dem Mock-Adapter hinter dem
-// Data-Port (@/data). Dieses Package existiert, damit das Repo-Layout backend-unabhängig
-// ist — der Fork bleibt so ein Swap in apps/web/src/data/index.ts und wird kein Repo-Umbau.
-//
-// Jede Runtime-Dependency hier wäre Vorwegnahme der Azure-Entscheidungen (Fastify, Drizzle,
-// withTenant(), generierter Tabellen-Router). Die trägt der Azure-Fork ein, nicht dieses
-// Skelett. Bis dahin: ein Health-Endpoint, der beweist, dass das Package baut und läuft.
-import { createServer } from 'node:http';
+// Fastify-Schale: Transport und Absicherung. Die Fachwirkung sitzt in router/handle.ts.
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
+import { allowedOrigins, serverEnv } from './env.js';
+import { toProblem } from './http/errors.js';
+import { handle } from './router/handle.js';
 
-const PORT = Number(process.env.PORT ?? 3000);
-
-const server = createServer((req, res) => {
-    res.setHeader('content-type', 'application/json');
-
-    if (req.method === 'GET' && req.url === '/health') {
-        res.writeHead(200);
-        res.end(JSON.stringify({ status: 'ok' }));
-        return;
+declare module 'fastify' {
+    interface FastifyRequest {
+        claims?: Claims;
     }
+}
 
-    res.writeHead(404);
-    res.end(JSON.stringify({ error: 'not_found' }));
+const env = serverEnv();
+
+const app = Fastify({
+    bodyLimit: env.BODY_LIMIT_BYTES,
+    logger: { level: 'info' },
 });
 
-server.listen(PORT, () => {
-    console.log(`api: http://localhost:${PORT}/health`);
+/** `/health` muss ohne Identität erreichbar sein, sonst kann Azure die Instanz nicht prüfen. */
+const isPublic = (url: string): boolean => url === '/health' || url.startsWith('/health?');
+
+// MUSS vor der Auth registriert werden: @fastify/cors beantwortet OPTIONS-Preflights
+// kurzschliessend, und ein Preflight trägt nie ein Token. Niemals `origin: true` — das erlaubte
+// jeder fremden Seite Schreibzugriff mit dem Token des eingeloggten Nutzers.
+await app.register(cors, { origin: allowedOrigins(), credentials: false });
+
+await app.register(rateLimit, { global: false, timeWindow: '1 minute' });
+
+app.addHook('onRequest', async (request: FastifyRequest) => {
+    if (isPublic(request.url)) return;
+    request.claims = await verifyAccessToken(bearerToken(request.headers.authorization));
 });
+
+// preHandler, damit der Schlüssel die geprüfte Nutzer-id sein kann: eine IP würde ein ganzes
+// Kundennetz hinter einer NAT-Adresse gemeinsam drosseln.
+app.addHook(
+    'preHandler',
+    app.rateLimit({
+        max: env.RATE_LIMIT_MAX,
+        keyGenerator: (request: FastifyRequest) => request.claims?.objectId ?? request.ip,
+    }),
+);
+
+app.setErrorHandler((error, _request, reply) => {
+    const problem = toProblem(error);
+    if (problem.status >= 500) app.log.error(error);
+    return reply.status(problem.status).type('application/problem+json').send(problem);
+});
+
+app.get('/health', async () => ({ status: 'ok' }));
+
+// Ein Handler für alle Tabellen. Neue Tabelle = ein Eintrag in router/registry.ts, keine Route.
+app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { status, body } = await handle({
+        method: request.method,
+        path: `/${(request.params as { '*': string })['*']}`,
+        query: request.query as Record<string, string | undefined>,
+        body: request.body,
+    });
+
+    return status === 204 ? reply.status(204).send() : reply.status(status).send(body);
+});
+
+await app.listen({ port: env.PORT, host: '0.0.0.0' });
