@@ -8,7 +8,7 @@ export interface ListQuery<TFilter, TSortField extends string> {
     filter?: TFilter;
     sort?: { field: TSortField; dir: SortDirection };
     limit?: number;
-    /** OPAQUE: an offset in mock/Supabase, Dataverse's native skipToken. */
+    /** OPAQUE: an offset in mock/azure, Dataverse's native skipToken. */
     cursor?: string | null;
 }
 

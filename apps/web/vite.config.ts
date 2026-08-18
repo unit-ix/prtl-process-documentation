@@ -3,20 +3,26 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Prototype-First Golden-Template-Toolchain (backend: mock).
-// - react()        — React 19 Fast Refresh
-// - tailwindcss()  — Tailwind v4 via Vite-Plugin (kein tailwind.config, Tokens leben in src/index.css)
-// - @-Alias        — spiegelt tsconfig `paths` ("@/*" -> "./src/*")
-// Das Microsoft-Power-Platform-Overlay (SDK + zugehöriges Vite-Plugin) wird erst am
-// beim dataverse-Fork re-added — im mock-Default bewusst NICHT vorverdrahtet.
+// Tailwind v4 läuft über das Vite-Plugin, es gibt kein tailwind.config — Tokens leben in
+// src/index.css. Das Power-Platform-Overlay kommt erst am dataverse-Fork dazu.
+
+/** Muss zu PORT in apps/api/.env passen. */
+const API_PORT = 3000;
+
 export default defineConfig({
     plugins: [react(), tailwindcss()],
+    // Spiegelt den /api/*-Proxy von Azure Static Web Apps auf localhost, damit die API lokal
+    // same-origin ist — sonst bräuchte der Adapter eine absolute Backend-URL im Bundle und CORS.
+    server: {
+        proxy: {
+            '/api': { target: `http://127.0.0.1:${API_PORT}`, changeOrigin: false },
+        },
+    },
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
-            // Die Backend-Achse ist projektweit, nicht app-lokal — .unitix/ liegt deshalb an der
-            // Repo-Root, zwei Ebenen über diesem Package. Als Alias statt '../../../../../': der
-            // Pfad bricht sonst still, sobald jemand eine Datei im src-Baum verschiebt.
+            // Als Alias statt '../../../../../': der relative Pfad bricht sonst still, sobald
+            // jemand eine Datei im src-Baum verschiebt.
             '@unitix': fileURLToPath(new URL('../../.unitix', import.meta.url)),
         },
     },
