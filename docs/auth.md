@@ -91,6 +91,12 @@ Backend-URL, und CORS greift im Normalbetrieb nie.
 | [`api/env.ts`](../apps/api/src/env.ts) | die Werte, die „unser Mandant / unsere API" bedeuten | — |
 | [`.unitix/project.json`](../.unitix/project.json) | `entra`-Block: dieselbe Angabe für die SPA-Seite | — |
 
+Der `entra`-Block trägt optional ein viertes Feld, `subdomain`. Bleibt es leer — der Normalfall —,
+ist der Mandant ein gewöhnlicher Firmen-Mandant. Gesetzt wird es nur, wenn sich firmenfremde Personen
+selbst registrieren sollen: dann liefert Microsoft dieselbe Anmeldung unter anderen Adressen aus
+(`*.ciamlogin.com`) — Authority, Aussteller und Schlüssel-Liste werden aus der Subdomain automatisch
+gebildet, nicht von Hand eingetragen. Anleitung: [Optional: Entra External ID](azure-setup.md#optional-entra-external-id-statt-entra-id).
+
 Das ist alles. Es gibt keine weitere Stelle im Repo, die mit Anmeldung zu tun hat.
 
 ## Die fünf Prüfungen im Code
@@ -137,6 +143,7 @@ ist ein Drei-Zeilen-Schritt und steht bewusst nicht auf Vorrat da.
 | Änderung | Folge |
 | --- | --- |
 | `ENTRA_API_AUDIENCE` in den App Settings | **Sofort jeder Request 401.** Der häufigste Selbstschuss. |
+| `ENTRA_SUBDOMAIN` | Leer = Firmen-Mandant. Aussteller und Schlüssel-Liste werden daraus automatisch gebildet — ein falscher Wert → **jeder Request 401**, obwohl der Login durchläuft. |
 | eine neue Redirect-URI (neue Domain, Testumgebung) | Login scheitert mit `AADSTS50011`, bis die URI **auch** in der SPA-Registrierung steht |
 | den `entra`-Block in `.unitix/project.json` | Wirkt erst nach **Rebuild + Redeploy** — Vite backt die Werte ins JS |
 | einen Endpunkt zu `isPublic` in `server.ts` hinzugefügt | Er ist ab sofort **ohne jede Anmeldung** aus dem Internet erreichbar |
@@ -174,6 +181,8 @@ Entra meldet Fehler als `AADSTS`-Nummer — in der Fehlerseite oder in der Brows
 | API antwortet **401**, `iss`-Fehler im Log | `requestedAccessTokenVersion` steht nicht auf `2` → Microsoft schickt Alt-Format-Ausweise | Manifest der **API**-Registrierung, Feld auf `2`, Save |
 | Token ohne Scope `access_as_user` | Die SPA hat ein „ist eingeloggt"-Token statt eines „darf die API"-Tokens geholt | `entra.apiScope` muss `api://<api-client-id>/access_as_user` sein, nicht die blanke Client-ID |
 | API antwortet **429** | Drosselung, siehe oben | Kein Fehler — Client-Schleife suchen |
+| `endpoints_resolution_error` beim Start (nur External ID) | MSAL prüft den gemeldeten `iss` gegen die Authority und stolpert über einen Host-Unterschied | Sollte nicht mehr auftreten — `auth.ts` verwendet dafür automatisch die Tenant-ID als Host, siehe [azure-setup.md](azure-setup.md#optional-entra-external-id-statt-entra-id) |
+| Konsole meldet `Refused to connect`/`Refused to frame` (CSP) | Die Anmelde-Domain fehlt in der CSP | `connect-src` **und** `frame-src` in [`staticwebapp.config.json`](../apps/web/public/staticwebapp.config.json); `login.microsoftonline.com` und `*.ciamlogin.com` stehen bereits drin |
 
 Der letzte Punkt aus dem [Smoke-Test](azure-setup.md#7-smoke-test) ist die schnellste Gesamtprüfung:
 `https://<web-app>.azurewebsites.net/api/contacts` ohne Ausweis muss **401** liefern. Kommt dort

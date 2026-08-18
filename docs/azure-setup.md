@@ -40,8 +40,22 @@ in wenigen Regionen angeboten wird; unkritisch, ausgeliefert wird global über d
 
 ## 1. Entra: zwei App-Registrierungen
 
+> **Vorher entscheiden: interner Mandant oder Entra External ID?** Sollen sich firmenfremde Personen
+> **selbst registrieren** (Kunden, Lieferanten, Mitglieder), gehört alles ab hier in einen separaten
+> **externen Mandanten** — und der muss **vor** diesem Schritt existieren. Was das heißt, was
+> anzulegen ist und welche drei Werte dazukommen:
+> [Optional: Entra External ID statt Entra ID](#optional-entra-external-id-statt-entra-id).
+>
+> Im Normalfall — nur Mitarbeitende des eigenen Mandanten — ist hier nichts zu tun, einfach
+> weiterlesen. Nachträglich wechseln geht, kostet aber beide Registrierungen, den User Flow und
+> jede Redirect-URI neu.
+
 **Portal → Microsoft Entra ID → App registrations → + New registration** — zweimal, einmal je
 Registrierung. Beide _Single tenant_ (`Accounts in this organizational directory only`).
+
+Bei **External ID** ist der Klickpfad identisch, nur im **externen** Mandanten statt im
+Arbeitsmandanten — der Mandantenwechsel oben rechts im Portal ist dabei die häufigste Fehlerquelle,
+weil die Registrierungen in beiden Mandanten gleich aussehen.
 
 **a) API-Registrierung** anlegen: Name `<projekt> API`, Redirect-URI **leer lassen** → _Register_.
 Danach in der frisch angelegten Registrierung:
@@ -79,6 +93,11 @@ Identifikatoren, kein Secret), die beiden API-Werte werden Umgebungsvariablen de
 _optional_ = nur nötig, wenn du die API **lokal** laufen lässt ([Lokal entwickeln](#lokal-entwickeln));
 `pnpm dev` und [Schritt 4](#4-datenbank-füllen) kommen ohne `.env` aus. Beide Orte existieren, weil
 eine `.env` nie deployed wird.
+
+Bei **External ID** werden dieselben vier Werte befüllt, nur aus den Registrierungen des externen
+Mandanten — dazu kommt eine weitere: die **Subdomain** des externen Mandanten
+(`entra.subdomain` in `project.json`, `ENTRA_SUBDOMAIN` als App setting), siehe
+[Die eine zusätzliche Angabe](#die-eine-zusätzliche-angabe).
 
 > `ENTRA_API_AUDIENCE` ist die **Client-ID der API-Registrierung** — nicht die der SPA, und mit
 > `requestedAccessTokenVersion: 2` auch nicht die `api://…`-URI: v2-Token tragen die reine GUID im
@@ -180,12 +199,12 @@ pnpm db:firewall             # legt an, korrigiert, entfernt Veraltetes
 
 Wiederholen statt nachpflegen: nach jedem dieser Ereignisse einmal laufen lassen.
 
-| Ereignis                                                                                    | warum                                                                              |
-| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Web App gelöscht und in **anderer** Resource Group neu angelegt                              | Deployment-Unit wechselt, der IP-Satz ist komplett neu                             |
-| letzte App einer RG+Region gelöscht und neu angelegt                                        | dito                                                                               |
+| Ereignis                                                                                         | warum                                                                                              |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Web App gelöscht und in **anderer** Resource Group neu angelegt                                  | Deployment-Unit wechselt, der IP-Satz ist komplett neu                                             |
+| letzte App einer RG+Region gelöscht und neu angelegt                                             | dito                                                                                               |
 | Tier-Sprung **zwischen** `{Basic, Standard, Premium}` / `{PremiumV2}` / `{PremiumV3}` / `{Pmv3}` | nur dieser Sprung ändert den Satz — durch `possible…` schon gedeckt, ein Lauf danach kostet nichts |
-| **PITR-Restore** der Datenbank                                                              | der wiederhergestellte Server hat **keine** Firewall-Regeln                        |
+| **PITR-Restore** der Datenbank                                                                   | der wiederhergestellte Server hat **keine** Firewall-Regeln                                        |
 
 > [!WARNING]
 > **Kein Premium V4.** Pv4 hat absichtlich **keinen** stabilen Satz von Outbound-IPs — ARM liefert für
@@ -416,6 +435,151 @@ pnpm dlx @azure/static-web-apps-cli deploy apps/web/dist --env production
   „Route fehlt", sondern der Backend-Link aus [Schritt 5a](#5-static-web-app) ist nicht gesetzt.
 
 ---
+
+## Optional: Entra External ID statt Entra ID
+
+Nur relevant, wenn sich **firmenfremde Personen selbst registrieren** sollen — Kunden, Lieferanten,
+Mitglieder. Der Normalfall (Mitarbeitende des eigenen Mandanten) braucht diesen Abschnitt nicht.
+
+External ID ist ein **separater Mandant** neben dem Arbeitsmandanten. Der Grund ist nicht der Preis
+(50.000 monatlich aktive Nutzer sind in beiden Modellen kostenlos), sondern: Self-Service-Sign-up mit
+lokalen Konten gibt es **nur dort**, und externe Personen werden so nie Objekte im eigenen
+M365-Verzeichnis — keine Adresslisten-Einträge, keine Teams-Zugriffe, kein Offboarding-Problem.
+
+Der Ablauf im Code ist **derselbe** wie bei Entra ID — nur die Microsoft-Adressen unterscheiden sich.
+Deshalb ändert sich keine Zeile Code, nur drei Konfigurationswerte.
+
+**Dieser Abschnitt ersetzt [Schritt 1](#1-entra-zwei-app-registrierungen)**, er ergänzt ihn nicht.
+Die Schritte 2–7 bleiben unverändert.
+
+### Was anzulegen ist
+
+**a) Externen Mandanten anlegen.** _Portal → Microsoft Entra ID → Create a tenant_ → Typ
+**External**. Subdomain und Directory (tenant) ID notieren.
+
+> Braucht die Rolle **Tenant Creator** im Arbeitsmandanten. Sie erzeugt ausschließlich neue,
+> separate Verzeichnisse und gibt **keine Rechte im bestehenden Mandanten**.
+
+> **Den Mandanten mit einer Subscription verknüpfen** — ein eigener, leicht übersehener Schritt.
+> Ohne ihn läuft External ID nur **30 Tage** als Testversion und hört danach auf zu funktionieren.
+
+**b) Zwei App-Registrierungen** im **externen** Mandanten anlegen — Klickpfad identisch zu
+[Schritt 1a/1b](#1-entra-zwei-app-registrierungen): API-Registrierung mit _Expose an API_ →
+`access_as_user` und `requestedAccessTokenVersion` auf **`2`**, SPA-Registrierung mit Plattform
+**_Single-page application (SPA)_**.
+
+> Achte darauf, im **externen** Mandanten zu sein, nicht im Arbeitsmandanten. Der Mandantenwechsel
+> oben rechts im Portal ist die häufigste Fehlerquelle — die Registrierungen sehen identisch aus.
+
+**c) User Flow anlegen.** _External Identities → User flows → + New user flow_ → _Sign up and sign
+in_, Identitätsanbieter **Email with password**. Danach im Flow unter _Applications_ → **Add
+application** die **SPA**-Registrierung zuordnen.
+
+> **Der einzige Schritt, den workforce Entra nicht kennt** — und der einzige, der lautlos scheitert.
+> Ohne die Zuordnung ist die App-Registrierung allein wirkungslos: der Login bricht ab, obwohl alle
+> Werte stimmen.
+
+**d) Redirect-URIs** in der SPA-Registrierung: `http://localhost:5173` und die SWA-Domain aus
+[Schritt 5](#5-static-web-app). Exakt, inklusive Port, ohne Slash am Ende.
+
+**e)** _Optional:_ MFA über Conditional Access.
+
+> ⚠️ **Authenticator/TOTP gibt es in externen Mandanten nicht.** Verfügbar sind nur E-Mail-OTP, SMS
+> (kostenpflichtig, ~0,03 $ pro Versuch) und **Passkey/FIDO2**. Wer TOTP bereits zugesagt hat, muss
+> das zurücknehmen — Passkey ist der bessere Ersatz.
+
+### Die eine zusätzliche Angabe
+
+Statt der Werte-Tabelle aus Schritt 1 — `entra.tenantId`, `entra.clientId`, `entra.apiScope` und
+`ENTRA_API_AUDIENCE` werden **genauso** befüllt, nur aus den Registrierungen des externen Mandanten.
+Zusätzlich kommt dieser eine Wert dazu, wie in Schritt a notiert:
+
+| Wert      | wohin                                                                        |
+| --------- | ----------------------------------------------------------------------------- |
+| Subdomain | `project.json → entra.subdomain` **und** App setting `ENTRA_SUBDOMAIN`, z. B. `contoso` |
+
+Authority der SPA, erwarteter Aussteller (`iss`) und Schlüssel-Liste (`jwks_uri`) werden daraus
+automatisch gebildet — [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts) und
+[`verify.ts`](../apps/api/src/auth/verify.ts):
+
+| Wert                  | Host      | Format                                                              |
+| --------------------- | --------- | -------------------------------------------------------------------- |
+| Authority der SPA     | Tenant-ID | `https://<tenant-id>.ciamlogin.com/<tenant-id>`                     |
+| Erwarteter Aussteller | Tenant-ID | `https://<tenant-id>.ciamlogin.com/<tenant-id>/v2.0`                |
+| Schlüssel-Liste       | Subdomain | `https://<subdomain>.ciamlogin.com/<tenant-id>/discovery/v2.0/keys` |
+
+> **Der Host-Unterschied ist kein Tippfehler**, sondern Microsofts tatsächliches Verhalten:
+> Aussteller trägt die Tenant-ID als Host, Schlüssel-Liste die Subdomain. Verwechselt man sie beim
+> Nachbauen von Hand, meldet man sich erfolgreich an und bekommt trotzdem auf jeden Request `401`.
+> Die Authority der SPA nutzt ebenfalls die Tenant-ID statt der Subdomain als Host — siehe die
+> Warnung unten.
+
+Bleiben `entra.subdomain` und `ENTRA_SUBDOMAIN` leer, verhält sich alles wie mit workforce Entra ID
+— der Wert ist optional, es gibt keinen Schalter und keinen zweiten Modus.
+
+> [!WARNING]
+> Ohne Gegenmaßnahme scheitert `ensureSignedIn()` mit `endpoints_resolution_error`: MSAL prüft den
+> vom Mandanten gemeldeten Aussteller gegen die konfigurierte Authority und stolpert über den
+> Host-Unterschied von oben ([msal-browser #8592](https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/8592),
+> betrifft das hier eingesetzte v5). [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts)
+> verwendet deshalb von vornherein die **Tenant-ID auch als Host** —
+> `https://<tenant-id>.ciamlogin.com/<tenant-id>` —, fest verdrahtet, nicht konfigurierbar. Die
+> Subdomain wird dafür nicht gebraucht, nur für die Schlüssel-Liste der API.
+
+Die CSP in [`staticwebapp.config.json`](../apps/web/public/staticwebapp.config.json) erlaubt
+`https://*.ciamlogin.com` bereits — daran ist nichts zu tun.
+
+### Weitere Mandanten anbinden (Federation)
+
+Für zwei Fälle: **Kundenfirmen, die ihren eigenen Entra-Mandanten mitbringen**, und **SSO für die
+eigenen Mitarbeitenden**. Technisch dasselbe, beliebig oft wiederholbar, kostenlos.
+
+Wichtig: **kein zweiter Mandant in der Konfiguration, keine Codeänderung.** Die App zeigt weiter nur
+auf den externen Mandanten; die Arbeits-Mandanten werden _in_ ihm als Identitätsanbieter hinterlegt
+und sind damit nur vorgelagert. Die App bekommt in allen Fällen ein Token des externen Mandanten —
+`entra.subdomain` und `ENTRA_SUBDOMAIN` bleiben unverändert.
+
+Auf der Anmeldeseite steht dann E-Mail + Passwort für Selbst-Registrierer, daneben je ein Knopf
+_Sign in with &lt;Firma&gt;_. Pro anzubindendem Mandanten einmal:
+
+1. **Im Arbeitsmandanten** eine App-Registrierung für den externen Mandanten: _Supported account
+   types_ = _Accounts in this organizational directory only_, Plattform **Web** mit den Redirect-URIs
+   `https://<subdomain>.ciamlogin.com/<tenant-id>/federation/oauth2` und
+   `https://<subdomain>.ciamlogin.com/<subdomain>.onmicrosoft.com/federation/oauth2`. Dazu ein
+   **Client Secret** (Wert notieren, nicht die Secret-ID), unter _API permissions_ die
+   Graph-_Delegated_-Rechte `email`, `openid`, `profile`, `User.Read` **mit Admin Consent**, und
+   unter _Token configuration_ den **`email`-Claim**.
+
+    > Ohne den `email`-Claim scheitert jede Anmeldung mit _„No email address was obtained from the
+    > external OIDC identity provider."_ — und die App braucht die Adresse ohnehin, um den Nutzer
+    > fachlich zuzuordnen.
+
+2. **Im externen Mandanten** _External Identities → All identity providers → Custom → New OpenID
+   Connect provider_:
+
+    | Feld                | Wert                                                                                    |
+    | ------------------- | --------------------------------------------------------------------------------------- |
+    | Well-known endpoint | `https://login.microsoftonline.com/organizations/v2.0/.well-known/openid-configuration` |
+    | OpenID Issuer URI   | `https://login.microsoftonline.com/<arbeits-tenant-id>/v2.0`                            |
+    | Client ID / Secret  | aus Schritt 1                                                                           |
+    | Scope               | `openid profile`                                                                        |
+    | Response type       | `code`                                                                                  |
+
+3. **Den Provider dem User Flow hinzufügen** — nicht nur dem Mandanten.
+
+    > Häufigster Fehler: Provider angelegt, aber nicht am Flow → der Knopf erscheint nie auf der
+    > Anmeldeseite. Fehlercode `40015` heißt dagegen das Gegenteil: der Provider wurde erreicht, aber
+    > Issuer oder Endpunkte passen nicht exakt zu seinem Discovery-Dokument.
+
+> **Das Client Secret läuft ab** und muss rotiert werden — der einzige Ablauftermin in diesem Setup.
+> Es lebt im Portal, nicht im Repo; die Regel „keine Secrets im Repo" bleibt unberührt.
+
+> **External ID vertraut einem im Arbeitsmandanten durchgeführten MFA nicht.** Mitarbeitende können
+> ein zweites Mal zur MFA aufgefordert werden, obwohl sie im Heimat-Mandanten bereits eine gemacht
+> haben. Ansonsten greifen dessen Conditional-Access- und MFA-Regeln vollständig.
+
+Quelle für diesen Unterabschnitt:
+[Microsoft Learn — Add Microsoft Entra ID for customer sign-in](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-entra-id-federation-customers).
 
 ## Lokal entwickeln
 

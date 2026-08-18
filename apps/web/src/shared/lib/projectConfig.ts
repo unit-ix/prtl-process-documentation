@@ -21,6 +21,14 @@ export interface EntraConfig {
     readonly clientId: string;
     /** Scope der API-App-Registrierung, z. B. `api://<api-client-id>/access_as_user`. */
     readonly apiScope: string;
+    /**
+     * Optional. Leer = workforce Entra ID (`login.microsoftonline.com/<tenantId>`). Gesetzt = Entra
+     * External ID (CIAM) — die `ciamlogin.com`-Subdomain des externen Mandanten, z. B. `contoso` für
+     * `contoso.ciamlogin.com`. Authority wird daraus automatisch gebildet, siehe
+     * [`auth.ts`](../../data/adapters/azure/auth.ts). Siehe docs/azure-setup.md, „Optional: Entra
+     * External ID statt Entra ID".
+     */
+    readonly subdomain?: string;
 }
 
 export interface ProjectConfig {

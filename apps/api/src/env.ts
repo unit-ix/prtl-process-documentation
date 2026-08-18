@@ -18,6 +18,11 @@ const serverSchema = z.object({
     /** Erwarteter `aud`: Client-id der API-App-Registrierung bzw. `api://<id>`. */
     ENTRA_API_AUDIENCE: z.string().min(1),
 
+    // Optional: leer = workforce Entra ID. Gesetzt = Entra External ID (CIAM) — `iss` und
+    // `jwks_uri` werden daraus automatisch gebildet, siehe issuer()/jwksUri() in auth/verify.ts.
+    /** External ID: die `ciamlogin.com`-Subdomain des externen Mandanten, z. B. `contoso`. */
+    ENTRA_SUBDOMAIN: z.string().optional(),
+
     /** Nur die SWA-Origin, kein Wildcard. Leer = keine Cross-Origin-Requests. */
     ALLOWED_ORIGIN: z.string().default(''),
 

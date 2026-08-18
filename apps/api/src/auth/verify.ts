@@ -10,12 +10,25 @@ export interface Claims {
     readonly name: string;
 }
 
+// External ID (CIAM): `iss` trägt die Tenant-ID als Host, `jwks_uri` die Subdomain — kein Tippfehler,
+// sondern Microsofts tatsächliches Verhalten. docs/azure-setup.md, „Die eine zusätzliche Angabe".
+function issuer(): string {
+    const { ENTRA_TENANT_ID, ENTRA_SUBDOMAIN } = serverEnv();
+    const host = ENTRA_SUBDOMAIN ? `${ENTRA_TENANT_ID}.ciamlogin.com` : 'login.microsoftonline.com';
+    return `https://${host}/${ENTRA_TENANT_ID}/v2.0`;
+}
+
+function jwksUri(): string {
+    const { ENTRA_TENANT_ID, ENTRA_SUBDOMAIN } = serverEnv();
+    const host = ENTRA_SUBDOMAIN ? `${ENTRA_SUBDOMAIN}.ciamlogin.com` : 'login.microsoftonline.com';
+    return `https://${host}/${ENTRA_TENANT_ID}/discovery/v2.0/keys`;
+}
+
 // Genau EIN Set pro Prozess — pro Request neu gebaut wäre ein HTTP-Call pro Request.
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
 function keySet(): ReturnType<typeof createRemoteJWKSet> {
-    const { ENTRA_TENANT_ID } = serverEnv();
-    jwks ??= createRemoteJWKSet(new URL(`https://login.microsoftonline.com/${ENTRA_TENANT_ID}/discovery/v2.0/keys`));
+    jwks ??= createRemoteJWKSet(new URL(jwksUri()));
     return jwks;
 }
 
@@ -31,23 +44,29 @@ function toClaims(payload: JWTPayload): Claims {
 
     const objectId = typeof payload.oid === 'string' ? payload.oid : payload.sub;
     if (!objectId) throw unauthorized('Token ohne Nutzer-Identität (weder oid noch sub).');
+    // External ID liefert die Adresse je nach konfiguriertem Optional Claim unter `email` statt
+    // `preferred_username` — föderierte Nutzer hätten sonst eine leere E-Mail.
+    const mail = payload.preferred_username ?? payload.email;
     return {
         objectId,
-        email: typeof payload.preferred_username === 'string' ? payload.preferred_username : '',
+        email: typeof mail === 'string' ? mail : '',
         name: typeof payload.name === 'string' ? payload.name : '',
     };
 }
 
 export async function verifyAccessToken(token: string): Promise<Claims> {
-    const { ENTRA_TENANT_ID, ENTRA_API_AUDIENCE } = serverEnv();
+    const { ENTRA_API_AUDIENCE } = serverEnv();
     try {
         const { payload } = await jwtVerify(token, keySet(), {
-            issuer: `https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0`,
+            issuer: issuer(),
             audience: ENTRA_API_AUDIENCE,
         });
         return toClaims(payload);
     } catch (error) {
         if (error instanceof ApiError) throw error;
+        // Die Antwort an den Client bleibt bewusst generisch (kein Detail über iss/aud/exp nach
+        // außen) — der jose-Fehler dahinter landet aber im Log, sonst ist diese 401 unlösbar blind.
+        console.error('[auth] Tokenprüfung fehlgeschlagen:', error);
         throw unauthorized('Token ungültig, abgelaufen oder für eine andere Anwendung ausgestellt.');
     }
 }

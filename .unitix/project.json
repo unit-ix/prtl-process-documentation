@@ -8,8 +8,9 @@
         "dbServerName": "template-app-postgresql"
     },
     "entra": {
-        "tenantId": "0bb7071a-01ca-4f14-9fcf-1b77cc51506d",
-        "clientId": "7ffd2e9d-168a-4d58-85e8-174c4f15f210",
-        "apiScope": "api://5328b165-c49c-4246-8e67-4049d6c2c8c8/access_as_user"
+        "subdomain": "unitixtemplateapp",
+        "tenantId": "030ef2e9-1e35-4e42-96ff-ea6e8c2b5453",
+        "clientId": "75fcd803-aa3e-4d33-9c44-f7cb8b90d42f",
+        "apiScope": "api://f090a739-aacb-4dcd-8be8-559573037e4d/access_as_user"
     }
 }

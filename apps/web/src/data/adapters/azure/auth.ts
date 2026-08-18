@@ -11,10 +11,21 @@ function client(): PublicClientApplication {
         throw new Error(`.unitix/project.json → entra: ${missing.join(', ')} fehlt (siehe docs/azure-setup.md).`);
     }
 
+    // External ID (CIAM): die Authority trägt die Tenant-ID auch als Host, nicht die Subdomain —
+    // Workaround für einen msal-browser-Bug (#8592), sonst scheitert die Anmeldung mit
+    // `endpoints_resolution_error`. docs/azure-setup.md, „Die eine zusätzliche Angabe".
+    const authority = entra.subdomain
+        ? `https://${entra.tenantId}.ciamlogin.com/${entra.tenantId}`
+        : `https://login.microsoftonline.com/${entra.tenantId}`;
+
     return new PublicClientApplication({
         auth: {
             clientId: entra.clientId,
-            authority: `https://login.microsoftonline.com/${entra.tenantId}`,
+            authority,
+            // Nur bei External ID: `*.ciamlogin.com` ist für MSAL kein bekannter Microsoft-Host und
+            // würde ohne diesen Eintrag abgelehnt. Für den Default-Fall bewusst NICHT gesetzt — dort
+            // überspränge der Eintrag die Instance Discovery und änderte damit bestehendes Verhalten.
+            ...(entra.subdomain ? { knownAuthorities: [new URL(authority).hostname] } : {}),
             // Lokal http://localhost:5173, in Azure die SWA-Domain — beide müssen in der
             // App-Registrierung als Redirect-URI stehen.
             redirectUri: window.location.origin,
