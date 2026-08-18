@@ -7,9 +7,9 @@
 **Prototype-First Golden Template.** Das Projekt startet als lauffähiger Mock-Prototyp (seed-basiert, localhost, kein Backend) und bekommt erst nach Kunden-OK ein echtes Backend. Zwei unabhängige Achsen:
 
 - **Stage** = Git-Branch. Prototyp-Phase: `/prototype` committet Feature für Feature direkt auf `prototype`; nach Kunden-OK ist der Branch eingefroren. Produkt-Phase (nach `/handoff`): `feature/* → dev → main`, wobei `prototype` eingefroren bleibt und bewusst übersprungen wird.
-- **Backend** = `backend`-Feld in [`.unitix/project.json`](.unitix/project.json) (`mock` → `supabase` oder `dataverse`). Single Source of Truth. UI und Hooks sprechen nur den Port (`@/data`) an, nie einen Adapter — der Fork ist ein Ein-Datei-Swap in `apps/web/src/data/index.ts`, siehe [`docs/prototype-manifest.md`](docs/prototype-manifest.md).
+- **Backend** = `backend`-Feld in [`.unitix/project.json`](.unitix/project.json) (`mock` → `azure` oder `dataverse`). Single Source of Truth. UI und Hooks sprechen nur den Port (`@/data`) an, nie einen Adapter — der Fork ist ein Ein-Datei-Swap in `apps/web/src/data/index.ts`, siehe [`docs/prototype-manifest.md`](docs/prototype-manifest.md).
 
-**Repo-Layout:** pnpm-Workspace mit zwei Packages — `apps/web/` (SPA) und `apps/api/` (Node-API, im Mock-Prototyp ein `/health`-Skelett ohne Dependencies). Die Root ist reiner Orchestrator und **kein** Package: `pnpm dev` / `pnpm verify` / `pnpm deploy` laufen dort, `vite.config.ts` / `tsconfig.json` / `components.json` liegen in `apps/web/`. Das Layout gilt backend-unabhängig, damit der Fork ein Adapter-Swap bleibt und kein Repo-Umbau wird.
+**Repo-Layout:** pnpm-Workspace mit zwei Packages — `apps/web/` (SPA) und `apps/api/` (Node-API: im Mock-Prototyp ungenutzt, am `azure`-Fork Fastify + Drizzle gegen PostgreSQL). Die Root ist reiner Orchestrator und **kein** Package: `pnpm dev` / `pnpm verify` / `pnpm deploy:cloudflare` laufen dort, `vite.config.ts` / `tsconfig.json` / `components.json` liegen in `apps/web/`. Das Layout gilt backend-unabhängig, damit der Fork ein Adapter-Swap bleibt und kein Repo-Umbau wird.
 
 **Design-Regel:** UI ausschließlich über die Design-Tokens und die shadcn-Komponenten in `apps/web/src/shared/components/ui/` — **kein eigenes CSS-File, keine Inline-Farben.** Tokens (oklch) leben in `apps/web/src/index.css`, Varianten laufen über Komponenten-Props. Welche Komponente wann: [`COMPONENTS.md`](COMPONENTS.md).
 
@@ -27,6 +27,8 @@
 | Anforderungen | [`docs/prd.md`](docs/prd.md) |
 | Datenmodell | [`docs/datamodel.md`](docs/datamodel.md) + [`docs/datamodel.mmd`](docs/datamodel.mmd) |
 | Hosting / Deploy | [`docs/hosting.md`](docs/hosting.md) |
+| Azure-Setup (Fork `mock → azure`) | [`docs/azure-setup.md`](docs/azure-setup.md) |
+| Anmeldung & Absicherung (`backend: azure`) | [`docs/auth.md`](docs/auth.md) |
 | Prototyp-Artefakte | [`docs/prototype-manifest.md`](docs/prototype-manifest.md) |
 
 `docs/prd.md`, `docs/datamodel.md` und `docs/datamodel.mmd` sind vom `/prototype`-Ingest gespiegelte **Snapshots** des SharePoint-Masters (Kopf-Header `Stand:`/`Quelle:`), nicht die Live-Wahrheit — bei Änderung via erneutem Ingest (`[O]verwrite`) auffrischen.

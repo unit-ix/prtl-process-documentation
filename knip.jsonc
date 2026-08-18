@@ -20,8 +20,10 @@
             "ignoreDependencies": ["date-fns", "zod"]
         },
         "apps/api": {
-            "entry": ["src/server.ts"],
-            "project": ["src/**/*.ts"]
+            // Vier Einstiegspunkte: drei eigene Prozesse plus die drizzle-kit-Config, die von
+            // drizzle-kit geladen und nirgends importiert wird.
+            "entry": ["src/server.ts", "src/db/migrate.ts", "src/db/grant-identity.ts", "drizzle.config.ts"],
+            "project": ["src/**/*.ts", "drizzle.config.ts"]
         }
     },
 

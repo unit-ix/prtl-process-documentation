@@ -2,7 +2,7 @@
 
 **Prototype-First Golden Template** für UNIT-IX Code Apps (React 19 + Vite + TypeScript SPA).
 
-Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne Backend, lokal im Browser erlebbar — und bekommt erst nach Kunden-OK ein echtes Backend (Supabase oder Dataverse). Der Prototyp ist kein Wegwerf-Mockup: er **wird** die App.
+Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne Backend, lokal im Browser erlebbar — und bekommt erst nach Kunden-OK ein echtes Backend (Azure oder Dataverse). Der Prototyp ist kein Wegwerf-Mockup: er **wird** die App.
 
 ---
 
@@ -11,7 +11,7 @@ Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne 
 | Achse       | Steuert                  | Werte                                                                     |
 | ----------- | ------------------------ | ------------------------------------------------------------------------- |
 | **Stage**   | Reifegrad (= Git-Branch) | Prototyp-Phase: `→ prototype` · Produkt-Phase: `feature/* → dev → main`   |
-| **Backend** | Datenquelle              | `mock` (Default) → `supabase` **oder** `dataverse` (Fork nach Kunden-OK)  |
+| **Backend** | Datenquelle              | `mock` (Default) → `azure` **oder** `dataverse` (Fork nach Kunden-OK)     |
 
 Die beiden Achsen sind unabhängig. Das aktive Backend steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
 
@@ -28,7 +28,7 @@ Die App weiß nicht, woher ihre Daten kommen. Sie fragt einen **Port**; dahinter
 ```
 apps/web/src/data/index.ts        ← der eine Swap-Punkt
 apps/web/src/data/ports/          ← Interfaces, backend-agnostisch
-apps/web/src/data/adapters/mock/  ← faker-Seed-Store (später: supabase/ oder dataverse/)
+apps/web/src/data/adapters/mock/  ← faker-Seed-Store (später: azure/ oder dataverse/)
 ```
 
 **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen via `eslint-plugin-boundaries`, nicht nur als Bitte. Die Domain-Typen in `apps/web/src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Stimmen sie, fällt das Backend-Schema später mechanisch heraus. Backend-Naming lebt ausschließlich im Adapter.
@@ -52,9 +52,9 @@ pnpm install
 ## Dev-Loop — localhost-first
 
 ```bash
-pnpm dev      # Vite Dev-Server (apps/web), Mock-Adapter, kein Backend nötig
-pnpm dev:api  # Node-API (apps/api) — im Mock-Prototyp nicht nötig
-pnpm verify   # check:env + lint + knip + build (build fächert über apps/*)
+pnpm dev       # Vite Dev-Server (apps/web), Mock-Adapter, kein Backend nötig
+pnpm dev:full  # API + SPA zusammen — der Einstieg bei backend: azure
+pnpm verify    # check:env + lint + knip + build (build fächert über apps/*)
 ```
 
 Alle Befehle laufen **an der Repo-Root**, nicht im Package — die Root ist der Orchestrator.
@@ -91,9 +91,11 @@ apps/web/                 Die SPA — wird statisch deployt (Cloudflare Pages bz
   src/features/           Feature-Module (_example = kanonisches Referenz-Feature)
   src/shared/             components/ (ui = shadcn), lib/, hooks/
 
-apps/api/                 Node-API. Im mock-Prototyp ein /health-Skelett ohne Dependencies —
-                          der Fork füllt sie. Existiert immer, damit das Layout backend-
-                          unabhängig bleibt und der Fork ein Swap statt eines Umbaus ist.
+apps/api/                 Node-API (Fastify + Drizzle). Im mock-Prototyp ungenutzt, am azure-Fork
+  src/db/                 die Serverseite. Existiert immer, damit das Layout backend-unabhängig
+  src/router/             bleibt und der Fork ein Swap statt eines Umbaus ist.
+  src/auth/
+
 ```
 
 ## Was wohin gehört
@@ -106,13 +108,14 @@ apps/api/                 Node-API. Im mock-Prototyp ein /health-Skelett ohne De
 
 `/prototype` spiegelt PRD und Datenmodell **einseitig** aus dem SharePoint-Quellordner (lokal via OneDrive-Sync) nach `docs/` — mit `Stand:`/`Quelle:`-Header, read-only, nie zurückschreibend. SharePoint bleibt die laufend gepflegte Single Source of Truth; bei Änderung frischt ein erneuter Ingest den Snapshot auf.
 
-## Fork: mock → supabase/dataverse
+## Fork: mock → azure/dataverse
 
 1. `backend` in [`.unitix/project.json`](.unitix/project.json) umstellen.
 2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `apps/web/src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 
+Beim `azure`-Fork kommen Node-API, PostgreSQL und Entra ID dazu — Ablauf und Voraussetzungen: [`docs/azure-setup.md`](docs/azure-setup.md).
 Beim `dataverse`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
 
 ## Shared-Ressourcen aktualisieren

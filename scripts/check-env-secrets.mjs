@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// Blockt Secrets in .env*-Dateien. ESLint kann das nicht: es liest keine .env-Files.
-// Warum es zählt: Vite kompiliert JEDE VITE_*-Variable ins public Bundle — ein
-// service_role-Key in .env landet damit im Browser jedes Besuchers.
+// Blockt Secrets in .env*-Dateien — ESLint kann das nicht, es liest keine .env-Files.
 //
-// Gescannt werden die Repo-Root UND jedes apps/*-Package. Der Grund ist nicht Gründlichkeit,
-// sondern Notwendigkeit: Vite lädt .env relativ zu seinem Root, also aus apps/web/. Würde nur
-// die Repo-Root gescannt, wäre genau die eine Datei unsichtbar, die im Bundle landet.
+// Genau EIN Muster: eine VITE_-Variable, deren Name nach Secret klingt. Nur VITE_-Variablen
+// erreichen das Bundle überhaupt; eine `DATABASE_URL` in einer .env ist für die SPA unsichtbar.
+//
+// Gescannt werden Repo-Root UND jedes apps/*-Package — vite lädt .env relativ zu seinem Root,
+// also aus apps/web/.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
-const SECRET = /service_role|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY/i;
+const PUBLIC_BUT_SECRET = /^\s*VITE_[A-Z0-9_]*(SECRET|PASSWORD|TOKEN|CONNECTION_STRING)/i;
 
 function scanRoots() {
     const roots = [ROOT];
@@ -26,20 +26,22 @@ const findings = [];
 for (const dir of scanRoots()) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (!entry.isFile() || !entry.name.startsWith('.env')) continue;
+        if (entry.name === '.env.example') continue;
         const abs = join(dir, entry.name);
         const label = relative(ROOT, abs) || entry.name;
         readFileSync(abs, 'utf8')
             .split(/\r?\n/)
             .forEach((line, i) => {
-                if (SECRET.test(line)) findings.push(`${label}:${i + 1}: ${line.trim().slice(0, 80)}`);
+                if (PUBLIC_BUT_SECRET.test(line)) findings.push(`${label}:${i + 1}: ${line.trim().slice(0, 80)}`);
             });
     }
 }
 
 if (findings.length > 0) {
-    console.error('Secret in .env gefunden — gehört NIE ins Bundle:\n');
+    console.error('Secret in einer VITE_-Variable gefunden — das landet im public Bundle:\n');
     findings.forEach((f) => console.error(`  ${f}`));
-    console.error('\nPublic sind nur VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY.');
-    console.error('Privilegierte Keys gehören in die Edge-Function-Env, nicht ins Frontend.');
+    console.error('\nDie public Konfiguration der SPA steht in .unitix/project.json (entra-Block) und');
+    console.error('enthält nur öffentliche Identifikatoren. Serverseitiges gehört nach apps/api/.env —');
+    console.error('und in Azure gar nicht erst in die App Settings: dort greift die Managed Identity.');
     process.exit(1);
 }

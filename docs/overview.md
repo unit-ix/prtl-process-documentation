@@ -54,10 +54,10 @@ Steht in [`.unitix/project.json`](../.unitix/project.json) — **die** Wahrheit 
 | Backend | Bedeutung |
 | --- | --- |
 | `mock` | Erfundene Daten aus dem Seed. Kein Backend. Default eines frischen Templates. |
-| `supabase` | Postgres + RLS + Auth, bleibt auf Cloudflare. **Strategisch der Haupt-Weg.** |
+| `azure` | Eigene Node-API + PostgreSQL + Entra ID, gehostet auf Azure Static Web Apps. **Strategisch der Haupt-Weg.** |
 | `dataverse` | Microsoft Power Platform Code App. |
 
-Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI-ready). Produktiv geht die Richtung „mehr Supabase, weniger Power Platform" — Bestehendes wird selektiv migriert, nicht per Hauruck.
+Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI-ready). Produktiv geht die Richtung „mehr Azure, weniger Power Platform" — Bestehendes wird selektiv migriert, nicht per Hauruck.
 
 ## Der Fork ist eine Datei
 
@@ -68,7 +68,7 @@ apps/web/src/data/index.ts        ← der eine Swap-Punkt
 apps/web/src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich nicht mehr AM FORK.
 apps/web/src/data/adapters/
     mock/                ← Seed-Daten
-    supabase/            ← echtes Backend
+    azure/               ← echtes Backend (eigene API + MSAL)
     dataverse/           ← echtes Backend
 ```
 
@@ -99,16 +99,16 @@ Kanonische Beschreibung: [`.claude/CLAUDE.md`](../.claude/CLAUDE.md).
 
 **Vor jedem Task liest die KI zwei Dateien immer** und **genau eine** backend-abhängig:
 
-| Immer | bei `mock` | bei `supabase` | bei `dataverse` |
+| Immer | bei `mock` | bei `azure` | bei `dataverse` |
 | --- | --- | --- | --- |
-| [`naming-conventions.md`](../.claude/docs/naming-conventions.md) | [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) | [`patterns-supabase.md`](../.claude/docs/patterns-supabase.md) | [`patterns-code-app.md`](../.claude/docs/patterns-code-app.md) |
-| [`lean-coding.md`](../.claude/docs/lean-coding.md) | Mock ok, `fetch` ok | **RLS Pflicht** | CSP, Dataverse-only |
+| [`naming-conventions.md`](../.claude/docs/naming-conventions.md) | [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) | [`patterns-azure.md`](../.claude/docs/patterns-azure.md) | [`patterns-code-app.md`](../.claude/docs/patterns-code-app.md) |
+| [`lean-coding.md`](../.claude/docs/lean-coding.md) | Mock ok, `fetch` ok | **Entra-JWT Pflicht**, Managed Identity | CSP, Dataverse-only |
 
-Der teure Fehler ist der **falsche Regelsatz**: Supabase-Code in eine CSP-gesperrte Code App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `backend`-Feld, nie am Branch.
+Der teure Fehler ist der **falsche Regelsatz**: eine `fetch`-basierte Azure-Architektur in eine CSP-gesperrte Code App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `backend`-Feld, nie am Branch.
 
 **DB-Naming ist systemabhängig** — kein Versehen, sondern Beschluss:
 
-| | Supabase / SQL | Dataverse / Canvas |
+| | Azure / PostgreSQL | Dataverse / Canvas |
 | --- | --- | --- |
 | Tabelle | `service_tickets` (snake_case, plural, **kein** Präfix) | `unitix_tblServiceTicket` |
 | Spalte | `customer_name` (**kein** Datentyp-Präfix) | `strCustomerName` |

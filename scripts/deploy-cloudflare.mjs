@@ -1,24 +1,35 @@
 #!/usr/bin/env node
-// Cloudflare Pages Direct-Upload-Deploy für die drei Umgebungen eines Kundenprojekts.
+// `pnpm deploy:cloudflare` — Direct-Upload der SPA auf Cloudflare Pages, für die drei Umgebungen
+// eines Kundenprojekts:
 //
 //   prototype-Branch → <slug>-prototype   (eingefrorene Kunden-Referenz, immer Mock)
 //   dev-Branch       → <slug>-dev          (Testumgebung)
 //   main-Branch      → <slug>              (Produktion)
 //
-// backend-aware (.unitix/project.json → backend): prototype deployt IMMER (per Definition mock);
-// dev/main nur bei `mock`|`supabase`. Bei `dataverse` läuft die App IN Power Platform → dev/main
-// werden sauber ÜBERSPRUNGEN (exit 0, kein CI-Fehler).
+// Eines von drei Deploy-Scripts, eines je Ziel — hier Cloudflare Pages, daneben `deploy:api`
+// (Node-API → Azure App Service) und `deploy:swa` (SPA → Azure Static Web Apps). Dieses Script
+// kennt nur Cloudflare; welches Ziel ein Projekt hat, sagt .unitix/project.json → frontend.
 //
-// Die EINE Deploy-Logik — lokal für den Ad-hoc-Link UND aus der CI heraus. Der Deploy-Job in
-// .github/workflows/ci.yml ruft dieses Script auf statt die Logik zu duplizieren: sonst entstehen
-// zwei Pages-Projekte mit zwei URLs, weil CI den Repo-Namen und das Script .unitix/project.json
-// als Slug-Quelle nimmt.
+// Die EINE Cloudflare-Deploy-Logik — lokal für den Ad-hoc-Link UND aus der CI heraus. Der
+// Deploy-Job in .github/workflows/ci.yml ruft dieses Script auf statt die Logik zu duplizieren:
+// sonst entstehen zwei Pages-Projekte mit zwei URLs, weil CI den Repo-Namen und das Script
+// .unitix/project.json als Slug-Quelle nimmt.
+//
+// host-aware, damit genau dieser CI-Job unverändert in JEDEM Projekt laufen kann: `prototype`
+// deployt IMMER (der abgestimmte Stand liegt per Definition auf Cloudflare), `dev`/`main` nur bei
+// `frontend: cloudflare`. Liegt die SPA woanders (`swa`, `powerapps`), ist das kein Fehler, sondern
+// ein anderes Ziel → dieses Script steigt sauber aus (exit 0) und der jeweilige Pfad übernimmt.
+//
+// Bewusst am `frontend`-Feld, nicht am `backend`: wo die SPA liegt, ist eine Host-Frage. Ein
+// Azure-Backend hinter einer Cloudflare-SPA wäre eine gültige Kombination — sie deployt hier
+// weiter, obwohl das Backend nicht mehr `mock` ist.
 //
 // Legt das Pages-Projekt bei Bedarf vorher explizit an (in CI unverzichtbar — wrangler würde sonst
 // interaktiv nachfragen und der allererste Deploy failt) und printet die `*.pages.dev`-URL.
 //
-// SPA-only: hochgeladen wird das statische `apps/web/dist/`. SSR-Projekte laufen nicht über diesen
-// Pfad, und apps/api deployt dieses Script (noch) nicht — das trägt der Azure-Fork ein.
+// SPA-only: hochgeladen wird das statische `apps/web/dist/` — fertig gebaut, dieses Script baut
+// nicht selbst (der Build ist in CI ein eigener Job-Step; die beiden Azure-Scripts bauen dagegen
+// selbst, weil sie von Hand laufen). SSR-Projekte laufen nicht über diesen Pfad.
 //
 // Voraussetzungen (fail loud): CLOUDFLARE_API_TOKEN (Scope Account > Cloudflare Pages > Edit),
 // CLOUDFLARE_ACCOUNT_ID, und ein gebautes `apps/web/dist/`. Beide Env-Namen liest wrangler nativ.
@@ -39,7 +50,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const WEB_DIST = 'apps/web/dist'
 
 // Branch → { Projekt-Suffix, Cloudflare-production-branch, deployt-immer }.
-// prototype ist immer mock → alwaysDeploy; dev/main sind backend-aware (siehe shouldDeploy).
+// prototype liegt immer auf Cloudflare → alwaysDeploy; dev/main sind host-aware (siehe shouldDeploy).
 const ENVIRONMENTS = {
   prototype: { suffix: '-prototype', productionBranch: 'prototype', alwaysDeploy: true },
   dev: { suffix: '-dev', productionBranch: 'dev', alwaysDeploy: false },
@@ -47,7 +58,7 @@ const ENVIRONMENTS = {
 }
 
 function fail(message) {
-  console.error(`\n✖ deploy: ${message}\n`)
+  console.error(`\n✖ deploy:cloudflare: ${message}\n`)
   process.exit(1)
 }
 
@@ -128,14 +139,19 @@ function projectNameFor(env) {
   return envProjectName(resolveBaseSlug(), ENVIRONMENTS[env].suffix)
 }
 
-// dev/main deployen nur, wenn das Backend web-hostbar ist. dataverse läuft in Power Platform.
+// Wo dev/main gehostet werden, entscheidet das `frontend`-Feld. Alles außer `cloudflare` hat
+// einen eigenen Deploy-Pfad und wird hier übersprungen, statt zu failen.
+const OTHER_HOSTS = {
+  swa: 'Azure Static Web Apps (`pnpm deploy:swa`, siehe docs/azure-setup.md)',
+  powerapps: 'Power Platform (pac code push)',
+}
+
 function shouldDeploy(env) {
   if (ENVIRONMENTS[env].alwaysDeploy) return true
-  const backend = (readJson('.unitix/project.json') ?? {}).backend
-  if (backend === 'dataverse') {
-    console.log(
-      `→ backend=dataverse → ${env} läuft in Power Platform, kein Cloudflare-Deploy. Übersprungen.`,
-    )
+  const frontend = (readJson('.unitix/project.json') ?? {}).frontend ?? 'cloudflare'
+  const otherHost = OTHER_HOSTS[frontend]
+  if (otherHost) {
+    console.log(`→ frontend=${frontend} → ${env} deployt über ${otherHost}. Cloudflare übersprungen.`)
     return false
   }
   return true
@@ -170,7 +186,7 @@ function wrangler(args, { allowFailure = false } = {}) {
 function main() {
   const env = resolveEnv()
 
-  // backend-aware ZUERST — ein dataverse-dev/main-Push soll exit 0 liefern, nicht am fehlenden
+  // host-aware ZUERST — ein swa-/dataverse-dev/main-Push soll exit 0 liefern, nicht am fehlenden
   // Token sterben. Deshalb der Skip-Check vor assertPrerequisites().
   if (!shouldDeploy(env)) process.exit(0)
 

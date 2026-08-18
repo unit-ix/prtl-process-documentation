@@ -11,13 +11,20 @@
     "scripts": {
         "dev": "pnpm --filter @app/web dev",
         "dev:api": "pnpm --filter @app/api dev",
+        "dev:full": "pnpm --parallel --filter \"./apps/*\" dev",
         "build": "pnpm --filter \"./apps/*\" build",
         "lint": "eslint . --max-warnings 0",
         "knip": "knip --no-config-hints",
         "check:env": "node scripts/check-env-secrets.mjs",
         "verify": "pnpm check:env && pnpm lint && pnpm knip && pnpm build",
-        "deploy": "node scripts/deploy.mjs",
-        "deploy:prototype": "node scripts/deploy.mjs --env=prototype"
+        "db:generate": "pnpm --filter @app/api db:generate",
+        "db:migrate": "pnpm --filter @app/api db:migrate",
+        "db:grant": "pnpm --filter @app/api db:grant",
+        "db:firewall": "node scripts/sync-db-firewall.mjs",
+        "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
+        "deploy:prototype": "node scripts/deploy-cloudflare.mjs --env=prototype",
+        "deploy:api": "node scripts/deploy-api.mjs",
+        "deploy:swa": "node --env-file-if-exists=.env scripts/deploy-swa.mjs"
     },
     "devDependencies": {
         "@eslint/js": "^9.17.0",

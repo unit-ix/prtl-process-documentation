@@ -841,7 +841,7 @@
                         <tr>
                             <th class="axis">Stage ↓ · Backend →</th>
                             <th><code>mock</code></th>
-                            <th><code>supabase</code></th>
+                            <th><code>azure</code></th>
                             <th><code>dataverse</code></th>
                         </tr>
                         <tr>
@@ -888,7 +888,7 @@
                 <figcaption>
                     Das aktive Backend steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit dieser
                     Achse, nie aus dem Branch abgeleitet. <code>mock</code> ist der Default eines frischen Templates,
-                    <code>supabase</code> strategisch der Haupt-Weg.
+                    <code>azure</code> strategisch der Haupt-Weg.
                 </figcaption>
             </figure>
 
@@ -987,7 +987,7 @@
                     </div>
                     <div class="adapters">
                         <div class="ad-mock">mock/</div>
-                        <div class="ad-supa">supabase/</div>
+                        <div class="ad-supa">azure/</div>
                         <div class="ad-supa">dataverse/</div>
                     </div>
                     <div class="layer">
@@ -1047,7 +1047,7 @@
             <h2><span class="num">6</span>Welcher Regelsatz gilt</h2>
             <p class="sub small">
                 Vor jedem Task liest die KI <strong>zwei Dateien immer</strong> und <strong>genau eine</strong>
-                backend-abhängig. Der teure Fehler ist der falsche Regelsatz — Supabase-Code in eine CSP-gesperrte
+                backend-abhängig. Der teure Fehler ist der falsche Regelsatz — eine fetch-basierte Azure-Architektur in eine CSP-gesperrte
                 Code App bauen, oder einen gesunden Prototyp rot flaggen.
             </p>
             <figure>
@@ -1057,22 +1057,22 @@
                         <ul>
                             <li class="always">naming-conventions.md</li>
                             <li class="always">lean-coding.md</li>
-                            <li>+ prototype-patterns.md</li>
+                            <li>+ patterns-prototype.md</li>
                         </ul>
                         <div class="why">
                             Mock erlaubt, <code>fetch</code> ok, public Hosting, kein DB-Zwang. Data-Seam Pflicht.
                         </div>
                     </div>
                     <div class="rulecol r-supa">
-                        <div class="hd">backend: supabase</div>
+                        <div class="hd">backend: azure</div>
                         <ul>
                             <li class="always">naming-conventions.md</li>
                             <li class="always">lean-coding.md</li>
-                            <li>+ supabase-patterns.md</li>
+                            <li>+ patterns-azure.md</li>
                         </ul>
                         <div class="why">
-                            anon-Key public, <strong>RLS Pflicht</strong>, Auth via OAuth/PKCE, Secrets nur in Edge
-                            Functions.
+                            Eigene Node-API, <strong>Entra-JWT auf allem ausser /health</strong>, Managed Identity statt Secrets,
+                            CSP selbst setzen.
                         </div>
                     </div>
                     <div class="rulecol r-dv">
