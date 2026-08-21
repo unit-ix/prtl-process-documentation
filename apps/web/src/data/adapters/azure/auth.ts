@@ -1,6 +1,6 @@
 // Entra ID über MSAL Browser. Ablauf, Diagramm und AADSTS-Fehlertabelle: docs/auth.md.
 // Bewusst ohne @azure/msal-react — der Login läuft einmal im Bootstrap, vor dem ersten Render.
-import { InteractionRequiredAuthError, PublicClientApplication } from '@azure/msal-browser';
+import { BrowserAuthError, InteractionRequiredAuthError, PublicClientApplication } from '@azure/msal-browser';
 import { entra } from '@/shared/lib/projectConfig';
 
 // Spiegelt REQUIRED_SCOPE in apps/api/src/auth/verify.ts — Packages können keine Konstante teilen.
@@ -62,6 +62,26 @@ export async function ensureSignedIn(): Promise<void> {
     msal = instance;
 }
 
+/**
+ * Silent-Ausgänge, die nur interaktiv aufzulösen sind. `timed_out` ist der häufigste: MSAL konnte das
+ * versteckte iframe nicht auslesen — etwa weil der Browser den Mandanten-Cookie darin als
+ * Third-Party blockt. Keiner davon ist ein `InteractionRequiredAuthError`, deshalb die eigene Liste:
+ * beide Klassen erben direkt von `AuthError`, ein `instanceof` erwischt sie also nicht mit.
+ */
+const SILENT_DEAD_ENDS = new Set([
+    'timed_out',
+    'block_iframe_reload',
+    'iframe_closed_prematurely',
+    'empty_window_error',
+    'hash_empty_error',
+    'no_state_in_hash',
+    'hash_does_not_contain_known_properties',
+]);
+
+const needsInteraction = (error: unknown): boolean =>
+    error instanceof InteractionRequiredAuthError ||
+    (error instanceof BrowserAuthError && SILENT_DEAD_ENDS.has(error.errorCode));
+
 /** Access-Token für die API. Silent, solange es geht — sonst zurück in den Redirect-Flow. */
 export async function accessToken(): Promise<string> {
     if (!msal) throw new Error('Nicht angemeldet — ensureSignedIn() läuft vor dem ersten Render.');
@@ -69,7 +89,9 @@ export async function accessToken(): Promise<string> {
         const result = await msal.acquireTokenSilent({ scopes: [apiScope()] });
         return result.accessToken;
     } catch (error) {
-        if (error instanceof InteractionRequiredAuthError) {
+        // Gegen eine Redirect-Schleife schützt MSAL selbst: eine laufende Interaktion lehnt es mit
+        // `interaction_in_progress` ab.
+        if (needsInteraction(error)) {
             await msal.acquireTokenRedirect({ scopes: [apiScope()] });
         }
         throw error;
