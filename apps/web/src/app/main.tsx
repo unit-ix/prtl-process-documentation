@@ -15,11 +15,18 @@ function render(): void {
     );
 }
 
+// MSAL erneuert Token in einem versteckten iframe, das auf die redirectUri zeigt — also auf diese
+// App. Startet sie dort mit, greift ein zweites MSAL auf denselben sessionStorage zu und verbraucht
+// die Antwort, bevor das Elternfenster sie lesen kann: die Erneuerung endet in `timed_out`.
+const inAuthFrame = window.self !== window.top && /[#&](code|error|state)=/.test(window.location.hash);
+
 // Bootstrap VOR dem ersten Render: braucht das Backend einen Login, navigiert er weg und `then`
 // wird nie erreicht — so gibt es keinen Zustand „App läuft, aber ohne Token". Bei `mock` ein No-op.
 // `.then()` statt top-level await, das würde das Build-Target des Templates auf ES2022 heben.
-initDataAccess().then(render, (error: unknown) => {
-    // Vor React gibt es keinen Komponentenbaum für einen ErrorState — deshalb direkt ins DOM.
-    console.error(error);
-    root.textContent = 'Anmeldung fehlgeschlagen. Bitte Seite neu laden.';
-});
+if (!inAuthFrame) {
+    initDataAccess().then(render, (error: unknown) => {
+        // Vor React gibt es keinen Komponentenbaum für einen ErrorState — deshalb direkt ins DOM.
+        console.error(error);
+        root.textContent = 'Anmeldung fehlgeschlagen. Bitte Seite neu laden.';
+    });
+}
