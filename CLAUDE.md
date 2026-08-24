@@ -30,6 +30,7 @@
 | Hosting Mock-Prototyp (Cloudflare) | [`docs/hosting.md`](docs/hosting.md) |
 | Azure-Setup (Fork `mock → azure`) | [`docs/azure-setup.md`](docs/azure-setup.md) |
 | Anmeldung & Absicherung (`platform: azure`) | [`docs/auth.md`](docs/auth.md) |
+| Dateien in Blob Storage (`platform: azure`) | [`docs/blob-storage.md`](docs/blob-storage.md) |
 | Prototyp-Artefakte | [`docs/prototype-manifest.md`](docs/prototype-manifest.md) |
 
 `docs/prd.md`, `docs/datamodel.md` und `docs/datamodel.mmd` sind vom `/prototype`-Ingest gespiegelte **Snapshots** des SharePoint-Masters (Kopf-Header `Stand:`/`Quelle:`), nicht die Live-Wahrheit — bei Änderung via erneutem Ingest (`[O]verwrite`) auffrischen.

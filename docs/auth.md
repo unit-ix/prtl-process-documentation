@@ -132,6 +132,17 @@ App-Service-Frontend ist die für alle Clients dieselbe — für einen brauchbar
 Wenn ungedrosselte Anfragen ohne Token einmal wirklich weh tun, ist der richtige Ort davor — Azure Front
 Door oder eine Conditional-Access-Policy —, nicht dieser Prozess.
 
+**`/health` ist von der Bremse ausgenommen**, und zwar aus genau demselben Grund: ohne Token gibt es keine
+Personalnummer, der Schlüssel fiele auf die Adresse zurück, und die ist für alle dieselbe. Alles, was von
+aussen an `/health` geht, teilte sich damit einen Eimer — und darin sässe auch die Health-Check-Sonde von
+Azure. Ihr `429` liest App Service als „Instanz ungesund" und startet neu: die Bremse wäre der Ausfall, den
+sie verhindern soll. Der Endpunkt verträgt das, weil er nichts tut — kein Query, keine Prüfung, ein
+statisches Objekt. Ohne die Ausnahme wäre er der einzige Pfad ohne Ausweis, auf den die Drosselung wirkt.
+
+Aus demselben Gedanken protokolliert Fastify **nicht** jede Anfrage (`disableRequestLogging`): ungedrosselte
+`401` würden sonst unbegrenzt Log schreiben — heute Plattenplatz, mit Application Insights eine Rechnung pro
+GB. Was bleibt, ist der 500er-Log im Error-Handler und die Zeile aus der Tokenprüfung.
+
 ## Wenn der Login scheitert
 
 Entra meldet Fehler als `AADSTS`-Nummer, in der Fehlerseite oder in der Browser-Konsole.

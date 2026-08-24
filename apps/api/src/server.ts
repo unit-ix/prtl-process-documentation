@@ -18,6 +18,7 @@ const env = serverEnv();
 const app = Fastify({
     bodyLimit: env.BODY_LIMIT_BYTES,
     logger: { level: 'info' },
+    disableRequestLogging: true,
 });
 
 /** `/health` muss ohne Identität erreichbar sein, sonst kann Azure die Instanz nicht prüfen. */
@@ -42,6 +43,7 @@ app.addHook(
     app.rateLimit({
         max: env.RATE_LIMIT_MAX,
         keyGenerator: (request: FastifyRequest) => request.claims?.objectId ?? request.ip,
+        allowList: (request: FastifyRequest) => isPublic(request.url),
     }),
 );
 
