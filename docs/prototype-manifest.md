@@ -25,7 +25,7 @@
 | Query-Übersetzer | `apps/web/src/data/adapters/mock/query.ts` (`applyQuery`) | Filtert/sortiert/schneidet die Seed-Arrays in-memory, spec-getrieben | Derselbe Aufbau mit nativen Mitteln: PostgREST `.ilike/.eq/.order/.range` + `count: 'exact'` bzw. OData `filter`/`orderBy`/`maxPageSize`/`skipToken`. Der Port-Vertrag (`ListQuery`/`Page`/`QuerySpec`) bleibt unverändert | `prototype` |
 | Seed-Daten (faker) | `apps/web/src/data/adapters/mock/seed.ts` | Deterministische deutsche Fake-Daten (SEED 42, fixe REF_DATE) | Echte Backend-Daten; faker fällt komplett weg | `prototype` |
 | Seeded / laufende ids | `apps/web/src/data/adapters/mock/store.ts` (`nextId`) | `*-new-N` Sequenz + Seed-uuids | Vom Backend vergebene ids (uuid/GUID) | `prototype` |
-| Adapter-Swap-Punkt | `apps/web/src/data/index.ts` | Verzweigt auf `backend`; `mock` liefert die Mock-Repositories | `azure`-Zweig verdrahtet (`AzureRepository`), `dataverse` noch `unsupported()` | `forked` |
+| Adapter-Swap-Punkt | `apps/web/src/data/index.ts` | Verzweigt auf `platform`; `mock` liefert die Mock-Repositories | `azure`-Zweig verdrahtet (`AzureRepository`), `dataverse` noch `unsupported()` | `forked` |
 | Demo-Anlegen | `apps/web/src/features/_example/pages/ContactsPage.tsx` (`handleCreateDemoContact`) | Legt einen Platzhalter-Kontakt an | Ersetzt durch echtes Formular pro Feature | `prototype` |
 | Error-Demo-Trigger | `apps/web/src/features/_example/hooks/useContacts.ts` (`simulateError`) | `?debugError=1` in der URL erzwingt den DoD-Error-Zustand, ohne UI-Button | Entfällt — echte Ladefehler triggern den Zustand | `prototype` |
 | Referenz-Feature `_example` | `apps/web/src/features/_example/*` | Kanonisches „mirror this, then delete."-Muster | Gelöscht, sobald das erste echte Feature steht | `prototype` |
@@ -38,7 +38,7 @@ Stellen in `apps/web/src/shared/components/ui/` (vendored shadcn) weichen bewuss
 
 ## Fork-Checkliste (beim Übergang mock → azure/dataverse)
 
-1. `backend` in `.unitix/project.json` umstellen.
+1. `platform` in `.unitix/project.json` umstellen.
 2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `apps/web/src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider`: Persona-Quelle auf den Host-User umstellen, `RoleSwitcher` aus `AppShell` entfernen.
 4. `_example` löschen (falls noch vorhanden), Demo-Anlegen + Error-Demo-Trigger aus echten Features entfernen.

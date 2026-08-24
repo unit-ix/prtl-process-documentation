@@ -26,36 +26,37 @@ Es gibt **keine harte Übergabe** zwischen „Konzept" und „Entwicklung". Der 
 
 ## Die zwei Achsen
 
-Alles hängt an genau zwei Schaltern, und sie sind **unabhängig** voneinander.
+Alles hängt an zwei Schaltern — aber nur einer davon ist eine Projekt-Eigenschaft.
 
-### Stage = welcher Git-Branch
+### Umgebung = wohin deployt wird
 
-Zwei Promotion-Pfade, **nicht** ein linearer Durchlauf:
+**Kein Branch.** Es gibt `main` und kurzlebige `feature/*`; welche Umgebung getroffen wird, sagt das Deploy-Kommando:
 
 ```
-Prototyp-Phase:  /prototype  →  prototype        (Feature-Checkpoints direkt auf prototype, dann eingefroren)
-Übergabe:        /handoff:   prototype ─seed→ dev
-Produkt-Phase:   feature/*  →  dev  →  main      (prototype eingefroren, aus dem Pfad raus)
+main ──●────●────●────●────●──▶     jeder Merge ist Dev-fähig
+       │                   │
+       └─Tag prototype-ok  └─Tag prod-2026-09-01  (pnpm deploy:prod)
 ```
 
-`feature/*` und `dev` gibt es **nur in der Produkt-Phase**.
+| Ziel | Kommando | Rolle |
+| --- | --- | --- |
+| Mock-Prototyp | `pnpm deploy:cloudflare` | Der Stand, den der Kunde abstimmt. Tag `prototype-ok` markiert das OK. |
+| Azure-Dev | `pnpm deploy:dev` | Testumgebung. Hier testet das Team, hier hängt auch die lokale Entwicklung dran. |
+| Azure-Prod | `pnpm deploy:prod` | Produktion. Der einzige gegatete Schritt, Tag `prod-YYYY-MM-DD`. |
 
-| Branch | Bedeutung |
-| --- | --- |
-| `feature/*` | Arbeit an einem Feature, von `dev` abgezweigt. Kein Deploy. |
-| `dev` | Mutable Testbasis. `/execute` merged hierher. Deployt auf `<slug>-dev`. |
-| `prototype` | **Eingefroren** — der abgestimmte Stand, den der Kunde sieht. Deployt auf `<slug>-prototype`, immer Mock. |
-| `main` | Produktion. Deployt auf `<slug>` — Cloudflare oder Power Platform, je nach Backend. |
+`feature/*` deployt nie. Warum ein Branch-Modell hier nicht trägt, und was Dev und Prod teilen: [`environments.md`](environments.md).
 
-### Backend = woher die Daten kommen
+### Plattform = woher die Daten kommen und wo es liegt
 
 Steht in [`.unitix/project.json`](../.unitix/project.json) — **die** Wahrheit dieser Achse:
 
-| Backend | Bedeutung |
-| --- | --- |
-| `mock` | Erfundene Daten aus dem Seed. Kein Backend. Default eines frischen Templates. |
-| `azure` | Eigene Node-API + PostgreSQL + Entra ID, gehostet auf Azure Static Web Apps. **Strategisch der Haupt-Weg.** |
-| `dataverse` | Microsoft Power Platform Code App. |
+| `platform` | Bedeutung | Host |
+| --- | --- | --- |
+| `mock` | Erfundene Daten aus dem Seed. Kein Backend. Default eines frischen Templates. | Cloudflare Pages |
+| `azure` | Eigene Node-API + PostgreSQL + Entra ID. **Strategisch der Haupt-Weg.** | Azure Static Web Apps |
+| `powerapps` | Microsoft Power Platform Code App auf Dataverse. | Power Platform |
+
+Ein Feld, nicht zwei: die Zuordnung Plattform → Host ist 1:1 und von den Regelsätzen erzwungen.
 
 Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI-ready). Produktiv geht die Richtung „mehr Azure, weniger Power Platform" — Bestehendes wird selektiv migriert, nicht per Hauruck.
 
@@ -69,7 +70,7 @@ apps/web/src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich n
 apps/web/src/data/adapters/
     mock/                ← Seed-Daten
     azure/               ← echtes Backend (eigene API + MSAL)
-    dataverse/           ← echtes Backend
+    dataverse/           ← echtes Backend (Power Platform Code App)
 ```
 
 Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `apps/web/src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
@@ -83,12 +84,12 @@ Details: [`prototype-manifest.md`](prototype-manifest.md)
 Kundenprojekte laufen in zwei Phasen:
 
 ```
-Prototyp-Phase:  /prototype <projektordner>   → baut den Mock-Prototyp autonom → prototype-Branch
-                                              → Cloudflare → Kunde OK → prototype eingefroren
-Übergabe:        /handoff                     → seedet dev aus dem eingefrorenen prototype
-Produkt-Phase:   /plan <slug>                 → Interview + Plan-File + feature/-Branch (von dev)
-                 /execute <plan>              → committet pro Phase, PR gegen dev, merged autonom
-                 /ship                        → Promotion dev → main (der eine gegatete Schritt)
+/prototype <projektordner>   → baut den Mock-Prototyp autonom, committet auf main
+                             → pnpm deploy:cloudflare → Kunde OK → Tag prototype-ok
+/plan <slug>                 → Interview + Plan-File + feature/-Branch (von main)
+/execute <plan>              → committet pro Phase, PR gegen main, merged autonom
+pnpm deploy:dev              → Azure-Dev, hier testet das Team
+pnpm deploy:prod             → Produktion. Der eine gegatete Schritt — ein Script, kein Command.
 ```
 
 Am Tooling selbst (`code-apps-template` / `code-apps-context`) gibt es keine Command-Kette: dort wird direkt auf `main` gearbeitet.
@@ -97,14 +98,14 @@ Kanonische Beschreibung: [`.claude/CLAUDE.md`](../.claude/CLAUDE.md).
 
 ## Die Regeln — und wo sie stehen
 
-**Vor jedem Task liest die KI zwei Dateien immer** und **genau eine** backend-abhängig:
+**Vor jedem Task liest die KI zwei Dateien immer** und **genau eine** plattform-abhängig:
 
-| Immer | bei `mock` | bei `azure` | bei `dataverse` |
+| Immer | bei `mock` | bei `azure` | bei `powerapps` |
 | --- | --- | --- | --- |
 | [`naming-conventions.md`](../.claude/docs/naming-conventions.md) | [`patterns-prototype.md`](../.claude/docs/patterns-prototype.md) | [`patterns-azure.md`](../.claude/docs/patterns-azure.md) | [`patterns-code-app.md`](../.claude/docs/patterns-code-app.md) |
 | [`lean-coding.md`](../.claude/docs/lean-coding.md) | Mock ok, `fetch` ok | **Entra-JWT Pflicht**, Managed Identity | CSP, Dataverse-only |
 
-Der teure Fehler ist der **falsche Regelsatz**: eine `fetch`-basierte Azure-Architektur in eine CSP-gesperrte Code App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `backend`-Feld, nie am Branch.
+Der teure Fehler ist der **falsche Regelsatz**: eine `fetch`-basierte Azure-Architektur in eine CSP-gesperrte Code App bauen, oder einen gesunden Prototyp rot flaggen. Deshalb hängt der Regelsatz am expliziten `platform`-Feld, nie am Branch.
 
 **DB-Naming ist systemabhängig** — kein Versehen, sondern Beschluss:
 
@@ -122,10 +123,11 @@ Grund: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ei
 ## Teilen und Deployen
 
 - **Wir entwickeln auf localhost** (`pnpm dev`) und machen dort den internen Review — nicht über einen Deploy.
-- **Der Kunde stimmt auf Cloudflare ab**, auf dem Deploy des `prototype`-Branches — immer noch Mock-Daten.
-- **Der Link entsteht über GitHub Actions**, ausgelöst durch eine Promotion auf `prototype`. Nicht jeder Commit deployt — Build-Minuten sind ein echtes Budget.
+- **Der Kunde stimmt auf Cloudflare ab** — immer noch Mock-Daten.
+- **Der Link entsteht über GitHub Actions** auf `main`. Kein PR und kein `feature/*` deployt — Build-Minuten sind ein echtes Budget.
+- **Nach dem Azure-Fork** übernimmt `pnpm deploy:dev` / `pnpm deploy:prod`.
 
-Details, Secrets und die drei Umgebungen: [`hosting.md`](hosting.md).
+Cloudflare-Details und Secrets: [`hosting.md`](hosting.md). Die Azure-Umgebungen: [`environments.md`](environments.md).
 
 ## Wann ist der Prototyp fertig?
 

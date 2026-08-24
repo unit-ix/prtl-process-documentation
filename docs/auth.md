@@ -4,7 +4,7 @@
 > [`verify.ts`](../apps/api/src/auth/verify.ts) und [`auth.ts`](../apps/web/src/data/adapters/azure/auth.ts)
 > von oben bis unten lesbar — beide Dateien sind kommentarfrei und setzen genau das voraus, was hier steht.
 >
-> Gilt nur bei `backend: azure` in [`.unitix/project.json`](../.unitix/project.json). Im Mock-Prototyp ist
+> Gilt nur bei `platform: azure` in [`.unitix/project.json`](../.unitix/project.json). Im Mock-Prototyp ist
 > [`initDataAccess()`](../apps/web/src/data/index.ts) ein No-op — es gibt keinen Login.
 
 ## Die Kurzfassung

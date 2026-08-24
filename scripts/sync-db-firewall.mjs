@@ -1,59 +1,22 @@
 #!/usr/bin/env node
-// Firewall des PostgreSQL Flexible Server auf die Outbound-IPs des App Service abgleichen — EIN
-// idempotenter Befehl statt der Handarbeit, die docs/azure-setup.md (Schritt 3) vorher aufzählte:
-// "Outbound addresses kopieren und für jede IP eine Regel anlegen".
-//
-// Das Problem an der Handarbeit ist nicht der Aufwand, sondern die Haltbarkeit. Die Liste ist ein
-// Snapshot, und wenn sie veraltet, erreicht die API die DB nicht mehr — im Log sieht das wie ein
-// Timeout aus. Drei Dinge machen die Liste ungültig, und keines davon meldet sich:
-//
-//   1. Web App löschen und in einer ANDEREN Resource Group neu anlegen (Deployment-Unit wechselt)
-//   2. die letzte App einer RG+Region löschen und neu anlegen (dito)
-//   3. Scaling ZWISCHEN den Tier-Gruppen {Basic, Standard, Premium} / {PremiumV2} / {PremiumV3} /
-//      {Pmv3 innerhalb PremiumV3}
-//   4. ein PITR-Restore der Datenbank — der wiederhergestellte Server hat KEINE Firewall-Regeln
-//
-// Deshalb liest das Script `possibleOutboundIpAddresses` und nicht `outboundIpAddresses`: die
-// erste Liste enthält alle IPs, die die App in ihrer Deployment-Unit je nutzen kann, TIERÜBERGREIFEND.
-// Damit ist Fall 3 gar keiner mehr — B1 → B2 → S1 → P1v3 ändert an der Firewall nichts. Wachsen kann
-// die Liste, wenn Azure der Deployment-Unit später ein neues Tier hinzufügt; wirksam wird das erst,
-// wenn man selbst dorthin wechselt. Also ein Ereignis, das wir auslösen, nicht eines, das uns
-// überrascht — und dann genügt ein erneuter Lauf.
-//
-// Scale-OUT (Instanzzahl) ändert die Outbound-IPs nie.
-//
-// Verwaltet werden ausschließlich Regeln mit dem Präfix `api-outbound-`; der Regelname trägt die IP
-// (`api-outbound-20-79-1-2`), womit der Abgleich ein reiner Mengenvergleich ist und keine
-// Index-Buchhaltung braucht. Alles ohne dieses Präfix bleibt unangetastet — die Regel für den
-// eigenen Rechner aus Schritt 2 überlebt jeden Lauf.
-//
-// Was das Script NICHT tut: die Checkbox "Allow public access from any Azure service" ersetzen. Die
-// lässt laut Azure-Doku "connections from the subscriptions of other customers" durch, ist deshalb
-// keine Option, und eine vorhandene 0.0.0.0-Regel wird hier gemeldet statt still geduldet.
+// Firewall des PostgreSQL Flexible Server auf die Outbound-IPs der App Services abgleichen.
 //
 //   pnpm db:firewall             # abgleichen
 //   pnpm db:firewall --dry-run   # nur zeigen, was passieren würde
 //
-// Ziel-Ressourcen kommen aus .unitix/project.json: resourceGroup und apiAppName aus dem azure-Block,
-// der Servername aus pg.host (dort steht der FQDN, az will den Namen davor). Einmalig überschreibbar
-// per --resource-group= / --app-name= / --db-server=.
+// KEIN --env: die Firewall gehört dem SERVER, nicht einer Umgebung. Dev und Prod teilen sich
+// standardmäßig einen Server, und der Abgleich löscht jede api-outbound-Regel, die nicht in der
+// Soll-Liste steht — pro Umgebung gelaufen würde ein Dev-Lauf die Regeln von Prod entfernen und die
+// Produktions-API binnen Minuten von der Datenbank trennen. Deshalb pro Server die VEREINIGUNG der
+// IPs aller App Services, die ihn benutzen.
 //
-// Voraussetzung (fail loud): Azure CLI installiert und `az login` gelaufen — dieselbe Sitzung, die
-// auch db:migrate als DB-Passwort-Ersatz nutzt. Welche Flag-Belegung die installierte CLI für
-// `firewall-rule` erwartet, erkennt resolveFlagStyle() unten selbst — sie wurde zwischen Versionen
-// vertauscht.
-//
-// Details: docs/azure-setup.md.
+// Warum possibleOutboundIpAddresses statt outboundIpAddresses, was die Liste ungültig macht und
+// warum nur Regeln mit dem eigenen Präfix angefasst werden: docs/azure-setup.md, Schritt 3.
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { argValue, hasFlag, readProjectConfig, repoRoot } from './lib/environment.mjs'
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-
-// Nur Regeln mit diesem Präfix gehören dem Script. Die Grenze ist der ganze Sicherheitsmechanismus
-// gegen "Script löscht die Regel, über die gerade migriert wird".
+// Alles ohne dieses Präfix bleibt unangetastet — u. a. die Regel für den eigenen Rechner.
 const RULE_PREFIX = 'api-outbound-'
 
 function fail(message) {
@@ -61,29 +24,10 @@ function fail(message) {
   process.exit(1)
 }
 
-function readJson(relPath) {
-  const abs = resolve(repoRoot, relPath)
-  if (!existsSync(abs)) return null
-  try {
-    return JSON.parse(readFileSync(abs, 'utf8'))
-  } catch {
-    return null
-  }
-}
+const dryRun = hasFlag('--dry-run')
 
-function argValue(flag) {
-  const prefix = `${flag}=`
-  return process.argv
-    .slice(2)
-    .map((a) => (a.startsWith(prefix) ? a.slice(prefix.length) : null))
-    .find(Boolean)
-}
-
-const dryRun = process.argv.slice(2).includes('--dry-run')
-
-// Alle az-Aufrufe laufen hierüber: stdout wird gelesen (nicht durchgeleitet), stderr nur im
-// Fehlerfall gezeigt — sonst überdeckt das CLI-Rauschen die eigentliche Zusammenfassung.
-function az(label, args, { json = false } = {}) {
+// stderr nur im Fehlerfall zeigen, sonst überdeckt das CLI-Rauschen die Zusammenfassung.
+function az(label, args, { json = false, soft = false } = {}) {
   const r = spawnSync('az', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
   if (r.error) {
     fail(
@@ -91,6 +35,7 @@ function az(label, args, { json = false } = {}) {
         'und `az login` ausführen.',
     )
   }
+  if (r.status !== 0 && soft) return null // noch nicht angelegte Ressource ist kein Fehler
   if (r.status !== 0) fail(`${label} beendete mit Code ${r.status}:\n${(r.stderr ?? '').trim()}`)
   if (!json) return (r.stdout ?? '').trim()
   try {
@@ -100,25 +45,56 @@ function az(label, args, { json = false } = {}) {
   }
 }
 
-// Explizites Argument schlägt project.json — so gleicht man ohne Umschreiben der Config einmalig
-// eine andere Umgebung ab (DEV vs. PROD).
-function resolveTarget() {
-  const config = readJson('.unitix/project.json') ?? {}
-  const azure = config.azure ?? {}
-  const resourceGroup = argValue('--resource-group') || azure.resourceGroup
-  const appName = argValue('--app-name') || azure.apiAppName
-  // Abgeleitet statt als zweites Feld gepflegt.
-  const dbServer = argValue('--db-server') || ((config.pg ?? {}).host ?? '').split('.')[0]
-  if (!resourceGroup || !appName || !dbServer) {
+function resolveTargets() {
+  const override = {
+    resourceGroup: argValue('--resource-group'),
+    appName: argValue('--app-name'),
+    dbServer: argValue('--db-server'),
+  }
+  if (override.resourceGroup && override.appName && override.dbServer) {
+    console.log('→ Explizites Einzelziel aus den Argumenten — der environments-Block wird ignoriert.')
+    return [{ name: '(argumente)', ...override }]
+  }
+  if (override.resourceGroup || override.appName || override.dbServer) {
     fail(
-      'Ziel unbekannt. Bitte in .unitix/project.json ergänzen:\n' +
-        '  "azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>" }\n' +
-        '  "pg": { "host": "<psql-name>.postgres.database.azure.com", … }\n' +
+      'Ein Einzelziel braucht alle drei Argumente: --resource-group= --app-name= --db-server=\n' +
+        'Teilweise gesetzt wäre es halb aus der Config und halb aus dem Befehl — und damit unlesbar.',
+    )
+  }
+
+  const environments = readProjectConfig().environments ?? {}
+  const targets = Object.entries(environments).map(([name, env]) => ({
+    name,
+    resourceGroup: (env.azure ?? {}).resourceGroup,
+    appName: (env.azure ?? {}).apiAppName,
+    // Abgeleitet statt als zweites Feld gepflegt.
+    dbServer: ((env.pg ?? {}).host ?? '').split('.')[0],
+  }))
+
+  const broken = targets.filter((t) => !t.resourceGroup || !t.appName || !t.dbServer)
+  if (targets.length === 0 || broken.length > 0) {
+    fail(
+      'Ziel unbekannt. Bitte in .unitix/project.json je Umgebung ergänzen:\n' +
+        '  "environments": { "dev": {\n' +
+        '      "azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>" },\n' +
+        '      "pg": { "host": "<psql-name>.postgres.database.azure.com", … } } }\n' +
+        (broken.length > 0 ? `Unvollständig: ${broken.map((t) => t.name).join(', ')}\n` : '') +
         'Oder einmalig: pnpm db:firewall --resource-group=<rg> --app-name=<name> --db-server=<psql-name>\n' +
         '--db-server erwartet den Server-Namen ohne .postgres.database.azure.com. Details: docs/azure-setup.md.',
     )
   }
-  return { resourceGroup, appName, dbServer }
+  return targets
+}
+
+function groupByServer(targets) {
+  const servers = new Map()
+  for (const t of targets) {
+    const existing = servers.get(t.dbServer)
+    if (existing) existing.apps.push(t)
+    // Die Resource Group des Servers: die der ersten Umgebung, die ihn nennt.
+    else servers.set(t.dbServer, { dbServer: t.dbServer, resourceGroup: t.resourceGroup, apps: [t] })
+  }
+  return [...servers.values()]
 }
 
 function assertAzLogin() {
@@ -134,12 +110,9 @@ function assertAzLogin() {
 
 const ruleName = (ip) => RULE_PREFIX + ip.replaceAll('.', '-')
 
-// Die Azure CLI hat die Flags dieser Befehlsgruppe zwischen Versionen umbenannt: bis 2.75 heißt der
-// SERVER `--name` und die Regel `--rule-name`, in neueren Versionen heißt der Server `--server-name`
-// und die Regel `--name`. Beide Belegungen sind für sich schlüssig, keine lässt sich am Namen
-// erkennen — und wer die falsche wählt, legt eine Regel auf einem Server an, der nicht existiert
-// (bzw. bekommt "the following arguments are required"). Deshalb einmal die Hilfe befragen statt
-// raten; der Aufruf ist lokal und kostet keinen Roundtrip.
+// Die Azure CLI hat die Flags dieser Befehlsgruppe zwischen Versionen vertauscht: bis 2.75 ist der
+// SERVER `--name` und die Regel `--rule-name`, danach umgekehrt. Wer falsch rät, legt eine Regel auf
+// einem Server an, der nicht existiert — deshalb die Hilfe befragen statt raten.
 function resolveFlagStyle() {
   const help = spawnSync('az', ['postgres', 'flexible-server', 'firewall-rule', 'create', '--help'], {
     cwd: repoRoot,
@@ -156,16 +129,16 @@ function resolveFlagStyle() {
 // Von main() gesetzt, bevor irgendeine Regel-Operation läuft.
 let flags
 
-// Beide Listen kommen als komma-separierter String. IPv6 wird verworfen: Postgres-Firewall-Regeln
-// müssen laut Doku IPv4 sein und lehnen IPv6 mit einem Validierungsfehler ab (App-Service-Outbound-
-// IPv6 ist Public Preview — es gehört bei diesem Stack aus).
+// IPv6 wird verworfen: Postgres-Firewall-Regeln müssen IPv4 sein und lehnen IPv6 mit einem
+// Validierungsfehler ab.
 function readOutboundIps(resourceGroup, appName) {
   const app = az(
     'az webapp show',
     ['webapp', 'show', '--resource-group', resourceGroup, '--name', appName,
       '--query', '{current: outboundIpAddresses, possible: possibleOutboundIpAddresses}', '--output', 'json'],
-    { json: true },
+    { json: true, soft: true },
   )
+  if (!app) return null
 
   const split = (s) => (s ?? '').split(',').map((x) => x.trim()).filter(Boolean)
   const possible = split(app.possible)
@@ -220,20 +193,65 @@ function applyRule(verb, resourceGroup, dbServer, name, ip) {
 }
 
 function main() {
-  const { resourceGroup, appName, dbServer } = resolveTarget()
+  const targets = resolveTargets()
 
   assertAzLogin()
   flags = resolveFlagStyle()
 
-  console.log(`→ Outbound-IPs von ${appName} lesen (possibleOutboundIpAddresses) …`)
-  const { ipv4, currentCount } = readOutboundIps(resourceGroup, appName)
-  console.log(`  ${ipv4.length} mögliche IPv4-Adresse(n), davon ${currentCount} aktuell in Benutzung.`)
+  const servers = groupByServer(targets)
+  console.log(
+    `→ ${targets.length} Umgebung(en) (${targets.map((t) => t.name).join(', ')}) an ` +
+      `${servers.length} Server: ${servers.map((s) => s.dbServer).join(', ')}`,
+  )
 
-  console.log(`→ Firewall-Regeln von ${dbServer} lesen …`)
+  let changed = 0
+  for (const server of servers) changed += syncServer(server)
+
+  if (changed === 0) console.log('\n✓ Alle Server sind synchron — nichts zu tun.')
+}
+
+/** Gleicht EINEN Server gegen die Vereinigung der IPs aller Apps ab, die ihn benutzen. */
+function syncServer({ dbServer, resourceGroup, apps }) {
+  console.log(`\n▸ ${dbServer}`)
+
+  const ips = new Set()
+  const missing = []
+  for (const app of apps) {
+    const result = readOutboundIps(app.resourceGroup, app.appName)
+    if (!result) {
+      missing.push(app)
+      continue
+    }
+    for (const ip of result.ipv4) ips.add(ip)
+    console.log(
+      `  ${app.name}: ${app.appName} → ${result.ipv4.length} mögliche IPv4-Adresse(n), ` +
+        `davon ${result.currentCount} aktuell in Benutzung.`,
+    )
+  }
+
+  for (const app of missing) {
+    console.log(`  ⚠ ${app.name}: Web App "${app.appName}" existiert (noch) nicht — übersprungen.`)
+  }
+
+  if (ips.size === 0) {
+    // Leere Soll-Liste würde ALLE eigenen Regeln löschen.
+    console.log('  ⚠ Keine App Service dieses Servers ist erreichbar — Abgleich übersprungen.')
+    return 0
+  }
+  if (missing.length > 0 && !hasFlag('--allow-partial')) {
+    fail(
+      `${missing.length} von ${apps.length} App Service(s) an ${dbServer} sind nicht lesbar.\n` +
+        'Ein Abgleich würde jetzt die Regeln der fehlenden Umgebung(en) löschen — bei einer noch nicht\n' +
+        'angelegten Umgebung harmlos, bei einem Tippfehler im Namen ein Ausfall der anderen.\n' +
+        'Wenn die Umgebung wirklich noch nicht existiert:  pnpm db:firewall --allow-partial',
+    )
+  }
+
+  console.log(`  → Firewall-Regeln lesen …`)
   const { managed, foreignCount } = readManagedRules(resourceGroup, dbServer)
-  console.log(`  ${managed.size} eigene Regel(n) (${RULE_PREFIX}*), ${foreignCount} fremde bleiben unangetastet.`)
+  console.log(`    ${managed.size} eigene Regel(n) (${RULE_PREFIX}*), ${foreignCount} fremde bleiben unangetastet.`)
 
-  const desired = new Map(ipv4.map((ip) => [ruleName(ip), ip]))
+  const desired = new Map([...ips].sort().map((ip) => [ruleName(ip), ip]))
   const toCreate = [...desired].filter(([name]) => !managed.has(name))
   // Namensgleich, aber Adressen von Hand verbogen: geradeziehen statt melden.
   const toFix = [...desired].filter(([name, ip]) => {
@@ -243,25 +261,24 @@ function main() {
   const toDelete = [...managed.keys()].filter((name) => !desired.has(name))
 
   if (toCreate.length + toFix.length + toDelete.length === 0) {
-    console.log('\n✓ Firewall ist synchron — nichts zu tun.')
-    return
+    console.log('    ✓ synchron')
+    return 0
   }
 
-  console.log('')
-  for (const [name, ip] of toCreate) console.log(`  + ${ip}  (${name})`)
-  for (const [name, ip] of toFix) console.log(`  ~ ${ip}  (${name}, Adressen korrigiert)`)
-  for (const name of toDelete) console.log(`  − ${name}`)
+  for (const [name, ip] of toCreate) console.log(`    + ${ip}  (${name})`)
+  for (const [name, ip] of toFix) console.log(`    ~ ${ip}  (${name}, Adressen korrigiert)`)
+  for (const name of toDelete) console.log(`    − ${name}`)
 
   if (dryRun) {
-    console.log('\n--dry-run: nichts geändert.')
-    return
+    console.log('    --dry-run: nichts geändert.')
+    return 1
   }
 
   // Serieller Ablauf mit Absicht: jede Regeländerung ist eine ARM-Operation auf DEMSELBEN Server,
   // parallel quittiert Azure das mit einem Conflict. Kostet einige Sekunden pro Regel.
   const total = toCreate.length + toFix.length + toDelete.length
   let done = 0
-  const step = (label) => console.log(`→ ${++done}/${total} ${label} …`)
+  const step = (label) => console.log(`    ${++done}/${total} ${label} …`)
 
   for (const [name, ip] of toCreate) {
     step(`anlegen ${ip}`)
@@ -280,9 +297,14 @@ function main() {
   }
 
   console.log(
-    `\n✓ ${desired.size} Regel(n) gesetzt. Änderungen an der Firewall greifen laut Azure-Doku erst nach\n` +
-      '  bis zu 5 Minuten — ein sofortiger Verbindungsversuch kann noch scheitern.',
+    `    ✓ ${desired.size} Regel(n) gesetzt. Änderungen greifen laut Azure-Doku erst nach bis zu\n` +
+      '      5 Minuten — ein sofortiger Verbindungsversuch kann noch scheitern.',
   )
+  return 1
 }
 
-main()
+try {
+  main()
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error))
+}

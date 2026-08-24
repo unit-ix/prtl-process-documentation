@@ -1,20 +1,36 @@
 {
     "name": "code-apps-template",
-    "backend": "azure",
-    "frontend": "swa",
-    "azure": {
-        "resourceGroup": "rg-template-app",
-        "apiAppName": "template-app-node"
-    },
-    "pg": {
-        "host": "template-app-postgresql.postgres.database.azure.com",
-        "database": "app",
-        "user": "template-app-node"
-    },
+    "platform": "azure",
     "entra": {
         "tenantId": "030ef2e9-1e35-4e42-96ff-ea6e8c2b5453",
         "clientId": "75fcd803-aa3e-4d33-9c44-f7cb8b90d42f",
         "apiAudience": "f090a739-aacb-4dcd-8be8-559573037e4d",
         "subdomain": "unitixtemplateapp"
+    },
+    "environments": {
+        "dev": {
+            "url": "",
+            "azure": {
+                "resourceGroup": "",
+                "apiAppName": ""
+            },
+            "pg": {
+                "host": "template-app-postgresql.postgres.database.azure.com",
+                "database": "app_dev",
+                "user": ""
+            }
+        },
+        "prod": {
+            "url": "",
+            "azure": {
+                "resourceGroup": "rg-template-app",
+                "apiAppName": "template-app-node"
+            },
+            "pg": {
+                "host": "template-app-postgresql.postgres.database.azure.com",
+                "database": "app",
+                "user": "template-app-node"
+            }
+        }
     }
 }

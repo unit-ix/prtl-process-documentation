@@ -1,22 +1,24 @@
-# Hosting — Prototyp, Testumgebung & Produktion (Cloudflare Pages)
+# Hosting — der Mock-Prototyp auf Cloudflare Pages
 
-> **localhost-first für die Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` gegen den Mock-Adapter, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft dagegen auf dem Cloudflare-Deploy des `prototype`-Branches (weiterhin Mock-Daten) — das ist der Regelfall, nicht die Ausnahme.
+> **Gilt bei `platform: mock`.** Der Host des Mock-Prototyps. Die Azure-Umgebungen (`platform: azure`)
+> stehen in [`environments.md`](environments.md), das Azure-Setup in [`azure-setup.md`](azure-setup.md).
+>
+> **localhost-first für die Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` gegen den Mock-Adapter, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft dagegen auf dem Cloudflare-Deploy von `main` (weiterhin Mock-Daten) — das ist der Regelfall, nicht die Ausnahme.
 
 Es gibt **einen** automatisierten Weg: **GitHub Actions**. Der Deploy sitzt im Golden Template — niemand klickt sich durchs Cloudflare-Dashboard.
 
 ## Der Deploy-Weg
 
-Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `apps/web/dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik**; welches Cloudflare-Projekt getroffen wird, bestimmt der Branch (`--branch=${{ github.ref_name }}`, lokal der aktuelle Checkout).
+Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `apps/web/dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik** — und genau ein Cloudflare-Projekt, `<slug>`.
 
-**Ein Script pro Ziel**, benannt nach dem Ziel — nie ein Script, das alles kann:
+**Ein Script pro Host**, benannt nach dem Host:
 
 | Befehl | Script | Ziel |
 | --- | --- | --- |
 | `pnpm deploy:cloudflare` | [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) | SPA → Cloudflare Pages (dieses Dokument) |
-| `pnpm deploy:swa` | [`scripts/deploy-swa.mjs`](../scripts/deploy-swa.mjs) | SPA → Azure Static Web Apps ([`azure-setup.md`](azure-setup.md#6-deployen)) |
-| `pnpm deploy:api` | [`scripts/deploy-api.mjs`](../scripts/deploy-api.mjs) | Node-API → Azure App Service ([`azure-setup.md`](azure-setup.md#6-deployen)) |
+| `pnpm deploy:dev` / `pnpm deploy:prod` | [`scripts/deploy-azure.mjs`](../scripts/deploy-azure.mjs) | Migrationen + Node-API + SPA → Azure ([`environments.md`](environments.md)) |
 
-Welches der beiden SPA-Ziele ein Projekt hat, sagt `.unitix/project.json` → `frontend` — die Scripts prüfen es selbst (siehe host-aware unten).
+Welchen Host ein Projekt hat, sagt `.unitix/project.json` → `platform` — die Scripts prüfen es selbst (siehe host-aware unten).
 
 Er ist **gegatet und standardmäßig aus** und läuft nur, wenn *beides* zutrifft:
 
@@ -25,22 +27,19 @@ Er ist **gegatet und standardmäßig aus** und läuft nur, wenn *beides* zutriff
 
 Bis dahin ist der Job dokumentiert, aber inert.
 
-## Drei Umgebungen, `feature/*` nie
+## Eine Umgebung
 
-Pro Kundenprojekt gibt es **drei** Cloudflare-Pages-Projekte, je Branch eines:
+Pro Kundenprojekt gibt es **ein** Cloudflare-Pages-Projekt, `<slug>`, deployt von `main`.
 
-| Branch | Cloudflare-Projekt | Rolle | Deployt? |
-| --- | --- | --- | --- |
-| `prototype` | `<slug>-prototype` | Eingefrorene Kunden-Referenz (immer Mock) | **Immer** |
-| `dev` | `<slug>-dev` | Testumgebung — hier testet das Team | **host-aware** |
-| `main` | `<slug>` | Produktion | **host-aware** |
-| `feature/*` | — | Feature-Arbeit | **Nie** |
+Ein Mock-Prototyp braucht keine zweite Umgebung: keine Datenbank, keine Anmeldung, nichts zu trennen. Der abgestimmte Stand wird mit dem Tag `prototype-ok` markiert statt mit einem eingefrorenen Branch und einem zweiten Pages-Projekt. Umgebungs-Trennung beginnt erst am Azure-Fork, und dort als Deploy-Ziel statt als Branch — [`environments.md`](environments.md).
 
-**host-aware** heißt: `prototype` liegt per Definition auf Cloudflare und deployt immer. Für `dev`/`main` liest das Script `.unitix/project.json` → `frontend`: bei `cloudflare` deployt es auf Cloudflare, bei `swa` (Azure Static Web Apps) und `powerapps` (Power Platform) hostet ein anderer Dienst — dann überspringt das Script den Cloudflare-Deploy sauber (exit 0, kein CI-Fehler) und der jeweilige Pfad übernimmt (bei `swa`: `pnpm deploy:swa` für die SPA, `pnpm deploy:api` für die Node-API, siehe [`azure-setup.md`](azure-setup.md#6-deployen)).
+**host-aware** heißt: das Script liest `.unitix/project.json` → `platform`. Bei `mock` deployt es auf Cloudflare; bei `azure` (Static Web Apps) und `powerapps` (Power Platform) hostet ein anderer Dienst — dann steigt es sauber aus (exit 0, kein CI-Fehler) und der jeweilige Pfad übernimmt. So läuft derselbe CI-Job unverändert in jedem Projekt.
 
-Bewusst am `frontend`-Feld, nicht am `backend`: wo die SPA liegt, ist eine Host-Frage. Ein Azure-Backend hinter einer Cloudflare-SPA wäre eine gültige Kombination — die deployt hier weiter, obwohl das Backend nicht mehr `mock` ist.
+Am `platform`-Feld und nicht an einem zweiten Host-Feld: die drei Kombinationen sind 1:1 und von den Regelsätzen erzwungen. Eine Cloudflare-SPA vor einer Azure-API wäre cross-origin — was `patterns-azure.md` mit relativer API-Basis und „CORS nur SWA-Origin" ausschließt.
 
-**Build-Minuten sind ein reales Budget.** GitHub Actions hat weniger davon als Cloudflare. `feature/*` deployt deshalb nie — erst in der CI fertig arbeiten, dann auf einen Umgebungs-Branch promoten. `dev` deployt pro Merge, aber der Job hat je Branch eine `concurrency`-Gruppe mit `cancel-in-progress`, sodass zwei schnelle Pushes nicht doppelt zählen.
+**Build-Minuten sind ein reales Budget.** Nur `main` deployt, kein PR und kein `feature/*` — erst in der CI fertig arbeiten, dann mergen. Der Job hat eine `concurrency`-Gruppe mit `cancel-in-progress`, sodass zwei schnelle Pushes nicht doppelt zählen.
+
+Lokal deployt das Script ebenfalls nur von `main`: der Cloudflare-Link ist der Stand, den der Kunde sieht, und ein Zwischenstand von einem Feature-Branch würde ihn still überschreiben. Wenn das wirklich gewollt ist: `pnpm deploy:cloudflare --force`.
 
 ## Warum nicht git-connect
 
@@ -55,20 +54,20 @@ GitHub Actions läuft über Cloudflare-URL + API-Token (Env-Vars) und ist deshal
 ## Lokaler Ad-hoc-Deploy
 
 ```bash
-pnpm build                        # erzeugt apps/web/dist/
-pnpm deploy:cloudflare             # = node scripts/deploy-cloudflare.mjs — Umgebung = aktueller Branch
-pnpm deploy:cloudflare --env=dev   # oder explizit (prototype|dev|main)
+pnpm build                          # erzeugt apps/web/dist/
+pnpm deploy:cloudflare              # = node scripts/deploy-cloudflare.mjs
+pnpm deploy:cloudflare --force      # auch von einem anderen Branch als main
 ```
 
 - Ruft `pnpm dlx wrangler pages deploy apps/web/dist --project-name=<projekt>` auf (Direct Upload).
 - Das Script heißt `deploy:cloudflare` und nicht `deploy`, weil **`pnpm deploy` ein eingebautes
   Kommando ist** (es zieht ein Workspace-Package für den Versand flach) und Vorrang vor einem
   gleichnamigen Script hat. Ein Script namens `deploy` wäre nur über `pnpm run deploy` erreichbar —
-  der Azure-Pfad braucht das Builtin: `pnpm deploy:api` ruft es intern auf (siehe
-  [`azure-setup.md`](azure-setup.md#6-deployen)).
-- Die **Umgebung** (`--env=` / `--branch=` / aktueller Branch) bestimmt Ziel-Projekt und production-branch. `feature/*` deployt nicht.
+  der Azure-Pfad braucht das Builtin: `deploy-azure.mjs` ruft es intern auf (siehe
+  [`environments.md`](environments.md)).
+- **Nur von `main`** — sonst Abbruch mit Hinweis auf `--force`. Der Link ist der Stand, den der Kunde sieht.
 - **Legt das Pages-Projekt vorher explizit an** und toleriert ein bereits existierendes — `wrangler` würde ein fehlendes Projekt beim Deploy nur *interaktiv* anlegen, sonst failt der allererste CI-Lauf.
-- **Basis-Slug** (`--project-name`): Priorität `Argument` > `.unitix/project.json` (`name`) > `package.json` (`name`), normalisiert auf einen gültigen Cloudflare-Slug (`a-z0-9-`, max. 58, kein führender/abschließender Bindestrich). Das Umgebungs-Suffix hängt das Script an. `.unitix/project.json` ist die vorgesehene Quelle, damit CI und lokal **denselben** Slug treffen.
+- **Slug** (`--project-name`): Priorität `Argument` > `.unitix/project.json` (`name`) > `package.json` (`name`), normalisiert auf einen gültigen Cloudflare-Slug (`a-z0-9-`, max. 58, kein führender/abschließender Bindestrich). `.unitix/project.json` ist die vorgesehene Quelle, damit CI und lokal **denselben** Slug treffen.
 - **Fail loud:** fehlt bei einem tatsächlichen Deploy `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder `apps/web/dist/`, bricht das Script mit klarer Meldung ab.
 
 ## Benötigte Secrets
@@ -89,7 +88,7 @@ Der Deploy lädt ein **statisches `apps/web/dist/`** hoch. Das Golden Template *
 ## Pricing
 
 - **Cloudflare Pages:** für unseren Bedarf **kostenlos** — unbegrenzte statische Requests/Bandwidth, kein Bandbreiten-Bill-Shock. Das Free-Tier erlaubt **kommerzielle Nutzung** (Vercel verbietet sie).
-- **Azure-Basis-Stack:** ca. **37 €/Monat** (SWA Standard ~8 € + App Service B1 ~12 € + PostgreSQL B1ms ~17 €), sobald ein echtes Backend dranhängt. Details: [`docs/azure-setup.md`](azure-setup.md).
+- **Azure-Stack:** ca. **45 €/Monat** für Dev **und** Prod zusammen — SWA Standard 2 × ~8 €, App Service B1 ~12 € (ein Plan, zwei Apps), PostgreSQL B1ms ~17 € (ein Server, zwei Datenbanken). Details: [`environments.md`](environments.md).
 - Direct Upload verbraucht **keine** Cloudflare-Build-Minuten — gebaut wird in der GitHub-CI, hochgeladen wird nur `apps/web/dist/`. Das relevante Budget ist deshalb das von GitHub Actions.
 
 ## Was gehört wohin
@@ -97,9 +96,9 @@ Der Deploy lädt ein **statisches `apps/web/dist/`** hoch. Das Golden Template *
 | Zweck | Wo |
 | --- | --- |
 | Entwicklung + interner Review | `pnpm dev` (localhost), nie über einen Deploy |
-| Kunden-Abstimmung | Cloudflare-Deploy von `prototype` (`<slug>-prototype`) |
-| Team-Test der Produkt-Phase | Cloudflare-Deploy von `dev` (`<slug>-dev`); bei `frontend: swa` stattdessen Azure, bei `powerapps` Power Platform |
-| Produktion | Deploy von `main` (`<slug>`) — host-aware |
+| Kunden-Abstimmung des Prototyps | Cloudflare-Deploy von `main` (`<slug>`), Tag `prototype-ok` |
+| Team-Test nach dem Azure-Fork | `pnpm deploy:dev` — Azure-Dev-Umgebung ([`environments.md`](environments.md)) |
+| Produktion | `pnpm deploy:prod` — der eine gegatete Schritt |
 | Link zwischendurch | `pnpm deploy:cloudflare` lokal, gleiche Logik |
 
-Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `dataverse`-Fork relevant — für den Mock-Prototyp nie.
+Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `powerapps`-Fork relevant — für den Mock-Prototyp nie.

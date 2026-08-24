@@ -5,6 +5,9 @@
 > Die **Regeln** stehen in [`.claude/docs/patterns-azure.md`](../.claude/docs/patterns-azure.md);
 > hier steht die **Reihenfolge**. Bei Widerspruch gewinnt der Regelsatz.
 >
+> Schritte 1–7 richten **eine** Umgebung ein, [Schritt 8](#8-die-zweite-umgebung) die zweite. Warum
+> Umgebungen keine Branches sind und was Dev und Prod teilen: [`environments.md`](environments.md).
+>
 > **Was die Anmeldung tut und warum**, ohne Vorwissen erklärt: [`docs/auth.md`](auth.md) — inklusive
 > Fehlertabelle für `AADSTS`-Meldungen. Wer hier in Schritt 1 hängen bleibt, findet dort die Antwort.
 
@@ -16,11 +19,19 @@
 | Backend   | App Service Linux, Node 24 (LTS) | B1, `Always On`                                | 12          |
 | Datenbank | PostgreSQL Flexible Server       | B1ms + 32 GB                                   | 17          |
 | Login     | Entra ID (interner Mandant)      | —                                              | 0           |
-|           |                                  | **Summe**                                      | **~37**     |
+|           |                                  | **Summe (eine Umgebung)**                      | **~37**     |
+|           | + zweite Umgebung (Dev)          | zweite SWA Standard                            | **+8**      |
+|           |                                  | **Summe (Dev + Prod)**                         | **~45**     |
 
 Blob Storage, Application Insights, AI Foundry, Entra External ID und Key Vault gehören **nicht**
 dazu. Kein Key Vault per Design: der App Service erreicht die DB über seine Managed Identity, es
 gibt kein Secret zu verwahren.
+
+**Zwei Umgebungen, geteilte Basis.** Dev und Prod teilen App-Service-Plan, PostgreSQL-Server und
+Entra-Registrierung; getrennt sind App Service, Datenbank, DB-Rolle und Static Web App. Deshalb kostet
+die Dev-Umgebung nur die zweite SWA. Dieses Runbook richtet **eine** Umgebung ein — welche, entscheidet
+allein, welche Namen du einsetzt. Für die zweite gibt es [Schritt 8](#8-die-zweite-umgebung). Das Modell
+dahinter: [`environments.md`](environments.md).
 
 **Regionen:** App Service + PostgreSQL in **eine** EU-Region (Germany West Central bevorzugt, ist
 aber für kleine Subscriptions oft gesperrt — dann Spain Central / West Europe / North Europe /
@@ -149,12 +160,12 @@ Danach in der Web App:
 
 - **Name der Web App und Resource Group** in den `azure`-Block von
   [`.unitix/project.json`](../.unitix/project.json) eintragen (`apiAppName` / `resourceGroup`) — von
-  dort nehmen `pnpm deploy:api` ([Schritt 6](#6-deployen)) und
+  dort nehmen `pnpm deploy:dev`/`:prod` ([Schritt 6](#6-deployen)) und
   [`pnpm db:firewall`](#firewall-der-db-auf-die-api-ips-abgleichen) ihr Ziel. Den Server-Namen der DB
   leitet `db:firewall` aus `pg.host` ab, er braucht kein eigenes Feld
 - **Denselben Namen der Web App auch als `pg.user`** eintragen — Azure benennt die Managed Identity
   nach der Web App, und dieser Name ist die DB-Rolle aus [Schritt 4](#4-datenbank-füllen).
-  `pnpm deploy:api` warnt, wenn die beiden auseinanderlaufen
+  der Deploy warnt, wenn die beiden auseinanderlaufen
 - **Identity → System assigned → On** → die **Object (principal) ID** notieren (Schritt 4)
 - **Configuration → General settings:** `Always On` → **On** (Default aus — sonst Kaltstart nach
   20 Min Leerlauf), `FTP state` → **Disabled** (Default `FTP + FTPS` = zweiter Deploy-Weg offen)
@@ -269,14 +280,15 @@ Der `PGHOST=… pnpm …`-Prefix ist zsh/bash-Syntax und setzt die Variablen nur
 Aufruf. In PowerShell gibt es das nicht — dort vorher je Zeile `$env:PGHOST='…'` setzen und danach
 `pnpm db:migrate` allein aufrufen.
 
-**Warum inline und nicht aus `project.json`?** Die Datei zeigt auf den **DEV**-Server; hier richtest du
-womöglich PROD ein. Inline geschrieben steht das Ziel sichtbar im Befehl, statt still aus einer Datei zu
-kommen — dieselbe Vorsicht, die die Warnung unten meint.
+**Warum hier inline?** Diese Schritte richten eine Umgebung **ein**, und beim Einrichten steht das Ziel
+besser sichtbar im Befehl als still in einer Datei. Im laufenden Betrieb braucht man das nicht mehr:
+`pnpm deploy:dev` / `pnpm deploy:prod` spielt die Migrationen als Schritt 1 selbst ein und nimmt Host
+und Datenbank aus dem `environments`-Block — die Reihenfolge „migrieren, dann deployen" ist dort
+strukturell erzwungen.
 
-Richtest du **DEV** ein, zeigt `pg.host` schon dorthin und du kannst die `PG*`-Prefixe weglassen:
-`pnpm db:migrate` allein genügt. Beides mischt sich gefahrlos, weil Inline-Werte die Defaults aus
-`project.json` überschreiben und nicht umgekehrt. Merksatz: **Default für DEV, Inline für jede andere
-Umgebung.**
+`pnpm db:migrate` ohne Prefix zeigt immer auf **Dev**: [`env.ts`](../apps/api/src/env.ts) liest fest
+`environments.dev`, und es gibt keine Variable, die das umschaltet. Inline-Werte schlagen die Defaults
+und nicht umgekehrt, beides mischt sich also gefahrlos.
 
 Sicherheitsnetz für beide Fälle: `db:migrate` gibt vor dem Lauf `→ Ziel: <user>@<host>/<db>` aus. Das
 ist die Zeile, die man zweimal liest — sie steht auch da, wenn das Ziel aus der Datei kam.
@@ -319,10 +331,15 @@ Bewusst zwei Befehle, denn sie verhalten sich grundverschieden:
 | `pnpm db:grant`   | **einmal pro Umgebung**       | ja, vollständig idempotent, fasst keine Daten an         |
 
 > [!WARNING]
-> **`db:migrate` ist kein Setup-Schritt, sondern ein Dauerläufer.** Der Befehl spielt jede
-> Migration ein, die gerade in deinem Arbeitsverzeichnis liegt — auch die aus einem Feature-Branch,
-> auch gegen Produktion. Steckt darin ein `DROP COLUMN`, sind die Daten weg. Vor jedem Lauf gegen
-> eine Umgebung mit echten Daten: **Branch prüfen und `PGHOST` zweimal lesen.**
+> **`db:migrate` direkt aufgerufen ist ungeschützt.** Der Befehl spielt jede Migration ein, die gerade
+> in deinem Arbeitsverzeichnis liegt — auch die aus einem Feature-Branch. Steckt darin ein
+> `DROP COLUMN`, sind die Daten weg. Ohne Prefix trifft es Dev, mit `PGHOST`/`PGDATABASE`-Prefix
+> trifft es, was du hinschreibst: **die `→ Ziel:`-Zeile zweimal lesen.**
+>
+> Gegen Produktion deshalb **nie direkt**, sondern über `pnpm deploy:prod`. Das prüft vorher Branch und
+> Sync-Stand, lässt `pnpm verify` laufen und **bricht bei destruktivem DDL ab** (`DROP COLUMN`,
+> `DROP TABLE`, `TRUNCATE`, `ALTER COLUMN … TYPE` in den Migrationen seit dem letzten `prod-*`-Tag) —
+> überstimmbar nur mit `--allow-destructive`. Details: [`environments.md`](environments.md#die-prod-gates).
 
 **Reihenfolge zählt: erst migrieren, dann granten.** `GRANT … ON ALL TABLES` erwischt nur, was zum
 Zeitpunkt des Laufs existiert — dafür aber unabhängig davon, wer es erzeugt hat. Umgekehrt hinge
@@ -377,49 +394,65 @@ _Authentication_ → Plattform _Single-page application_ → **Add URI** → ein
 
 ## 6. Deployen
 
-Gebaut wird lokal, hochgeladen über die CLI — **ein Befehl pro Deployable**. Die Ziel-Ressourcen der
-API stehen einmalig im `azure`-Block von [`.unitix/project.json`](../.unitix/project.json)
-(Ressourcennamen sind keine Secrets — dasselbe Argument wie beim `entra`-Block):
+Gebaut wird lokal, hochgeladen über die CLI — **ein Befehl pro Umgebung**. Die Ziel-Ressourcen stehen
+im `environments`-Block von [`.unitix/project.json`](../.unitix/project.json) (Ressourcennamen sind
+keine Secrets — dasselbe Argument wie beim `entra`-Block):
 
 ```json
-"azure": { "resourceGroup": "<rg>", "apiAppName": "<name-der-web-app>" }
+"environments": {
+  "dev":  { "url": "https://<swa-dev>.azurestaticapps.net",
+            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>-dev" },
+            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app_dev", "user": "<name>-dev" } },
+  "prod": { "url": "https://<swa>.azurestaticapps.net",
+            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>" },
+            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app", "user": "<name>" } }
+}
 ```
 
 ```bash
-pnpm deploy:api    # baut, zieht das Package ohne devDependencies heraus, zippt, az webapp deploy
-
-export SWA_DEPLOYMENT_TOKEN='<token-aus-schritt-5>'   # nicht wörtlich in den Befehl → Shell-History
-pnpm deploy:swa    # baut apps/web und lädt dist/ in die production-Umgebung der SWA
+pnpm deploy:dev              # Migrationen → API → SPA, ohne Rückfrage
+pnpm deploy:prod             # dasselbe, mit Gates davor und Tag danach
+pnpm deploy:dev --only=web   # nur die SPA (ein API-Neustart kostet Sekunden Downtime)
 ```
 
-Statt des `export` darf der Token auch dauerhaft in die **Root-`.env`** (gitignored, Vorlage:
-[`.env.example`](../.env.example)) — `pnpm deploy:swa` lädt sie über Nodes `--env-file-if-exists`:
+**Ein Script für alle drei Schritte, in fester Reihenfolge** — weil die Reihenfolge sicherheitsrelevant
+ist: Migrationen laufen **vor** dem Deploy, neuer Code auf altem Schema stirbt beim ersten Query. Und
+weil die Prod-Gates so genau einmal existieren statt in zwei Scripten oder in einem dritten, das man
+umgehen kann. Was `pnpm deploy:prod` prüft, steht in [`environments.md`](environments.md#die-prod-gates).
+
+Die beiden Deployment-Token gehören in die **Root-`.env`** (gitignored, Vorlage:
+[`.env.example`](../.env.example)) — `deploy-azure.mjs` lädt sie über Nodes `--env-file-if-exists`:
 
 ```dotenv
-SWA_DEPLOYMENT_TOKEN=<token-aus-schritt-5>
-PGUSER=<dein-upn>          # für pnpm dev:full und pnpm db:*, siehe „Lokal entwickeln"
+SWA_DEPLOYMENT_TOKEN_DEV=<token der dev-SWA aus Schritt 5>
+SWA_DEPLOYMENT_TOKEN_PROD=<token der prod-SWA>
+PGUSER=<dein-upn>          # für pnpm dev:full und jede Migration, siehe „Lokal entwickeln"
 ```
+
+Der Name trägt die Umgebung, und ein unsuffixierter `SWA_DEPLOYMENT_TOKEN` wird bewusst **nicht**
+akzeptiert: bei zwei Umgebungen ist „welche SWA war das eigentlich" die falsche Frage, um sie beim
+Prod-Deploy zu stellen.
 
 Das ist die **einzige** `.env` im Repo, und sie liegt bewusst im Root und nicht in einem Package:
 `pnpm deploy` kopiert das Package-Verzeichnis, eine `apps/api/.env` würde also im Deploy-ZIP landen und
 in Azure still Werte liefern, die dort aus den App settings kommen sollen.
 [`scripts/check-env-secrets.mjs`](../scripts/check-env-secrets.mjs) blockt sie deshalb im `verify`-Gate,
-und `pnpm deploy:api` bricht ab, falls doch eine im Staging-Verzeichnis auftaucht.
+und der Deploy bricht ab, falls doch eine im Staging-Verzeichnis auftaucht.
 
 Das Bundle erreicht die Datei nie: Vite lädt `.env` relativ zu `apps/web/`, und selbst dort landen nur
 `VITE_`-Variablen im Client-Code.
 
-Bewusst zwei Befehle statt einem Sammel-Deploy: die beiden haben unterschiedliche Voraussetzungen
-(`az login` vs. Deployment-Token) und werden selten gleichzeitig ausgerollt — ein gemeinsamer Befehl
-scheitert dann zur Hälfte. Einmalig gegen eine andere Ressourcengruppe geht ohne Config-Änderung:
-`pnpm deploy:api --resource-group=<rg> --app-name=<name>`.
+Einmalig gegen eine andere Ressourcengruppe geht ohne Config-Änderung:
+`pnpm deploy:dev --resource-group=<rg> --app-name=<name>`.
 
-Was [`scripts/deploy-api.mjs`](../scripts/deploy-api.mjs) und
-[`scripts/deploy-swa.mjs`](../scripts/deploy-swa.mjs) dabei tun — die vier bzw. zwei Schritte, die
-vorher hier von Hand standen:
+Was [`scripts/deploy-azure.mjs`](../scripts/deploy-azure.mjs) dabei tut — die Schritte, die vorher
+hier von Hand standen:
 
 ```bash
-# pnpm deploy:api
+# --only=db
+PGHOST=<host> PGDATABASE=<db> pnpm --filter @app/api db:migrate
+
+# --only=api
 pnpm --filter @app/api build
 pnpm --config.node-linker=hoisted --filter @app/api --prod --legacy deploy .artifacts/api
 rm -f .artifacts/api/.env .artifacts/api/.env.example   # gehören nicht ins Artefakt
@@ -427,10 +460,15 @@ cd .artifacts/api && zip -r ../api.zip . && cd -
 az webapp deploy --resource-group <rg> --name <name-der-web-app> \
   --src-path .artifacts/api.zip --type zip
 
-# pnpm deploy:swa
+# --only=web
 pnpm --filter @app/web build
-pnpm dlx @azure/static-web-apps-cli deploy apps/web/dist --env production
+SWA_CLI_DEPLOYMENT_TOKEN=$SWA_DEPLOYMENT_TOKEN_<ENV> \
+  pnpm dlx @azure/static-web-apps-cli deploy apps/web/dist --env production
 ```
+
+> Das `--env production` der SWA-CLI benennt die Umgebung **innerhalb** einer Static Web App
+> (production statt Preview) und hat nichts mit unserem `--env=dev|prod` zu tun — unsere Umgebungen
+> sind zwei getrennte Static Web Apps, je mit eigenem Token.
 
 > **`pnpm deploy`** ist hier das **eingebaute** pnpm-Kommando (nicht `deploy:cloudflare`) — es zieht
 > das Workspace-Package flach aus den Symlinks. **`--prod`** lässt dabei die devDependencies
@@ -451,17 +489,16 @@ pnpm dlx @azure/static-web-apps-cli deploy apps/web/dist --env production
 > ```
 >
 > `hoisted` erzeugt ein flaches `node_modules` aus echten Verzeichnissen. Nebeneffekt: das ZIP fällt von
-> 68 auf 15 MB, weil die aufgelösten Symlinks jedes Paket doppelt enthielten. `pnpm deploy:api` prüft das
+> 68 auf 15 MB, weil die aufgelösten Symlinks jedes Paket doppelt enthielten. der Deploy prüft das
 > Staging-Verzeichnis vor dem Zippen auf verbliebene Symlinks und bricht ab, statt ein kaputtes ZIP
 > hochzuladen.
 >
-> Das `--env production` im SWA-Befehl ist etwas völlig anderes: es benennt die Ziel-**Umgebung** der
-> Static Web App (production statt Preview-Environment). Für SWA gibt es keinen Portal-Upload und
-> kein Kudu; die CLI ist der einzige Weg außerhalb einer Pipeline.
+> Für SWA gibt es keinen Portal-Upload und kein Kudu; die CLI ist der einzige Weg außerhalb einer
+> Pipeline.
 >
 > Anders als [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) (CI-getrieben, Build ist ein
-> eigener Job-Step) **bauen beide Scripts selbst** — ein altes `dist/` würde still veralteten Code
-> deployen.
+> eigener Job-Step) **baut das Script selbst** — ein altes `dist/` würde still veralteten Code deployen.
+> Beim Prod-Deploy hat `pnpm verify` schon gebaut; dann wird der Build nicht wiederholt.
 >
 > **B1 hat keine Deployment-Slots** — jedes Deployment ist ein Neustart von wenigen Sekunden.
 
@@ -476,6 +513,42 @@ pnpm dlx @azure/static-web-apps-cli deploy apps/web/dist --env production
   „Route fehlt", sondern der Backend-Link aus [Schritt 5a](#5-static-web-app) ist nicht gesetzt.
 
 ---
+
+## 8. Die zweite Umgebung
+
+Nach Schritt 7 läuft **eine** Umgebung. Die zweite ist kein zweites Runbook, sondern sechs Ergänzungen —
+alles andere wird geteilt. Konvention: Prod ohne Suffix, Dev mit `-dev`.
+
+| # | Was | Wie |
+| --- | --- | --- |
+| 1 | **App Service** | Neue Web App `<name>-dev` **im selben App-Service-Plan** (Portal: _Create Web App_ → bestehenden Plan wählen). Zwei Apps auf einem B1-Plan starten unabhängig; `Always On` und Node 24 wie in [Schritt 3](#3-app-service). |
+| 2 | **App settings** | Dieselbe Tabelle wie in [Schritt 3](#environment-variables--app-settings-nicht-connection-strings), nur `PGDATABASE=app_dev` und `PGUSER=<name>-dev`. `ENTRA_*` sind **identisch** — die Registrierung ist geteilt. |
+| 3 | **Datenbank** | `CREATE DATABASE app_dev;` auf dem bestehenden Server. Kein zweiter Server: die Firewall und der Entra-Admin sind schon eingerichtet. |
+| 4 | **Rolle + Rechte** | `db:migrate` und `db:grant` gegen `app_dev` mit der Identity der neuen App — die Befehle aus [Schritt 4](#4-datenbank-füllen), mit `PGDATABASE=app_dev` und `API_IDENTITY_*` der neuen Web App. |
+| 5 | **Static Web App** | Zweite SWA (Standard), Backend-Link auf `<name>-dev` wie in [Schritt 5](#5-static-web-app). Eine SWA proxied genau **ein** Backend, deshalb braucht jede Umgebung ihre eigene. |
+| 6 | **Redirect-URI** | Die Origin der neuen SWA in die **bestehende** SPA-Registrierung eintragen — exakt die Origin, `https://`, kein Pfad, kein Slash am Ende. |
+
+Danach `environments` in [`.unitix/project.json`](../.unitix/project.json) um den zweiten Block ergänzen
+(Schema in [Schritt 6](#6-deployen)) und die Firewall abgleichen:
+
+```bash
+pnpm db:firewall             # setzt die Outbound-IPs BEIDER App Services
+```
+
+`db:firewall` hat bewusst kein `--env`: die Firewall gehört dem Server, und der wird geteilt. Pro
+Umgebung abgeglichen würde ein Dev-Lauf die Regeln von Prod löschen und die Produktions-API binnen
+Minuten von der Datenbank trennen. Existiert eine der beiden Apps noch nicht, meldet das Script das und
+verlangt `--allow-partial`, statt still die Regeln der fehlenden Umgebung zu entfernen.
+
+**Warum eine geteilte Entra-Registrierung?** Vite backt den `entra`-Block ins Bundle, und `redirectUri`
+ist `window.location.origin`. Mit einer Registrierung ist derselbe Build für beide Umgebungen gültig —
+`pnpm build` einmal, nach Dev und nach Prod deployen. Getrennte Registrierungen würden zwei nicht
+austauschbare Artefakte erzwingen und die Verwechslungsgefahr genau dort einbauen, wo sie am teuersten
+ist.
+
+**Was geteilt bleibt und was das kostet:** PITR läuft pro **Server**. Ein Dev-Restore erzeugt einen
+Klon-Server mit beiden Datenbanken, aus dem man die gewünschte dumpt. Braucht ein Projekt unabhängiges
+Restore, ist das ein zweiter PostgreSQL-Server — eine Änderung im `environments`-Block, kein Code-Umbau.
 
 ## Optional: Entra External ID statt Entra ID
 
@@ -630,9 +703,9 @@ Quelle für diesen Unterabschnitt:
 Zwei Modi, **keine lokale Datenbank** in beiden:
 
 ```bash
-pnpm dev          # backend: mock — kein Login, kein Backend, Seed-Adapter. Normalfall für UI-Arbeit.
+pnpm dev          # platform: mock — kein Login, kein Backend, Seed-Adapter. Normalfall für UI-Arbeit.
 
-pnpm db:migrate   # backend: azure — Schema auf dem DEV-Server aus Schritt 2
+pnpm db:migrate   # platform: azure — Schema auf der Dev-Datenbank
 pnpm dev:full     # API :3000 + SPA :5173 — braucht PGUSER in der Root-.env
 ```
 
@@ -652,10 +725,14 @@ daran ist es sofort zu erkennen.
 Eine `apps/api/.env` gibt es **nicht** und darf es nicht geben: `pnpm verify` bricht ab, wenn eine
 auftaucht (Begründung in [Schritt 6](#6-deployen)).
 
-Der azure-Modus läuft passwortlos gegen den Azure-DEV-Server (`az login` statt Passwort,
+Der azure-Modus läuft passwortlos gegen die **Dev-Datenbank in Azure** (`az login` statt Passwort,
 Firewall-Regel für deine IP). Vorteil gegenüber lokalem Postgres: es testet dieselbe
 Authentifizierung wie Produktion — es gibt gar keinen zweiten Anmeldeweg im Code. Vite proxied
 `/api` lokal, dieselbe Origin-Situation wie in Azure, deshalb steckt keine API-Basis-URL im Bundle.
+
+**Dev ist hier nicht der Default, sondern die einzige Option:** [`env.ts`](../apps/api/src/env.ts) liest
+fest `environments.dev`, eine Umschalt-Variable existiert nicht. Wer wirklich einmal gegen Prod lesen
+muss, setzt `PGDATABASE`/`PGUSER` inline — dann steht das Ziel sichtbar im Befehl.
 
 **Schema ändern:** `pnpm db:generate` (SQL offline aus `schema.ts`) → `pnpm db:migrate`. Die Files
 unter `apps/api/drizzle/` gehören ins Repo.
@@ -669,7 +746,8 @@ Der Stack läuft von Hand. Bewusst **noch nicht** automatisiert:
   die Migration braucht eine temporäre Firewall-Regel für die wechselnde Runner-IP. `pnpm db:firewall`
   ([Schritt 3](#firewall-der-db-auf-die-api-ips-abgleichen)) läuft dort unverändert mit und ist der
   Ort, an dem der Abgleich am Ende hingehört: ein Schritt im Deploy-Job, und Drift kann keine
-  Deploy-Runde überleben
+  Deploy-Runde überleben. Solange das aussteht, deployt `pnpm deploy:dev` / `pnpm deploy:prod` lokal —
+  die Gates sitzen deshalb im Script und nicht in der Pipeline
 - **MFA-Policy** im Mandanten (Conditional Access)
 - **PITR-Restore einmal wirklich testen** — HA ist kein Backup. Zum Runbook gehört
   [`pnpm db:firewall`](#firewall-der-db-auf-die-api-ips-abgleichen): ein wiederhergestellter Server

@@ -3,6 +3,10 @@
 // Zwei Quellen: explizite Umgebungsvariablen gewinnen, `.unitix/project.json` liefert die Defaults.
 // Lokal deckt die Datei alles ausser PGUSER; in Azure wird sie nicht mitgeliefert, dort sind die
 // gleichnamigen App Settings Pflicht (docs/azure-setup.md, Schritt 3).
+//
+// Die Defaults kommen fest aus `environments.dev` — es gibt keine Variable, die das umschaltet, weil
+// die App lokal gegen die Produktions-Datenbank laufen zu lassen kein Anwendungsfall ist. Wer es
+// doch einmal braucht, setzt PGHOST/PGDATABASE/PGUSER inline (docs/environments.md).
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +45,13 @@ const serverSchema = z.object({
 // Derselbe Pfad aus src/ (tsx) wie aus dist/ (node).
 const PROJECT_JSON = resolve(dirname(fileURLToPath(import.meta.url)), '../../../.unitix/project.json');
 
+const LOCAL_ENVIRONMENT = 'dev';
+
+interface ProjectJson {
+    entra?: Record<string, string>;
+    environments?: Record<string, { pg?: Record<string, string> }>;
+}
+
 /** Fehlende Datei = Normalfall in Azure. Vorhandene, aber kaputte Datei muss laut scheitern. */
 function projectConfigDefaults(): Record<string, string> {
     let raw: string;
@@ -50,7 +61,7 @@ function projectConfigDefaults(): Record<string, string> {
         return {};
     }
 
-    let config: { pg?: Record<string, string>; entra?: Record<string, string> };
+    let config: ProjectJson;
     try {
         config = JSON.parse(raw);
     } catch (error) {
@@ -59,7 +70,20 @@ function projectConfigDefaults(): Record<string, string> {
         );
     }
 
-    const { pg = {}, entra = {} } = config;
+    const { entra = {}, environments = {} } = config;
+    const environment = environments[LOCAL_ENVIRONMENT];
+    if (!environment) {
+        const known = Object.keys(environments);
+        throw new Error(
+            `${PROJECT_JSON} → environments.${LOCAL_ENVIRONMENT} fehlt.` +
+                (known.length > 0
+                    ? ` Vorhanden: ${known.join(', ')}.`
+                    : ' Der environments-Block ist leer.') +
+                ` Lokal läuft die API immer gegen "${LOCAL_ENVIRONMENT}" — docs/environments.md.`,
+        );
+    }
+
+    const { pg = {} } = environment;
     return Object.fromEntries(
         Object.entries({
             PGHOST: pg.host,

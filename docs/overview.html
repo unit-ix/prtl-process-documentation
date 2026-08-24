@@ -370,21 +370,16 @@
                 fill: none;
                 stroke-width: 2;
             }
-            .graph .l-proto {
-                stroke: var(--mock);
-            }
-            .graph .l-dev {
-                stroke: var(--accent);
-            }
             .graph .l-main {
                 stroke: var(--supa);
+                stroke-width: 2.5;
             }
             .graph .l-feat {
                 stroke: var(--muted);
                 stroke-dasharray: 4 3;
             }
-            .graph .seed {
-                stroke: var(--muted);
+            .graph .l-deploy {
+                stroke: var(--accent);
                 stroke-dasharray: 3 3;
                 fill: none;
             }
@@ -839,130 +834,125 @@
                 <div class="scroll">
                     <table class="matrix">
                         <tr>
-                            <th class="axis">Stage ↓ · Backend →</th>
+                            <th class="axis">Umgebung ↓ · Plattform →</th>
                             <th><code>mock</code></th>
                             <th><code>azure</code></th>
-                            <th><code>dataverse</code></th>
+                            <th><code>powerapps</code></th>
                         </tr>
                         <tr>
                             <td class="rowh">
                                 <b>feature/*</b>
-                                <span>Arbeit an einem Feature, von <code>dev</code> abgezweigt</span>
+                                <span>Kurzlebige Arbeit an einem Feature, von <code>main</code> abgezweigt</span>
                             </td>
                             <td class="cell na" colspan="3">deployt nie — Build-Minuten sind ein Budget</td>
                         </tr>
                         <tr>
                             <td class="rowh">
-                                <b>prototype</b>
-                                <span>Nach dem Kunden-OK eingefroren</span>
+                                <b>Prototyp</b>
+                                <span><code>pnpm deploy:cloudflare</code> · Tag <code>prototype-ok</code></span>
                             </td>
                             <td class="cell c-mock">
-                                <b>&lt;slug&gt;-prototype</b>
-                                Der Stand, den der Kunde sieht
+                                <b>&lt;slug&gt;</b>
+                                Der Stand, den der Kunde abstimmt
                             </td>
                             <td class="cell na" colspan="2">
-                                existiert nicht — <code>prototype</code> ist per Definition Mock
+                                existiert nicht — der Prototyp ist per Definition Mock
                             </td>
                         </tr>
                         <tr>
                             <td class="rowh">
-                                <b>dev</b>
-                                <span>Mutable Testbasis, hier testet das Team</span>
+                                <b>Dev</b>
+                                <span><code>pnpm deploy:dev</code> · hier testet das Team</span>
                             </td>
-                            <td class="cell c-mock"><b>&lt;slug&gt;-dev</b>Cloudflare</td>
-                            <td class="cell c-supa"><b>&lt;slug&gt;-dev</b>Cloudflare + Postgres</td>
-                            <td class="cell c-dv"><b>Power Platform</b>kein Cloudflare-Deploy</td>
+                            <td class="cell na">existiert nicht — Mock braucht keine zweite Umgebung</td>
+                            <td class="cell c-supa"><b>&lt;name&gt;-dev</b>SWA + App Service + <code>app_dev</code></td>
+                            <td class="cell c-dv"><b>Power Platform</b>Dev-Environment</td>
                         </tr>
                         <tr>
                             <td class="rowh">
-                                <b>main</b>
-                                <span>Produktion</span>
+                                <b>Prod</b>
+                                <span><code>pnpm deploy:prod</code> · Tag <code>prod-JJJJ-MM-TT</code></span>
                             </td>
-                            <td class="cell c-mock"><b>&lt;slug&gt;</b>Cloudflare</td>
-                            <td class="cell c-supa"><b>&lt;slug&gt;</b>Cloudflare + Postgres</td>
+                            <td class="cell na">existiert nicht</td>
+                            <td class="cell c-supa"><b>&lt;name&gt;</b>SWA + App Service + <code>app</code></td>
                             <td class="cell c-dv"><b>Power Platform</b>Microsoft-Hosting</td>
                         </tr>
                     </table>
                 </div>
                 <p class="swipe">→ horizontal scrollen</p>
                 <figcaption>
-                    Das aktive Backend steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit dieser
-                    Achse, nie aus dem Branch abgeleitet. <code>mock</code> ist der Default eines frischen Templates,
-                    <code>azure</code> strategisch der Haupt-Weg.
+                    Die aktive Plattform steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit
+                    dieser Achse, nie aus dem Branch abgeleitet. <code>mock</code> ist der Default eines frischen
+                    Templates, <code>azure</code> strategisch der Haupt-Weg.
                 </figcaption>
             </figure>
 
-            <h2><span class="num">3</span>Das Branch-Modell</h2>
+            <h2><span class="num">3</span>Ein Branch, drei Deploy-Ziele</h2>
             <p class="sub small">
-                Zwei Promotion-Pfade, <strong>nicht</strong> ein linearer Durchlauf. Der abgestimmte Prototyp wird
-                eingefroren und in der Produkt-Phase bewusst <em>übersprungen</em> — er bleibt Referenz, nicht
-                Zwischenschritt.
+                Es gibt <strong>einen</strong> langlebigen Branch. Umgebungen sind Deploy-Ziele, keine Branches — ein
+                Branch pro Umgebung würde dasselbe Modell zweimal kodieren, einmal in Git und einmal in der Config,
+                und beide können driften. Was gilt, markieren <em>Tags</em>.
             </p>
             <figure>
                 <div class="scroll">
-                    <svg class="graph" viewBox="0 0 660 320" role="img" aria-labelledby="gtitle">
+                    <svg class="graph" viewBox="0 0 660 260" role="img" aria-labelledby="gtitle">
                         <title id="gtitle">
-                            Branch-Graph: prototype wird eingefroren, dev wird daraus geseedet, feature-Branches
-                            zweigen von dev ab und münden zurück, dev wird per /ship nach main promotet
+                            Branch-Graph: eine main-Linie, von der kurzlebige feature-Branches abzweigen und
+                            zurueckmuenden. Drei Deploy-Ziele haengen an main — Cloudflare fuer den Mock-Prototyp,
+                            Azure-Dev und Azure-Prod. Das Tag prototype-ok markiert den vom Kunden abgestimmten
+                            Stand, das Tag prod-JJJJ-MM-TT den in Produktion laufenden. Nur der Prod-Deploy ist
+                            ein Gate.
                         </title>
 
-                        <!-- Phasen-Beschriftung -->
-                        <text class="note" x="8" y="14">PROTOTYP-PHASE</text>
-                        <text class="note" x="300" y="14">ÜBERGABE</text>
-                        <text class="note" x="430" y="14">PRODUKT-PHASE</text>
-                        <line x1="290" y1="22" x2="290" y2="305" stroke="var(--line)" stroke-dasharray="3 4" />
-                        <line x1="420" y1="22" x2="420" y2="305" stroke="var(--line)" stroke-dasharray="3 4" />
+                        <!-- main: die eine Linie -->
+                        <text class="lbl" x="8" y="76" fill="var(--supa)">main</text>
+                        <path class="ln l-main" d="M 74 72 H 652" />
+                        <circle class="node" cx="120" cy="72" r="4.5" fill="var(--supa)" />
+                        <circle class="node" cx="200" cy="72" r="4.5" fill="var(--supa)" />
+                        <circle class="node" cx="330" cy="72" r="4.5" fill="var(--supa)" />
+                        <circle class="node" cx="470" cy="72" r="4.5" fill="var(--supa)" />
+                        <circle class="node" cx="580" cy="72" r="4.5" fill="var(--supa)" />
 
-                        <!-- prototype -->
-                        <text class="lbl" x="8" y="60" fill="var(--mock)">prototype</text>
-                        <path class="ln l-proto" d="M 80 56 H 280" />
-                        <circle class="node" cx="110" cy="56" r="4.5" fill="var(--mock)" />
-                        <circle class="node" cx="150" cy="56" r="4.5" fill="var(--mock)" />
-                        <circle class="node" cx="190" cy="56" r="4.5" fill="var(--mock)" />
-                        <circle class="node" cx="230" cy="56" r="4.5" fill="var(--mock)" />
-                        <text class="note" x="86" y="76">Checkpoint je Feature</text>
-                        <rect class="freeze" x="264" y="42" width="88" height="28" rx="6" />
-                        <text x="272" y="60" fill="var(--mock)" style="font-size: 10.5px; font-weight: 600">
-                            EINGEFROREN
+                        <!-- Tags -->
+                        <path class="ln l-main" d="M 200 72 V 40" stroke-width="1.5" opacity="0.6" />
+                        <rect class="freeze" x="150" y="18" width="102" height="22" rx="6" />
+                        <text x="158" y="33" fill="var(--mock)" style="font-size: 10.5px; font-weight: 600">
+                            tag prototype-ok
                         </text>
-                        <path class="ln l-proto" d="M 352 56 H 650" stroke-dasharray="2 5" opacity="0.4" />
-                        <text class="note" x="452" y="48">bleibt als Kunden-Referenz stehen</text>
+                        <path class="ln l-main" d="M 580 72 V 40" stroke-width="1.5" opacity="0.6" />
+                        <rect class="freeze" x="512" y="18" width="132" height="22" rx="6" />
+                        <text x="520" y="33" fill="var(--supa)" style="font-size: 10.5px; font-weight: 600">
+                            tag prod-2026-09-01
+                        </text>
 
-                        <!-- Seed prototype → dev -->
-                        <path class="seed" d="M 308 74 V 130 H 336" />
-                        <text class="note" x="316" y="100">/handoff seedet</text>
+                        <!-- feature/* zweigt ab und muendet zurueck -->
+                        <text class="lbl" x="8" y="136" fill="var(--muted)">feature/*</text>
+                        <path class="ln l-feat" d="M 200 72 C 224 72 224 132 250 132 H 282 C 310 132 310 72 330 72" />
+                        <path class="ln l-feat" d="M 330 72 C 356 72 356 132 384 132 H 420 C 450 132 450 72 470 72" />
+                        <circle class="node" cx="266" cy="132" r="4" fill="var(--muted)" />
+                        <circle class="node" cx="402" cy="132" r="4" fill="var(--muted)" />
+                        <text class="note" x="228" y="158">/plan → /execute, merged selbst · kein Deploy</text>
 
-                        <!-- dev -->
-                        <text class="lbl" x="8" y="134" fill="var(--accent)">dev</text>
-                        <path class="ln l-dev" d="M 336 130 H 652" />
-                        <circle class="node" cx="400" cy="130" r="4.5" fill="var(--accent)" />
-                        <circle class="node" cx="500" cy="130" r="4.5" fill="var(--accent)" />
-                        <circle class="node" cx="580" cy="130" r="4.5" fill="var(--accent)" />
+                        <!-- Deploy-Ziele -->
+                        <text class="note" x="8" y="200">DEPLOY-ZIELE</text>
+                        <path class="ln l-deploy" d="M 120 72 V 196 H 148" />
+                        <rect class="gatebox" x="152" y="185" width="150" height="22" rx="11" opacity="0.85" />
+                        <text class="gate" x="160" y="200">deploy:cloudflare · Mock</text>
 
-                        <!-- feature/* zweigt von dev ab und mündet zurück -->
-                        <text class="lbl" x="8" y="202" fill="var(--muted)">feature/*</text>
-                        <path class="ln l-feat" d="M 400 130 C 418 130 418 198 440 198 H 462 C 484 198 484 130 500 130" />
-                        <path class="ln l-feat" d="M 500 130 C 518 130 518 198 540 198 H 558 C 578 198 578 130 580 130" />
-                        <circle class="node" cx="450" cy="198" r="4" fill="var(--muted)" />
-                        <circle class="node" cx="549" cy="198" r="4" fill="var(--muted)" />
-                        <text class="note" x="424" y="226">/plan → /execute, merged selbst</text>
+                        <path class="ln l-deploy" d="M 470 72 V 196 H 344" />
+                        <rect class="gatebox" x="348" y="185" width="112" height="22" rx="11" opacity="0.85" />
+                        <text class="gate" x="356" y="200">deploy:dev · Test</text>
 
-                        <!-- main: existiert, bekommt aber erst mit /ship Inhalt -->
-                        <text class="lbl" x="8" y="284" fill="var(--supa)">main</text>
-                        <path class="ln l-main" d="M 80 280 H 628" stroke-dasharray="2 5" opacity="0.5" />
-                        <path class="ln l-main" d="M 604 130 C 624 130 624 280 636 280" />
-                        <circle class="node" cx="640" cy="280" r="4.5" fill="var(--supa)" />
-                        <path class="ln l-main" d="M 644 280 H 652" />
-                        <text class="note" x="86" y="298">existiert von Anfang an, bekommt aber erst mit /ship Inhalt</text>
-                        <rect class="gatebox" x="528" y="244" width="78" height="22" rx="11" />
-                        <text class="gate" x="536" y="259">/ship · GATE</text>
+                        <path class="ln l-deploy" d="M 580 72 V 228 H 470" />
+                        <rect class="gatebox" x="474" y="217" width="170" height="22" rx="11" />
+                        <text class="gate" x="482" y="232">deploy:prod · GATE</text>
                     </svg>
                 </div>
                 <p class="swipe">→ horizontal scrollen</p>
                 <figcaption>
-                    <code>feature/*</code> und <code>dev</code> gibt es <strong>nur in der Produkt-Phase</strong>. Der
-                    einzige bewusst von einem Menschen freigegebene Schritt ist <code>/ship</code> —
-                    <code>dev → main</code>.
+                    <code>feature/*</code> ist kurzlebig und deployt nie. Der einzige bewusst von einem Menschen
+                    freigegebene Schritt ist <code>pnpm deploy:prod</code> — ein <em>Script</em>, kein Command, damit
+                    der Gate auch fuer den greift, der ohne Claude Code deployt.
                 </figcaption>
             </figure>
 
@@ -1002,10 +992,10 @@
                 </figcaption>
             </figure>
 
-            <h2><span class="num">5</span>Die Command-Kette</h2>
+            <h2><span class="num">5</span>Die Kette</h2>
             <p class="sub small">
-                Fünf Kommandos. Autonom bis <code>dev</code> — der einzige Punkt, an dem ein Mensch bewusst zustimmt,
-                ist die Produktions-Promotion.
+                Drei Kommandos und zwei Deploys. Autonom bis <code>main</code> inklusive Dev-Deploy — der einzige
+                Punkt, an dem ein Mensch bewusst zustimmt, ist die Freigabe an den Kunden.
             </p>
             <figure>
                 <div class="scroll">
@@ -1015,20 +1005,20 @@
                             <span>Liest PRD, baut den Mock-Prototyp autonom, prüft sich per Screenshot selbst</span>
                         </div>
                         <div class="cmd">
-                            <b>/handoff</b>
-                            <span>Seedet <code>dev</code> aus dem eingefrorenen <code>prototype</code>. Einmalig</span>
-                        </div>
-                        <div class="cmd">
                             <b>/plan</b>
-                            <span>Interview, Plan-File, <code>feature/</code>-Branch von <code>dev</code></span>
+                            <span>Interview, Plan-File, <code>feature/</code>-Branch von <code>main</code></span>
                         </div>
                         <div class="cmd">
                             <b>/execute</b>
-                            <span>Committet pro Phase, PR gegen <code>dev</code>, merged selbst</span>
+                            <span>Committet pro Phase, PR gegen <code>main</code>, merged selbst</span>
+                        </div>
+                        <div class="cmd">
+                            <b>deploy:dev</b>
+                            <span>Migrationen → API → SPA gegen die Dev-Umgebung</span>
                         </div>
                         <div class="cmd human">
-                            <b>/ship</b>
-                            <span>Promotion nach <code>main</code> — bewusst gegatet</span>
+                            <b>deploy:prod</b>
+                            <span>Gates, Deploy, Tag — ein Script, kein Command</span>
                         </div>
                     </div>
                     <div class="autobar">
@@ -1053,7 +1043,7 @@
             <figure>
                 <div class="rules">
                     <div class="rulecol r-mock">
-                        <div class="hd">backend: mock</div>
+                        <div class="hd">platform: mock</div>
                         <ul>
                             <li class="always">naming-conventions.md</li>
                             <li class="always">lean-coding.md</li>
@@ -1064,7 +1054,7 @@
                         </div>
                     </div>
                     <div class="rulecol r-supa">
-                        <div class="hd">backend: azure</div>
+                        <div class="hd">platform: azure</div>
                         <ul>
                             <li class="always">naming-conventions.md</li>
                             <li class="always">lean-coding.md</li>
@@ -1076,7 +1066,7 @@
                         </div>
                     </div>
                     <div class="rulecol r-dv">
-                        <div class="hd">backend: dataverse</div>
+                        <div class="hd">platform: powerapps</div>
                         <ul>
                             <li class="always">naming-conventions.md</li>
                             <li class="always">lean-coding.md</li>

@@ -6,20 +6,22 @@ Jedes Projekt startet als lauffähiger **Mock-Prototyp** — seed-basiert, ohne 
 
 ---
 
-## Zwei Achsen: Stage × Backend
+## Zwei Achsen: Plattform × Umgebung
 
-| Achse       | Steuert                  | Werte                                                                     |
-| ----------- | ------------------------ | ------------------------------------------------------------------------- |
-| **Stage**   | Reifegrad (= Git-Branch) | Prototyp-Phase: `→ prototype` · Produkt-Phase: `feature/* → dev → main`   |
-| **Backend** | Datenquelle              | `mock` (Default) → `azure` **oder** `dataverse` (Fork nach Kunden-OK)     |
+| Achse         | Steuert                                      | Werte                                                            |
+| ------------- | -------------------------------------------- | ---------------------------------------------------------------- |
+| **Plattform** | Datenadapter, Regelsatz und Host             | `mock` (Default) → `azure` **oder** `powerapps` (Fork nach Kunden-OK) |
+| **Umgebung**  | Deploy-Ziel — **kein Branch**                | `dev` · `prod` (nur bei `platform: azure`)                       |
 
-Die beiden Achsen sind unabhängig. Das aktive Backend steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
+Die aktive Plattform steht in [`.unitix/project.json`](.unitix/project.json) und ist die **Single Source of Truth**:
 
 ```json
-{ "backend": "mock", "frontend": "cloudflare" }
+{ "platform": "mock" }
 ```
 
-`prototype` ist nach dem Kunden-OK eingefroren und **nicht** Teil des Produkt-Pfads. Was auf welchen Branch deployt: [`docs/hosting.md`](docs/hosting.md).
+Ein Feld und nicht zwei, weil die Zuordnung Plattform → Host 1:1 ist: `mock` → Cloudflare Pages, `azure` → Azure Static Web Apps, `powerapps` → Power Platform.
+
+**Es gibt einen Branch, `main`** (plus kurzlebige `feature/*`). Umgebungen sind Deploy-Ziele, keine Branches — ein Branch pro Umgebung wäre dasselbe Modell doppelt kodiert, einmal in Git und einmal in der Config. Das Modell: [`docs/environments.md`](docs/environments.md).
 
 ## Der Data-Seam
 
@@ -53,19 +55,19 @@ pnpm install
 
 ```bash
 pnpm dev       # Vite Dev-Server (apps/web), Mock-Adapter, kein Backend nötig
-pnpm dev:full  # API + SPA zusammen — der Einstieg bei backend: azure
+pnpm dev:full  # API + SPA zusammen — der Einstieg bei platform: azure (DB in Azure-Dev)
 pnpm verify    # check:env + lint + knip + build (build fächert über apps/*)
 ```
 
 Alle Befehle laufen **an der Repo-Root**, nicht im Package — die Root ist der Orchestrator.
 
-`pnpm verify` ist das eine Gate, muss vor jedem Commit grün sein und wird von CI 1:1 gespiegelt. Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` im Browser, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft über den Cloudflare-Deploy des `prototype`-Branches.
+`pnpm verify` ist das eine Gate, muss vor jedem Commit grün sein und wird von CI 1:1 gespiegelt. Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` im Browser, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft über den Cloudflare-Deploy von `main`.
 
-> Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `dataverse`-Fork relevant, im Mock-Prototyp nie.
+> Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `powerapps`-Fork relevant, im Mock-Prototyp nie.
 
 ## Der Workflow
 
-Consultant-Einstieg ist `/prototype <projektordner>`, dann `/handoff` in die Produkt-Phase, dann pro Änderung `/plan → /execute → /ship`. Autonom bis `dev`; der einzige bewusst gegatete Schritt ist `/ship` (dev→main).
+Consultant-Einstieg ist `/prototype <projektordner>`, danach pro Änderung `/plan → /execute`. Autonom bis `main` inklusive Dev-Deploy; der einzige bewusst gegatete Schritt ist `pnpm deploy:prod` — ein Script und kein Command, damit der Gate auch ohne Claude Code greift.
 
 Kanonische Beschreibung aller Commands und Regelsätze: [`.claude/CLAUDE.md`](.claude/CLAUDE.md). Roter Faden für neue Teammitglieder: [`docs/overview.md`](docs/overview.md).
 
@@ -108,15 +110,15 @@ apps/api/                 Node-API (Fastify + Drizzle). Im mock-Prototyp ungenut
 
 `/prototype` spiegelt PRD und Datenmodell **einseitig** aus dem SharePoint-Quellordner (lokal via OneDrive-Sync) nach `docs/` — mit `Stand:`/`Quelle:`-Header, read-only, nie zurückschreibend. SharePoint bleibt die laufend gepflegte Single Source of Truth; bei Änderung frischt ein erneuter Ingest den Snapshot auf.
 
-## Fork: mock → azure/dataverse
+## Fork: mock → azure/powerapps
 
-1. `backend` in [`.unitix/project.json`](.unitix/project.json) umstellen.
-2. Backend-Adapter pro Entität am jeweiligen Port implementieren, `apps/web/src/data/index.ts` um den Zweig ergänzen.
+1. `platform` in [`.unitix/project.json`](.unitix/project.json) umstellen.
+2. Adapter pro Entität am jeweiligen Port implementieren, `apps/web/src/data/index.ts` um den Zweig ergänzen.
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 
-Beim `azure`-Fork kommen Node-API, PostgreSQL und Entra ID dazu — Ablauf und Voraussetzungen: [`docs/azure-setup.md`](docs/azure-setup.md).
-Beim `dataverse`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
+Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-setup.md`](docs/azure-setup.md), Modell: [`docs/environments.md`](docs/environments.md).
+Beim `powerapps`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
 
 ## Shared-Ressourcen aktualisieren
 

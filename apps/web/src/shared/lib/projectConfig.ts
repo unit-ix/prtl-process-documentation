@@ -1,21 +1,22 @@
-import projectConfigData from '@unitix/project.json';
-
-/** `mock` = seed-based prototype (default), `azure`/`dataverse` = forks after customer sign-off. */
-export type Backend = 'mock' | 'azure' | 'dataverse';
+// Named Imports: was die SPA aus project.json liest, steht damit in einer Zeile.
+import { platform as platformValue, entra as entraValue } from '@unitix/project.json';
 
 /**
- * Where the SPA is hosted. Prototype default: Cloudflare Pages.
- * `swa` = Azure Static Web Apps — the only host that proxies `/api/*` to the App Service.
+ * Zielplattform — die eine Achse, an der Datenadapter, Regelsatz und Host hängen. Ein Feld statt
+ * zwei, weil die Zuordnung zum Host 1:1 ist: `mock` → Cloudflare Pages, `azure` → Static Web Apps,
+ * `powerapps` → Power Platform. `mock` ist der Default eines frisch geklonten Templates.
  */
-export type Frontend = 'cloudflare' | 'swa' | 'powerapps';
+export type Platform = 'mock' | 'azure' | 'powerapps';
 
 /**
- * Entra-App-Registrierung, nur bei `backend: azure` gefüllt (im Template leer). Committet statt in
- * einer `.env`, weil alle Werte öffentliche Identifikatoren sind — sie benennen die Anwendung,
- * sie autorisieren nichts. Ein Secret gehört NIE hier hinein.
+ * Entra-App-Registrierung, nur bei `platform: azure` gefüllt. Committet statt in einer `.env`, weil
+ * alle Werte öffentliche Identifikatoren sind — sie benennen die Anwendung, sie autorisieren nichts.
+ * Ein Secret gehört NIE hier hinein.
  *
- * Jeder Wert heisst wie seine Azure-Umgebungsvariable (`tenantId` → `ENTRA_TENANT_ID`), nur im
- * Format anders — docs/azure-setup.md, Schritt 3.
+ * Umgebungs-neutral und deshalb NICHT im `environments`-Block: Dev und Prod teilen eine
+ * Registrierung, sonst wäre ein Build-Artefakt nur für eine Umgebung gültig (docs/environments.md).
+ *
+ * Jeder Wert heisst wie seine Azure-Umgebungsvariable (`tenantId` → `ENTRA_TENANT_ID`).
  */
 export interface EntraConfig {
     /** Verzeichnis-id des Mandanten, bildet die Authority. */
@@ -34,22 +35,6 @@ export interface EntraConfig {
     readonly subdomain?: string;
 }
 
-/** Nur die Blöcke, die die SPA sehen darf — `azure` und `pg` gehören nicht ins Bundle. */
-export interface ProjectConfig {
-    readonly backend: Backend;
-    readonly frontend: Frontend;
-    readonly entra: EntraConfig;
-}
+export const platform: Platform = platformValue as Platform;
 
-/**
- * Typed reader for `.unitix/project.json` — single source of truth for the backend axis.
- * NICHT exportiert: sonst liesse sich das Gesamt-Objekt serialisieren und `azure`/`pg` landeten
- * im public Bundle.
- */
-const projectConfig: ProjectConfig = projectConfigData as ProjectConfig;
-
-export const backend: Backend = projectConfig.backend;
-
-export const frontend: Frontend = projectConfig.frontend;
-
-export const entra: EntraConfig = projectConfig.entra;
+export const entra: EntraConfig = entraValue as EntraConfig;
