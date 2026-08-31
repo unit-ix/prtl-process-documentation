@@ -101,4 +101,4 @@ Der Deploy lädt ein **statisches `apps/web/dist/`** hoch. Das Golden Template *
 | Produktion | `pnpm deploy:prod` — der eine gegatete Schritt |
 | Link zwischendurch | `pnpm deploy:cloudflare` lokal, gleiche Logik |
 
-Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `powerapps`-Fork relevant — für den Mock-Prototyp nie.
+Die Power-Platform-Toolchain (`pa …`) ist erst am `powerapps`-Fork relevant — für den Mock-Prototyp nie.

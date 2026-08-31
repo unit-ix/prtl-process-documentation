@@ -39,7 +39,7 @@ function resolveProjectName() {
 
 const OTHER_HOSTS = {
   azure: 'Azure Static Web Apps (`pnpm deploy:dev` / `pnpm deploy:prod`, siehe docs/environments.md)',
-  powerapps: 'Power Platform (pac code push)',
+  powerapps: 'Power Platform (pa app push)',
 }
 
 function shouldDeploy() {

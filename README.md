@@ -63,7 +63,7 @@ Alle Befehle laufen **an der Repo-Root**, nicht im Package — die Root ist der 
 
 `pnpm verify` ist das eine Gate, muss vor jedem Commit grün sein und wird von CI 1:1 gespiegelt. Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` im Browser, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft über den Cloudflare-Deploy von `main`.
 
-> Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `powerapps`-Fork relevant, im Mock-Prototyp nie.
+> Die Power-Platform-Toolchain (`pa …`) ist erst am `powerapps`-Fork relevant, im Mock-Prototyp nie.
 
 ## Der Workflow
 
@@ -118,7 +118,7 @@ apps/api/                 Node-API (Fastify + Drizzle). Im mock-Prototyp ungenut
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 
 Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-runbook.md`](docs/azure-runbook.md), Begründungen: [`docs/azure-decisions.md`](docs/azure-decisions.md), Modell: [`docs/environments.md`](docs/environments.md).
-Beim `powerapps`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
+Beim `powerapps`-Fork kommt die Power-Platform-Toolchain ins Spiel (`pa app run` / `pa app push`).
 
 ## Shared-Ressourcen aktualisieren
 
