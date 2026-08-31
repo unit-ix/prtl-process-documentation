@@ -36,21 +36,21 @@ Trage jeden Wert ein, sobald er entsteht. `project.json` meint
 [`.unitix/project.json`](../.unitix/project.json), App setting die Web App aus
 [Schritt 3b](#3b-app-settings), `.env` die eine Datei im Repo-Root.
 
-| Wert                                       | entsteht in                                    | wohin                                                        | Key-Name                                    |
-| ------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| Resource Group `<rg>`                      | [Voraussetzungen](#voraussetzungen)            | `project.json`                                               | `azure.resourceGroup`                       |
-| Dein UPN im Mandanten                      | [Voraussetzungen](#voraussetzungen)            | `.env`                                                       | `PGUSER`                                    |
-| Directory (tenant) ID                      | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting                                 | `entra.tenantId` / `ENTRA_TENANT_ID`        |
-| Client-ID der SPA                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json`                                               | `entra.clientId`                            |
-| Client-ID der API                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting                                 | `entra.apiAudience` / `ENTRA_API_AUDIENCE`  |
-| Server-Name `<psql-name>`                  | [Schritt 2](#2-postgresql-flexible-server)     | `project.json` + App setting                                 | `pg.host` / `PGHOST`, als FQDN              |
-| Name der Web App `<name>`                  | [Schritt 3](#3-app-service)                    | `project.json` + App setting                                 | `azure.apiAppName` und `pg.user` / `PGUSER` |
-| Object (principal) ID der Managed Identity | [Schritt 3](#3-app-service)                    | nirgends, Shell-Variable in [Schritt 4](#4-datenbank-fullen) | `API_IDENTITY_OBJECT_ID`                    |
-| SWA-Origin                                 | [Schritt 5](#5-static-web-app)                 | `project.json`                                               | `url`                                       |
-| SWA-Deployment-Token                       | [Schritt 5](#5-static-web-app)                 | `.env`                                                       | `SWA_DEPLOYMENT_TOKEN_DEV` / `_PROD`        |
-| Storage-Konto `st<projekt>`                | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting                                 | `storage.account` / `STORAGE_ACCOUNT`       |
-| Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting                                 | `storage.container` / `STORAGE_CONTAINER`   |
-| Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)     | `project.json` + App setting                                 | `entra.subdomain` / `ENTRA_SUBDOMAIN`       |
+| Wert                                       | entsteht in                                    | wohin                                 | Key-Name                                                         |
+| ------------------------------------------ | ---------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| Resource Group `<rg>`                      | [Voraussetzungen](#voraussetzungen)            | `project.json`                        | `azure.resourceGroup`                                            |
+| Dein UPN im Mandanten                      | [Voraussetzungen](#voraussetzungen)            | `.env`                                | `PGUSER`                                                         |
+| Directory (tenant) ID                      | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting          | `entra.tenantId` / `ENTRA_TENANT_ID`                             |
+| Client-ID der SPA                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json`                        | `entra.clientId`                                                 |
+| Client-ID der API                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting          | `entra.apiAudience` / `ENTRA_API_AUDIENCE`                       |
+| Server-Name `<psql-name>`                  | [Schritt 2](#2-postgresql-flexible-server)     | `project.json` + App setting          | `pg.host` / `PGHOST`, als FQDN                                   |
+| Name der Web App `<name>`                  | [Schritt 3](#3-app-service)                    | `project.json` + App setting + `.env` | `azure.apiAppName` und `pg.user` / `PGUSER`, `API_IDENTITY_NAME` |
+| Object (principal) ID der Managed Identity | [Schritt 3](#3-app-service)                    | `.env`                                | `API_IDENTITY_OBJECT_ID`                                         |
+| SWA-Origin                                 | [Schritt 5](#5-static-web-app)                 | `project.json`                        | `url`                                                            |
+| SWA-Deployment-Token                       | [Schritt 5](#5-static-web-app)                 | `.env`                                | `SWA_DEPLOYMENT_TOKEN_DEV` / `_PROD`                             |
+| Storage-Konto `st<projekt>`                | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting          | `storage.account` / `STORAGE_ACCOUNT`                            |
+| Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting          | `storage.container` / `STORAGE_CONTAINER`                        |
+| Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)     | `project.json` + App setting          | `entra.subdomain` / `ENTRA_SUBDOMAIN`                            |
 
 ---
 
@@ -227,12 +227,10 @@ PGDATABASE=app \
 PGUSER='<deine-e-mail-im-mandanten>' \
 pnpm db:migrate
 
-# 2. Rolle + Rechte für die Managed Identity
+# 2. Rolle + Rechte für die Managed Identity — API_IDENTITY_* kommen aus der .env
 PGHOST=<psql-name>.postgres.database.azure.com \
 PGDATABASE=app \
 PGUSER='<deine-e-mail-im-mandanten>' \
-API_IDENTITY_NAME='<name-der-web-app>' \
-API_IDENTITY_OBJECT_ID='<object-principal-id-aus-schritt-3>' \
 pnpm db:grant
 ```
 
@@ -359,8 +357,9 @@ sieben. Alles andere teilen die Umgebungen. Konvention: Prod ohne Suffix, Dev mi
    `PGUSER=<name>-dev`. Die `ENTRA_*`-Werte sind in beiden Umgebungen identisch.
 3. **Datenbank.** `CREATE DATABASE app_dev;` auf dem bestehenden Server.
 4. **Rolle + Rechte.** `db:migrate` und `db:grant` gegen `app_dev`, siehe
-   [Schritt 4](#4-datenbank-füllen). Setze `API_IDENTITY_NAME` und `API_IDENTITY_OBJECT_ID` der neuen
-   Web App.
+   [Schritt 4](#4-datenbank-füllen). Trage vorher `API_IDENTITY_NAME` und `API_IDENTITY_OBJECT_ID`
+   der neuen Web App in die `.env` ein — die Keys sind unsuffixiert und tragen immer die Identity
+   der Umgebung, gegen die du gerade grantest.
 5. **Static Web App.** Zweite SWA im Plan Standard, Backend-Link auf `<name>-dev`.
 6. **Redirect-URI.** Origin der neuen SWA in die bestehende SPA-Registrierung, ohne Pfad und ohne
    Slash am Ende.

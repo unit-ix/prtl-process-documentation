@@ -221,12 +221,15 @@ dann deployen" ist dort strukturell erzwungen.
 `environments.dev`, eine Umschalt-Variable gibt es nicht. Inline-Werte schlagen die Defaults, beides
 mischt sich also gefahrlos.
 
-### `API_IDENTITY_*` gehören in keine Datei
+### `API_IDENTITY_*` stehen in der `.env`, nicht in `project.json`
 
-`API_IDENTITY_NAME` und `API_IDENTITY_OBJECT_ID` gelten dem einen `db:grant`-Lauf. Sie beschreiben
-die Identity der Ziel-Web-App statt der eigenen Arbeitsumgebung, und die laufende API liest sie nie.
-Sie gehören deshalb weder in die `.env` noch in `project.json`, und
-[`env.ts`](../apps/api/src/env.ts) kennt sie nicht.
+`API_IDENTITY_NAME` und `API_IDENTITY_OBJECT_ID` gelten dem einen `db:grant`-Lauf. Die Object ID ist
+nichts, was ins Repo gehört, und die laufende API liest beide nie — also `.env` statt `project.json`,
+und [`env.ts`](../apps/api/src/env.ts) kennt sie nicht.
+
+Die Keys tragen kein `_DEV`/`_PROD`, anders als `SWA_DEPLOYMENT_TOKEN_*`. Der Grant läuft einmal pro
+Umgebung und setzt `PGHOST`/`PGDATABASE` ohnehin inline; ein Suffix würde ein Auswahlproblem
+erfinden, das der Befehl nicht hat.
 
 ---
 
