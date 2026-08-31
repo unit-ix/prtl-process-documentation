@@ -18,7 +18,6 @@ interface ConfirmDialogProps {
     description?: string;
     confirmLabel?: string;
     cancelLabel?: string;
-    /** Red styling for destructive actions. */
     destructive?: boolean;
     onConfirm: () => void;
 }

@@ -29,8 +29,6 @@ export interface SeedData {
     contacts: Contact[];
 }
 
-// Call order is part of the contract: reordering these generator calls shifts every id and
-// value that follows.
 export function buildSeed(): SeedData {
     faker.seed(SEED);
     faker.setDefaultRefDate(REF_DATE);

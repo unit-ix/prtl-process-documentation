@@ -12,7 +12,6 @@ function matchesSearch(value: string, needle: string | undefined): boolean {
     return !trimmed || value.toLowerCase().includes(trimmed.toLowerCase());
 }
 
-// Numbers numerically, everything else as German-collated text so umlauts sort correctly.
 function compareValues(left: unknown, right: unknown): number {
     if (typeof left === 'number' && typeof right === 'number') return left - right;
     return String(left).localeCompare(String(right), 'de');

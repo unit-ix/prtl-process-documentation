@@ -1,4 +1,5 @@
-// Anmeldung per Entra-Token (Managed Identity in Azure, `az login` lokal) — kein DB-Passwort.
+// Anmeldung per Entra-Token, kein DB-Passwort. Der `error`-Listener ist Pflicht:
+// docs/azure-decisions.md, „Code-Fallen".
 import { DefaultAzureCredential } from '@azure/identity';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
@@ -7,8 +8,6 @@ import * as schema from './schema.js';
 
 const POSTGRES_SCOPE = 'https://ossrdbms-aad.database.windows.net/.default';
 
-// Als Funktion, nicht als String: `pg` ruft sie bei JEDEM Verbindungsaufbau auf, und das Token
-// gilt nur 5–60 Minuten. Der Credential-Cache verhindert einen HTTP-Call pro Connection.
 function entraToken(): () => Promise<string> {
     const credential = new DefaultAzureCredential();
     return async () => {
@@ -18,7 +17,6 @@ function entraToken(): () => Promise<string> {
     };
 }
 
-/** `database` weicht nur in `grant-identity.ts` ab — Begründung steht dort. */
 export function createPool(database: string = dbEnv.PGDATABASE): Pool {
     const instance = new Pool({
         host: dbEnv.PGHOST,
@@ -26,13 +24,10 @@ export function createPool(database: string = dbEnv.PGDATABASE): Pool {
         database,
         user: dbEnv.PGUSER,
         password: entraToken(),
-        // Azures Kette hängt an einer Root-CA, die Node kennt — deshalb KEIN rejectUnauthorized: false.
         ssl: { rejectUnauthorized: true },
         max: 5,
     });
 
-    // NICHT entfernen: ohne 'error'-Listener wirft eine sterbende idle-Verbindung (Failover,
-    // Wartungsfenster) eine uncaught exception und nimmt den Prozess mit.
     instance.on('error', (error: Error) => {
         console.error('PostgreSQL-Pool: idle client gestorben —', error.message);
     });

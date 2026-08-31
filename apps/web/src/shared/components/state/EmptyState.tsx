@@ -5,7 +5,6 @@ interface EmptyStateProps {
     title?: string;
     description?: string;
     icon?: ComponentType<{ className?: string }>;
-    /** Optional primary action. */
     action?: ReactNode;
 }
 

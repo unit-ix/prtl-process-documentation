@@ -36,6 +36,19 @@ Stellen in `apps/web/src/shared/components/ui/` (vendored shadcn) weichen bewuss
 
 - **`sidebar.tsx` — `document.cookie`-Persistenz** (`SIDEBAR_COOKIE_NAME`): der shadcn-Sidebar-Block persistiert den Auf/Zu-Zustand in einem Cookie. Das ist eine harmlose UI-Präferenz (kein App-State, kein Secret), bewusst der „kein `localStorage`/Client-State"-Posture entzogen und als vendored shadcn-Standard **unverändert** übernommen. Kein Fork-Handlungsbedarf.
 
+## Warum der Seed lazy ist
+
+[`store.ts`](../apps/web/src/data/adapters/mock/store.ts) baut den Seed in einer Funktion
+(`seedDb()`) und nicht als `export const db = buildSeed()`. Ein Aufruf auf Modul-Top-Level ist ein
+Seiteneffekt, den Rollup nicht als rein beweisen kann: das Modul blieb dann selbst im azure-Bundle
+stehen, mitsamt dem kompletten faker-Baum (~250 kB), obwohl dort nie ein Mock-Adapter läuft. Als
+Funktion ist die Datei seiteneffektfrei und fällt beim Tree-Shaking zusammen mit den
+Mock-Repositories weg. Die Form ist deshalb Absicht und keine Umständlichkeit.
+
+Aus demselben Grund ist die **Aufrufreihenfolge in [`seed.ts`](../apps/web/src/data/adapters/mock/seed.ts)
+Teil des Vertrags**: faker läuft gegen einen festen Seed, jedes Umstellen der Generator-Aufrufe
+verschiebt jede id und jeden Wert danach.
+
 ## Fork-Checkliste (beim Übergang mock → azure/dataverse)
 
 1. `platform` in `.unitix/project.json` umstellen.

@@ -382,6 +382,10 @@ von 68 auf 15 MB, weil die aufgelösten Symlinks jedes Paket doppelt enthielten.
 Staging-Verzeichnis vor dem Zippen auf verbliebene Symlinks und bricht ab, statt ein kaputtes ZIP
 hochzuladen.
 
+Dazu kommt `--legacy`: ohne das Flag verlangt `pnpm deploy` ab pnpm 10 ein
+`inject-workspace-packages=true` in der Workspace-Konfiguration. Und das Staging-Verzeichnis muss
+leer sein, `pnpm deploy` bricht sonst ab — der Deploy löscht es deshalb vorher.
+
 ### Das Script baut selbst
 
 Ein altes `dist/` würde still veralteten Code deployen.
@@ -571,6 +575,40 @@ nicht. Musst du wirklich einmal gegen Prod lesen, setze `PGDATABASE` und `PGUSER
 das Ziel sichtbar im Befehl.
 
 ---
+
+## Code-Fallen
+
+Vier Stellen, an denen der Code anders aussieht, als er aussehen müsste. Jede hat einen Grund
+ausserhalb des Repos, und jede wäre beim „Aufräumen" ein stiller Rückschritt.
+
+### Die Flags von `az postgres flexible-server firewall-rule` haben getauscht
+
+Bis Azure CLI 2.75 ist der SERVER `--name` und die Regel `--rule-name`, danach umgekehrt. Wer falsch
+rät, legt eine Regel auf einem Server an, der nicht existiert.
+[`sync-db-firewall.mjs`](../scripts/sync-db-firewall.mjs) fragt deshalb einmal `--help` und leitet
+die Namen daraus ab, statt sie zu setzen.
+
+### `URLSearchParams.size` ist zu neu
+
+[`AzureRepository.ts`](../apps/web/src/data/adapters/azure/AzureRepository.ts) prüft auf einen
+leeren Query-String über `toString()` und nie über `params.size`. Letzteres gibt es erst ab
+Safari 17, und Vite transpiliert keine Runtime-APIs. Auf iOS 16 wäre es `undefined`, der
+Query-String fiele weg, und Filter und Sortierung würden still ignoriert: die falschen Daten sehen
+dann richtig aus.
+
+### Der Pool braucht einen `error`-Listener
+
+[`db/client.ts`](../apps/api/src/db/client.ts) hängt einen `'error'`-Handler an den Pool. Ohne ihn
+wirft eine sterbende idle-Verbindung — Failover, Wartungsfenster — eine uncaught exception und nimmt
+den Prozess mit. Der Handler ist die einzige Aufgabe dieser Zeile, sie sieht deshalb entbehrlich aus.
+
+### CORS wird vor der Auth registriert
+
+In [`server.ts`](../apps/api/src/server.ts) steht `@fastify/cors` vor dem JWT-Hook, weil es
+OPTIONS-Preflights kurzschliessend beantwortet und ein Preflight nie ein Token trägt. Umgekehrt
+registriert stirbt jeder Cross-Origin-Request am Preflight. Das Rate Limit sitzt dagegen als
+`preHandler` nach der Prüfung, damit der Schlüssel die verifizierte Nutzer-id sein kann — eine IP
+würde ein ganzes Kundennetz hinter einer NAT-Adresse gemeinsam drosseln.
 
 ## Restrisiko
 

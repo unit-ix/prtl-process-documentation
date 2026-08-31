@@ -12,8 +12,6 @@ export function useContactsController() {
     const [role, setRole] = useState<RoleFilterValue>(ALL_ROLES);
     const [sort, setSort] = useState<ContactSort>({ field: 'fullName', dir: 'asc' });
     const [pendingDelete, setPendingDelete] = useState<Contact | null>(null);
-    // No UI trigger by design — reachable via `#/?debugError=1` for review/QA, demonstrates the
-    // DoD error state without a demo button.
     const [searchParams] = useSearchParams();
     const simulateError = searchParams.get('debugError') === '1';
 
@@ -21,7 +19,6 @@ export function useContactsController() {
     const needle = debouncedSearch.trim();
     const hasActiveFilter = Boolean(needle) || role !== ALL_ROLES;
 
-    // Empty values must be `undefined`, never '', or the adapter filters on an empty string.
     const listQuery = useMemo<ContactListQuery>(
         () => ({
             limit: DEFAULT_PAGE_SIZE,
@@ -47,8 +44,6 @@ export function useContactsController() {
         role,
         setRole,
         sort,
-        // Same column toggles direction, a new column starts at 'asc'. Either way the query key
-        // changes, which resets paging — that is intended, do not "optimise" it away.
         toggleSort: (field: ContactSort['field']) =>
             setSort((current) =>
                 current.field === field

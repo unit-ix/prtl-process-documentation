@@ -1,5 +1,3 @@
-// Pro Tabelle EIN Eintrag; list.ts und handle.ts sind für alle Tabellen dieselbe Implementierung.
-// `filters` und `sorts` sind Whitelists — was hier fehlt, ist über die API nicht erreichbar.
 import { type SQL, sql } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
@@ -13,19 +11,15 @@ import {
     type ContactRow,
 } from '../db/schema.js';
 
-/** Deutsche Collation — ohne sie sortiert Postgres nach Byte-Wert, „Ärztehaus" hinter „Zylinder". */
 const german = (column: PgColumn): SQL => sql`${column} collate "de-DE-x-icu"`;
 
 export interface Resource {
     readonly table: PgTable;
-    /** Die uuid-PK. Explizit, weil `PgTable` als Basistyp seine Spalten nicht mehr kennt. */
     readonly idColumn: PgColumn;
     readonly searchColumn: PgColumn;
-    /** Erlaubte Gleichheitsfilter: Query-Feld → Spalte + Parser für den String aus der URL. */
     readonly filters: Readonly<Record<string, { column: PgColumn; schema: z.ZodType }>>;
     readonly sorts: Readonly<Record<string, SQL>>;
     readonly defaultSort: string;
-    /** Zeile → Domain-Objekt. Backend-Naming endet hier; nach aussen spricht die API Domain. */
     readonly toDomain: (row: never) => unknown;
     readonly createSchema: z.ZodType;
     readonly updateSchema: z.ZodType;
@@ -33,8 +27,6 @@ export interface Resource {
 
 const isoDate = (value: Date): string => value.toISOString();
 
-// Werte aus den pgEnums, nicht als zweite Literal-Liste — sonst laufen Validierung und Spaltentyp
-// auseinander, sobald jemand nur eine der beiden pflegt.
 const companyBody = {
     name: z.string().min(1),
     industry: z.enum(industryEnum.enumValues),
@@ -77,7 +69,6 @@ const contactBody = {
 const contactResource: Resource = {
     table: contacts,
     idColumn: contacts.id,
-    // Generierte Spalte, nicht first_name ODER last_name: „Anna Schmidt" findet man nur so.
     searchColumn: contacts.fullName,
     filters: {
         role: { column: contacts.role, schema: z.enum(contactBody.role.options) },
@@ -111,7 +102,6 @@ export const RESOURCES: Readonly<Record<string, Resource>> = {
     contacts: contactResource,
 };
 
-/** Die einzige Stelle, die den Lookup flachklopft: `company: { id }` → `company_id`. */
 export function toColumns(input: Record<string, unknown>): Record<string, unknown> {
     const { company, ...rest } = input;
     if (company && typeof company === 'object' && 'id' in company) {

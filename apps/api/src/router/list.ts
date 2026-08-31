@@ -1,4 +1,3 @@
-// ListQuery → SQL, ein Übersetzer für alle Tabellen. Vertrag: apps/web/src/data/ports/Query.ts.
 import { and, asc, desc, ilike, eq, type SQL, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { badRequest } from '../http/errors.js';
@@ -15,7 +14,6 @@ export interface Page {
 
 type Query = Record<string, string | undefined>;
 
-/** Escaped die LIKE-Metazeichen, sonst wird eine Sucheingabe `%` zum Full-Table-Match. */
 function searchPattern(raw: string): string {
     return `%${raw.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
@@ -45,7 +43,6 @@ function orderBy(resource: Resource, query: Query): SQL {
 }
 
 function paging(query: Query): { limit: number; offset: number } {
-    // Untere Grenze nicht weglassen: ein negatives `limit` ginge als `LIMIT -5` an Postgres → 500.
     const limit = Math.min(Math.max(Number(query.limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
     const offset = Math.max(Number(query.cursor) || 0, 0);
     return { limit, offset };
@@ -55,8 +52,6 @@ export async function listRows(resource: Resource, query: Query): Promise<Page> 
     const where = conditions(resource, query);
     const { limit, offset } = paging(query);
 
-    // `count(*) over()` holt die Gesamttrefferzahl im selben Durchlauf — ein separates
-    // SELECT count(*) wäre ein zweiter Table-Scan mit derselben WHERE-Klausel.
     const rows = await db
         .select({ row: resource.table, total: sql<string>`count(*) over()` })
         .from(resource.table)

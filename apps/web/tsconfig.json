@@ -23,8 +23,6 @@
 
         "paths": {
             "@/*": ["./src/*"],
-            // Spiegelt den Alias in vite.config.ts. .unitix/ liegt an der Repo-Root (projektweite
-            // Achse, nicht app-lokal). Kein rootDir-Konflikt, weil dieses Projekt noEmit fährt.
             "@unitix/*": ["../../.unitix/*"]
         }
     },

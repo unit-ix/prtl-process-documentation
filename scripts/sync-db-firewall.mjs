@@ -1,22 +1,11 @@
 #!/usr/bin/env node
-// Firewall des PostgreSQL Flexible Server auf die Outbound-IPs der App Services abgleichen.
-//
-//   pnpm db:firewall             # abgleichen
-//   pnpm db:firewall --dry-run   # nur zeigen, was passieren würde
-//
-// KEIN --env: die Firewall gehört dem SERVER, nicht einer Umgebung. Dev und Prod teilen sich
-// standardmäßig einen Server, und der Abgleich löscht jede api-outbound-Regel, die nicht in der
-// Soll-Liste steht — pro Umgebung gelaufen würde ein Dev-Lauf die Regeln von Prod entfernen und die
-// Produktions-API binnen Minuten von der Datenbank trennen. Deshalb pro Server die VEREINIGUNG der
-// IPs aller App Services, die ihn benutzen.
-//
-// Warum possibleOutboundIpAddresses statt outboundIpAddresses, was die Liste ungültig macht und
-// warum nur Regeln mit dem eigenen Präfix angefasst werden: docs/azure-decisions.md.
+// Firewall des PostgreSQL-Servers auf die Outbound-IPs der App Services abgleichen.
+// Warum kein --env, warum possibleOutboundIpAddresses, warum die Flags erfragt werden:
+// docs/azure-decisions.md. Klickpfad: docs/azure-runbook.md.
 
 import { spawnSync } from 'node:child_process'
 import { argValue, hasFlag, readProjectConfig, repoRoot } from './lib/environment.mjs'
 
-// Alles ohne dieses Präfix bleibt unangetastet — u. a. die Regel für den eigenen Rechner.
 const RULE_PREFIX = 'api-outbound-'
 
 function fail(message) {
@@ -26,7 +15,6 @@ function fail(message) {
 
 const dryRun = hasFlag('--dry-run')
 
-// stderr nur im Fehlerfall zeigen, sonst überdeckt das CLI-Rauschen die Zusammenfassung.
 function az(label, args, { json = false, soft = false } = {}) {
   const r = spawnSync('az', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
   if (r.error) {
@@ -35,7 +23,7 @@ function az(label, args, { json = false, soft = false } = {}) {
         'und `az login` ausführen.',
     )
   }
-  if (r.status !== 0 && soft) return null // noch nicht angelegte Ressource ist kein Fehler
+  if (r.status !== 0 && soft) return null
   if (r.status !== 0) fail(`${label} beendete mit Code ${r.status}:\n${(r.stderr ?? '').trim()}`)
   if (!json) return (r.stdout ?? '').trim()
   try {
@@ -67,7 +55,6 @@ function resolveTargets() {
     name,
     resourceGroup: (env.azure ?? {}).resourceGroup,
     appName: (env.azure ?? {}).apiAppName,
-    // Abgeleitet statt als zweites Feld gepflegt.
     dbServer: ((env.pg ?? {}).host ?? '').split('.')[0],
   }))
 
@@ -91,7 +78,6 @@ function groupByServer(targets) {
   for (const t of targets) {
     const existing = servers.get(t.dbServer)
     if (existing) existing.apps.push(t)
-    // Die Resource Group des Servers: die der ersten Umgebung, die ihn nennt.
     else servers.set(t.dbServer, { dbServer: t.dbServer, resourceGroup: t.resourceGroup, apps: [t] })
   }
   return [...servers.values()]
@@ -110,9 +96,6 @@ function assertAzLogin() {
 
 const ruleName = (ip) => RULE_PREFIX + ip.replaceAll('.', '-')
 
-// Die Azure CLI hat die Flags dieser Befehlsgruppe zwischen Versionen vertauscht: bis 2.75 ist der
-// SERVER `--name` und die Regel `--rule-name`, danach umgekehrt. Wer falsch rät, legt eine Regel auf
-// einem Server an, der nicht existiert — deshalb die Hilfe befragen statt raten.
 function resolveFlagStyle() {
   const help = spawnSync('az', ['postgres', 'flexible-server', 'firewall-rule', 'create', '--help'], {
     cwd: repoRoot,
@@ -126,11 +109,8 @@ function resolveFlagStyle() {
     : { server: '--server-name', rule: '--name' }
 }
 
-// Von main() gesetzt, bevor irgendeine Regel-Operation läuft.
 let flags
 
-// IPv6 wird verworfen: Postgres-Firewall-Regeln müssen IPv4 sein und lehnen IPv6 mit einem
-// Validierungsfehler ab.
 function readOutboundIps(resourceGroup, appName) {
   const app = az(
     'az webapp show',
@@ -168,8 +148,6 @@ function readManagedRules(resourceGroup, dbServer) {
     { json: true },
   )
 
-  // Start = Ende = 0.0.0.0 ist CLI-seitig das Äquivalent zur Portal-Checkbox "Allow public access
-  // from any Azure service" — laut Doku inklusive fremder Kunden-Subscriptions.
   const anyAzure = all.filter((r) => r.startIpAddress === '0.0.0.0' && r.endIpAddress === '0.0.0.0')
   if (anyAzure.length > 0) {
     console.log(
@@ -210,7 +188,6 @@ function main() {
   if (changed === 0) console.log('\n✓ Alle Server sind synchron — nichts zu tun.')
 }
 
-/** Gleicht EINEN Server gegen die Vereinigung der IPs aller Apps ab, die ihn benutzen. */
 function syncServer({ dbServer, resourceGroup, apps }) {
   console.log(`\n▸ ${dbServer}`)
 
@@ -234,7 +211,6 @@ function syncServer({ dbServer, resourceGroup, apps }) {
   }
 
   if (ips.size === 0) {
-    // Leere Soll-Liste würde ALLE eigenen Regeln löschen.
     console.log('  ⚠ Keine App Service dieses Servers ist erreichbar — Abgleich übersprungen.')
     return 0
   }
@@ -253,7 +229,6 @@ function syncServer({ dbServer, resourceGroup, apps }) {
 
   const desired = new Map([...ips].sort().map((ip) => [ruleName(ip), ip]))
   const toCreate = [...desired].filter(([name]) => !managed.has(name))
-  // Namensgleich, aber Adressen von Hand verbogen: geradeziehen statt melden.
   const toFix = [...desired].filter(([name, ip]) => {
     const r = managed.get(name)
     return r && (r.startIpAddress !== ip || r.endIpAddress !== ip)
@@ -274,8 +249,6 @@ function syncServer({ dbServer, resourceGroup, apps }) {
     return 1
   }
 
-  // Serieller Ablauf mit Absicht: jede Regeländerung ist eine ARM-Operation auf DEMSELBEN Server,
-  // parallel quittiert Azure das mit einem Conflict. Kostet einige Sekunden pro Regel.
   const total = toCreate.length + toFix.length + toDelete.length
   let done = 0
   const step = (label) => console.log(`    ${++done}/${total} ${label} …`)

@@ -2,8 +2,6 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { contactRepository } from '@/data';
 import type { ContactCreate, ContactQuery } from '@/data/ports/ContactRepository';
 
-// The cursor is useInfiniteQuery's pageParam, not part of the query key — in the key every page
-// would get its own cache entry and loading more would do nothing.
 export type ContactListQuery = Omit<ContactQuery, 'cursor'>;
 
 export const contactKeys = {
@@ -15,8 +13,7 @@ export const contactKeys = {
     detail: (id: string) => [...contactKeys.details(), id] as const,
 };
 
-// PROTOTYPE-ONLY — `simulateError` demonstrates the DoD error state without a UI trigger, see
-// `?debugError=1` in useContactsController. Dropped once a feature has a real failure path.
+// PROTOTYPE-ONLY — `simulateError`, siehe docs/prototype-manifest.md.
 export function useContacts(query: ContactListQuery, simulateError = false) {
     return useInfiniteQuery({
         queryKey: contactKeys.list(query, simulateError),

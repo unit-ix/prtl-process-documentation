@@ -1,5 +1,3 @@
-// Die EINE Stelle im Frontend, die HTTP spricht. Basis bewusst relativ: `/api` proxied lokal vite,
-// in Azure die Static Web App — gleiche Origin, also kein CORS und keine Backend-URL im Bundle.
 import { accessToken } from './auth';
 
 const BASE = '/api';
@@ -9,7 +7,6 @@ interface Problem {
     detail?: string;
 }
 
-/** Der Fehlerkontrakt der API (RFC 7807) als Error — ErrorState im UI zeigt `message`. */
 export class ApiError extends Error {
     constructor(
         readonly status: number,
@@ -43,7 +40,6 @@ export async function apiGet<T>(path: string): Promise<T> {
     return (await response.json()) as T;
 }
 
-/** `get(id)` im Port darf `null` liefern — ein 404 ist hier kein Fehler, sondern die Antwort. */
 export async function apiGetOrNull<T>(path: string): Promise<T | null> {
     const response = await request(path, { method: 'GET' });
     if (response.status === 404) return null;

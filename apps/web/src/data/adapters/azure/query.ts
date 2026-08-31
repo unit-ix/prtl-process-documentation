@@ -1,8 +1,5 @@
-// ListQuery → Query-String. Vertrag: ../../ports/Query.ts, serverseitiges Gegenstück:
-// apps/api/src/router/list.ts. Der Cursor bleibt opak — hier ein Offset, in Dataverse ein skipToken.
 import type { ListQuery } from '../../ports/Query';
 
-/** Der gemeinsame Nenner aller entitäts-spezifischen Query-Typen (`ContactQuery` usw.). */
 export type AnyListQuery = ListQuery<Record<string, unknown>, string>;
 
 export function toSearchParams(query: AnyListQuery | undefined): URLSearchParams {

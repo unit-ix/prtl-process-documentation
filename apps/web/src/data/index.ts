@@ -1,4 +1,3 @@
-// The one swap point of the data seam: picks the adapters by `platform`.
 import { platform } from '@/shared/lib/projectConfig';
 import type { Company } from '@/domain/Company';
 import type { Contact } from '@/domain/Contact';
@@ -15,7 +14,6 @@ function unsupported(): never {
     );
 }
 
-/** Einmaliger Bootstrap vor dem ersten Render, aufgerufen aus app/main.tsx. */
 export async function initDataAccess(): Promise<void> {
     if (platform === 'azure') await ensureSignedIn();
 }

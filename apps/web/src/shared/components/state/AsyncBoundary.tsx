@@ -6,10 +6,8 @@ import { ErrorState } from './ErrorState';
 interface AsyncBoundaryProps {
     isLoading: boolean;
     error?: unknown;
-    /** True when the load succeeded but returned nothing. */
     isEmpty?: boolean;
     onRetry?: () => void;
-    /** Overrides the default skeleton / empty state. */
     loadingFallback?: ReactNode;
     emptyFallback?: ReactNode;
     children: ReactNode;

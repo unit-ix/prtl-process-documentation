@@ -4,7 +4,6 @@ import { Button } from '@/shared/components/ui/button';
 interface NotFoundProps {
     title?: string;
     description?: string;
-    /** Target of the back button (HashRouter path). */
     homeHref?: string;
 }
 

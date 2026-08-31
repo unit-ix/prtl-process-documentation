@@ -1,5 +1,3 @@
-// Gemeinsame Argument- und Config-Helfer der Deploy-Scripts.
-
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
@@ -30,7 +28,6 @@ export function readProjectConfig() {
     }
 }
 
-/** Default `dev` — die harmlose Umgebung. Ein Tippfehler darf nicht still in Prod landen. */
 export function resolveEnvironment() {
     const name = argValue('--env') ?? 'dev'
     const environments = readProjectConfig().environments ?? {}

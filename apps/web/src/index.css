@@ -3,11 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Token-Contract (Prototype-First Golden Template).
- * EINZIGE Quelle für Farben/Radius. Komponenten referenzieren NUR die semantischen
- * Aliases (bg-background, text-muted-foreground, border-border, bg-sidebar …) —
- * nie Roh-Hex/px. Eine spaetere Design-Registry tauscht diese Werte aus.
- * Werte in oklch (shadcn new-york / baseColor neutral). Vokabular ist in COMPONENTS.md dokumentiert. */
+/* Token-Contract — einzige Quelle für Farben und Radius. Vokabular: COMPONENTS.md. */
 :root {
     --radius: 0.625rem;
     --background: oklch(1 0 0);

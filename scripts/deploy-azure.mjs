@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-// Azure-Deploy: Migrationen → API → SPA.
-//
-//   node scripts/deploy-azure.mjs --env=dev|prod [--only=db,api,web]
-//                                 [--allow-destructive] [--yes]
-//                                 [--resource-group=<rg>] [--app-name=<name>]
-//
-// Modell, Gates und Ressourcen-Konvention: docs/environments.md. Setup: docs/azure-runbook.md.
+// Azure-Deploy: Migrationen → API → SPA. Flags, Gates und Reihenfolge: docs/environments.md.
 
 import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
@@ -110,8 +104,6 @@ function assertAzLogin() {
     }
 }
 
-// PGUSER wird bewusst nicht injiziert: in Azure ist das die Managed Identity, von einem
-// Entwickler-Rechner aus aber dessen eigener UPN aus der Root-.env.
 function deployMigrations(env) {
     if (!process.env.PGUSER) {
         fail('PGUSER fehlt — dein UPN im Mandanten (nicht die Managed Identity), gehört in die Root-.env.')
@@ -135,16 +127,12 @@ function findEntries(absDir, predicate, skip, rel = '', found = []) {
 function assertCleanArtifact() {
     const abs = absPath(DEPLOY_DIR)
 
-    // node_modules/ ausgenommen — dort liegen .env-Fixtures fremder Pakete.
     const envFiles = findEntries(abs, (e) => e.isFile() && e.name.startsWith('.env'), ['node_modules'])
     if (envFiles.length > 0) {
         fail(`.env im Artefakt (${envFiles.join(', ')}) — in Azure kommt die Konfiguration aus den App Settings.`)
     }
 
-    // `zip` löst Symlinks auf, und ein aufgelöster pnpm-Link verliert seine Geschwister-Dependencies:
-    // lokal unauffällig, in Azure stirbt die API beim Start mit ERR_MODULE_NOT_FOUND. Dagegen steht
-    // `--config.node-linker=hoisted` unten am pnpm-deploy; diese Prüfung hält den Zustand fest.
-    const symlinks = findEntries(abs, (e) => e.isSymbolicLink(), ['.bin']) // .bin = CLI-Shims
+    const symlinks = findEntries(abs, (e) => e.isSymbolicLink(), ['.bin'])
     if (symlinks.length > 0) {
         fail(
             `${symlinks.length} Symlink(s) im Artefakt (${symlinks.slice(0, 3).join(', ')} …) — daraus wird ein\n` +
@@ -154,7 +142,7 @@ function assertCleanArtifact() {
 }
 
 function createZip() {
-    rmSync(absPath(ZIP_FILE), { force: true }) // sonst UPDATET zip das alte Archiv
+    rmSync(absPath(ZIP_FILE), { force: true })
     const cwd = absPath(DEPLOY_DIR)
     const name = ZIP_FILE.split('/').pop()
     if (process.platform === 'win32') {
@@ -171,7 +159,6 @@ function deployApi(env, alreadyBuilt) {
     if (!resourceGroup || !appName) {
         fail(`environments.${env.name}.azure braucht resourceGroup und apiAppName — docs/azure-runbook.md.`)
     }
-    // Azure benennt die Managed Identity nach der Web App, und dieser Name IST die DB-Rolle.
     if (env.pg.user && env.pg.user !== appName) {
         console.log(`⚠ pg.user "${env.pg.user}" ≠ apiAppName "${appName}" — sonst: permission denied for table.`)
     }
@@ -179,12 +166,12 @@ function deployApi(env, alreadyBuilt) {
     if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/api', 'build'])
 
     console.log(`→ API: Package nach ${DEPLOY_DIR}/ herausziehen (flach, ohne devDependencies) …`)
-    rmSync(absPath(DEPLOY_DIR), { recursive: true, force: true }) // pnpm deploy will es leer
+    rmSync(absPath(DEPLOY_DIR), { recursive: true, force: true })
     run('pnpm deploy', 'pnpm', [
         '--config.node-linker=hoisted',
         '--filter', '@app/api',
         '--prod',
-        '--legacy', // ohne das Flag verlangt pnpm 10 inject-workspace-packages=true
+        '--legacy',
         'deploy', DEPLOY_DIR,
     ])
     for (const f of ['.env', '.env.example']) rmSync(absPath(`${DEPLOY_DIR}/${f}`), { force: true })
@@ -207,9 +194,6 @@ function deployWeb(env, alreadyBuilt) {
     if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/web', 'build'])
     if (!existsSync(absPath(WEB_DIST))) fail(`Build lief durch, aber ${WEB_DIST}/ fehlt.`)
 
-    // `--env production` ist die Umgebung INNERHALB einer Static Web App (production statt Preview) —
-    // unsere dev/prod sind zwei getrennte SWAs. Der Token geht über die Env des Kindprozesses statt
-    // als Argument, sonst steht das Secret in der Prozessliste.
     console.log(`→ SPA: ${WEB_DIST}/ hochladen (Token aus ${tokenName}) …`)
     run('swa deploy', 'pnpm', ['dlx', '@azure/static-web-apps-cli', 'deploy', WEB_DIST, '--env', 'production'], {
         env: { ...process.env, SWA_CLI_DEPLOYMENT_TOKEN: token },
@@ -252,8 +236,6 @@ async function main() {
     const isProd = env.name === 'prod'
     console.log(`\n▸ Deploy nach ${env.name.toUpperCase()} — Schritte: ${steps.join(', ')}\n`)
 
-    // Die Gates lassen `pnpm verify` laufen, und das baut beide Packages — ein zweiter Build wäre
-    // identisch.
     if (isProd) {
         await assertProdGates({ allowDestructive: hasFlag('--allow-destructive'), autoConfirm: hasFlag('--yes') })
     }

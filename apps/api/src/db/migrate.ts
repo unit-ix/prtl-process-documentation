@@ -1,5 +1,3 @@
-// Migrations-Runner, programmatisch statt `drizzle-kit migrate`: so läuft die Migration durch
-// dieselbe Pool-Factory wie der Server und kann sich mit einem Entra-Token anmelden.
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -9,7 +7,6 @@ import { dbTarget } from '../env.js';
 const migrationsFolder = resolve(dirname(fileURLToPath(import.meta.url)), '../../drizzle');
 
 async function main(): Promise<void> {
-    // Ziel vor dem Lauf: der Befehl spielt jede Migration im Arbeitsverzeichnis ein, auch gegen PROD.
     console.log(`→ Ziel: ${dbTarget()}`);
     console.log(`→ Migrationen aus ${migrationsFolder} …`);
     await migrate(db, { migrationsFolder });

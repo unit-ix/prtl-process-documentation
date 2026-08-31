@@ -1,15 +1,6 @@
 #!/usr/bin/env node
-// `pnpm deploy:cloudflare` — Direct-Upload der SPA auf Cloudflare Pages: der Host des Mock-Prototyps,
-// ein Ziel, `main` → `<slug>`. Bei `platform: azure`/`powerapps` steigt das Script sauber aus (exit 0),
-// damit derselbe CI-Job in jedem Projekt läuft.
-//
-// Dieselbe Logik lokal UND aus der CI — der Deploy-Job ruft dieses Script auf statt sie zu
-// duplizieren, sonst nimmt CI den Repo-Namen als Slug und es entstehen zwei Pages-Projekte.
-//
-// Voraussetzungen (fail loud): CLOUDFLARE_API_TOKEN (Scope Account > Cloudflare Pages > Edit),
-// CLOUDFLARE_ACCOUNT_ID, ein gebautes `apps/web/dist/`. Beide Env-Namen liest wrangler nativ.
-//
-// Details: docs/hosting.md. Warum es nur eine Umgebung gibt: docs/environments.md.
+// Direct-Upload der SPA auf Cloudflare Pages, der Host des Mock-Prototyps. Details, Slug-Regeln
+// und Voraussetzungen: docs/hosting.md.
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -19,8 +10,6 @@ import { argValue, hasFlag, readProjectConfig, repoRoot } from './lib/environmen
 
 const WEB_DIST = 'apps/web/dist'
 
-// Cloudflare braucht den Branch beim Anlegen, damit ein Direct-Upload als Produktions-Deployment
-// zählt und nicht als Preview.
 const PRODUCTION_BRANCH = 'main'
 
 function fail(message) {
@@ -28,9 +17,6 @@ function fail(message) {
   process.exit(1)
 }
 
-// wrangler-Projektnamen: lowercase, a-z0-9-, max. 58 Zeichen, kein führender/abschließender
-// Bindestrich. Das Trimmen muss NACH dem slice passieren, sonst endet ein auf 58 gekürzter Name
-// womöglich auf `-` und Cloudflare lehnt ihn ab.
 function sanitizeProjectName(raw) {
   return String(raw)
     .toLowerCase()
@@ -41,7 +27,6 @@ function sanitizeProjectName(raw) {
 }
 
 function resolveProjectName() {
-  // Priorität: arg > .unitix/project.json > package.json.
   const unitix = readProjectConfig()
   const pkg = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8'))
   const rawName = argValue('--project-name') || unitix.name || unitix.slug || pkg.name
@@ -67,7 +52,6 @@ function shouldDeploy() {
   return true
 }
 
-// Der Link ist der Stand, den der Kunde sieht — ein Feature-Branch würde ihn still überschreiben.
 function assertBranch() {
   if (hasFlag('--force')) return
   const r = spawnSync('git', ['branch', '--show-current'], { cwd: repoRoot, encoding: 'utf8' })
@@ -93,7 +77,6 @@ function assertPrerequisites() {
   if (!existsSync(resolve(repoRoot, WEB_DIST))) fail(`Kein ${WEB_DIST}/ gefunden — zuerst \`pnpm build\` ausführen.`)
 }
 
-// wrangler liest CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID selbst aus der Env.
 function wrangler(args, { allowFailure = false } = {}) {
   const r = spawnSync('pnpm', ['dlx', 'wrangler@latest', ...args], {
     cwd: repoRoot,
@@ -106,16 +89,12 @@ function wrangler(args, { allowFailure = false } = {}) {
 }
 
 function main() {
-  // Vor assertPrerequisites: ein azure-/powerapps-Push soll exit 0 liefern, nicht am fehlenden
-  // Token sterben.
   if (!shouldDeploy()) process.exit(0)
 
   assertBranch()
   assertPrerequisites()
   const projectName = resolveProjectName()
 
-  // wrangler legt ein fehlendes Projekt beim deploy nur INTERAKTIV an — in CI failt damit der
-  // allererste Deploy. Deshalb explizit anlegen und ein existierendes tolerieren.
   console.log(`→ Stelle Cloudflare-Pages-Projekt sicher: ${projectName} …`)
   const create = wrangler(['pages', 'project', 'create', projectName, `--production-branch=${PRODUCTION_BRANCH}`], {
     allowFailure: true,
@@ -137,7 +116,6 @@ function main() {
   console.log(`\n✓ Deploy fertig. Die *.pages.dev-URL steht oben in der wrangler-Ausgabe (Projekt: ${projectName}).`)
 }
 
-// Nur ausführen, wenn direkt gestartet — ein Import soll keinen Deploy auslösen.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main()
 }

@@ -20,7 +20,6 @@ interface ContactsToolbarProps {
     creating: boolean;
 }
 
-// Rendered OUTSIDE the AsyncBoundary, which unmounts on every fetch and would drop focus here.
 export function ContactsToolbar(props: ContactsToolbarProps) {
     const { search, onSearch, role, onRole, canCreate, onCreate, creating } = props;
     return (

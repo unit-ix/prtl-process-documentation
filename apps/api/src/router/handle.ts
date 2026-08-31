@@ -1,5 +1,3 @@
-// Transport-agnostischer Router: `({ method, path, query, body }) → { status, body }`.
-// Auth, Rate Limit, CORS und Fehlerkontrakt sitzen in server.ts.
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { badRequest, notFound } from '../http/errors.js';
@@ -8,7 +6,6 @@ import { RESOURCES, toColumns, type Resource } from './registry.js';
 
 export interface RouterRequest {
     readonly method: string;
-    /** Pfad OHNE /api-Präfix, z. B. `/contacts` oder `/contacts/<uuid>`. */
     readonly path: string;
     readonly query: Record<string, string | undefined>;
     readonly body: unknown;
@@ -32,8 +29,6 @@ function resolveTarget(path: string): Target {
     return { resource, id: segments[1] ?? null };
 }
 
-// `.strict()` in der Registry ist die Schreib-Whitelist: eine Spalte, die nicht im Schema steht,
-// ist über die API nicht setzbar — auch wenn sie in der Tabelle existiert.
 function parseBody(schema: Resource['createSchema'], body: unknown): Record<string, unknown> {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
@@ -50,7 +45,6 @@ async function getOne(resource: Resource, id: string): Promise<unknown> {
 }
 
 async function writeOne(resource: Resource, id: string | null, values: Record<string, unknown>): Promise<unknown> {
-    // Ohne diesen Guard baut Drizzle ein `UPDATE … SET` ohne Zuweisung → SQL-Fehler → 500 statt 400.
     if (id && Object.keys(values).length === 0) throw badRequest('PATCH ohne Felder.');
 
     const rows = id

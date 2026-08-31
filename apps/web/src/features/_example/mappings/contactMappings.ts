@@ -7,7 +7,6 @@ export const ROLE_LABELS: Record<ContactRole, string> = {
     other: 'Sonstige',
 };
 
-/** Sentinel for "no role filter": Radix Select rejects an empty string as a value. */
 export const ALL_ROLES = 'all';
 
 export type RoleFilterValue = ContactRole | typeof ALL_ROLES;

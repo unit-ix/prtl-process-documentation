@@ -12,7 +12,6 @@ import type { ContactSort } from '@/data/ports/ContactRepository';
 import type { Contact } from '@/domain/Contact';
 import { ROLE_LABELS } from '../mappings/contactMappings';
 
-// Role is absent on purpose: choice sorting is backend-dependent (see QuerySpec).
 const SORTABLE_COLUMNS: { field: ContactSort['field']; label: string }[] = [
     { field: 'fullName', label: 'Name' },
     { field: 'email', label: 'E-Mail' },

@@ -1,4 +1,5 @@
-// Fastify-Schale: Transport und Absicherung. Die Fachwirkung sitzt in router/handle.ts.
+// Transport und Absicherung, Fachwirkung in router/handle.ts. Warum CORS vor der Auth und das
+// Rate Limit danach: docs/azure-decisions.md, „Code-Fallen".
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
@@ -21,12 +22,8 @@ const app = Fastify({
     disableRequestLogging: true,
 });
 
-/** `/health` muss ohne Identität erreichbar sein, sonst kann Azure die Instanz nicht prüfen. */
 const isPublic = (url: string): boolean => url === '/health' || url.startsWith('/health?');
 
-// MUSS vor der Auth registriert werden: @fastify/cors beantwortet OPTIONS-Preflights
-// kurzschliessend, und ein Preflight trägt nie ein Token. Niemals `origin: true` — das erlaubte
-// jeder fremden Seite Schreibzugriff mit dem Token des eingeloggten Nutzers.
 await app.register(cors, { origin: allowedOrigins(), credentials: false });
 
 await app.register(rateLimit, { global: false, timeWindow: '1 minute' });
@@ -36,8 +33,6 @@ app.addHook('onRequest', async (request: FastifyRequest) => {
     request.claims = await verifyAccessToken(bearerToken(request.headers.authorization));
 });
 
-// preHandler, damit der Schlüssel die geprüfte Nutzer-id sein kann: eine IP würde ein ganzes
-// Kundennetz hinter einer NAT-Adresse gemeinsam drosseln.
 app.addHook(
     'preHandler',
     app.rateLimit({
@@ -55,7 +50,6 @@ app.setErrorHandler((error, _request, reply) => {
 
 app.get('/health', async () => ({ status: 'ok' }));
 
-// Ein Handler für alle Tabellen. Neue Tabelle = ein Eintrag in router/registry.ts, keine Route.
 app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
     const { status, body } = await handle({
         method: request.method,

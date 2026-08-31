@@ -1,8 +1,6 @@
-// Eine Domain-Entität (apps/web/src/domain/) = eine Tabelle, Naming nach .claude/docs/naming-conventions.md.
 import { sql } from 'drizzle-orm';
 import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
-// Werte WÖRTLICH die String-Literal-Unions aus apps/web/src/domain/.
 export const industryEnum = pgEnum('industry', [
     'technology',
     'manufacturing',
@@ -30,9 +28,6 @@ export const contacts = pgTable('contacts', {
     firstName: text('first_name').notNull(),
     lastName: text('last_name').notNull(),
 
-    // STORED, nicht im Mapper berechnet: so ist der Wert von aussen nicht setzbar (Gegenstück zu
-    // `readonly fullName` im Domain-Typ) und trotzdem filter- und sortierbar. Spaltennamen roh,
-    // die Referenz zeigt auf Geschwisterspalten derselben Tabelle.
     fullName: text('full_name').generatedAlwaysAs(sql`first_name || ' ' || last_name`),
 
     email: text('email').notNull().default(''),

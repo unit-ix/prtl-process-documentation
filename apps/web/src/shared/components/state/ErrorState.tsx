@@ -4,7 +4,6 @@ import { Button } from '@/shared/components/ui/button';
 interface ErrorStateProps {
     title?: string;
     error?: unknown;
-    /** When set, a retry button is shown — typically query.refetch. */
     onRetry?: () => void;
 }
 

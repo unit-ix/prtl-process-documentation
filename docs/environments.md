@@ -69,6 +69,10 @@ pnpm deploy:prod                # dasselbe, mit Gates davor und Tag danach
 pnpm deploy:dev --only=web      # nur die SPA (API neu zu starten kostet Sekunden Downtime)
 ```
 
+Alle Flags: `--env=dev|prod`, `--only=db,api,web`, `--allow-destructive`, `--yes` und die beiden
+Notausgänge `--resource-group=<rg>` / `--app-name=<name>`, die den `azure`-Block der Umgebung für
+einen Lauf überschreiben.
+
 Beides läuft über [`scripts/deploy-azure.mjs`](../scripts/deploy-azure.mjs), **lokal von Hand** — es gibt
 bewusst noch keinen CI-Deploy nach Azure (Begründung und der spätere OIDC-Pfad:
 [`azure-decisions.md`](azure-decisions.md#scope)). CI läuft `pnpm verify` auf jeden Push und PR.

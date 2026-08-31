@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-// Zwei mechanische Regeln um .env-Dateien — ESLint kann das nicht, es liest keine .env-Files.
-//
-// 1. EINE .env, im Repo-Root. Eine .env in einem apps/*-Package landet über `pnpm deploy` im
-//    Deploy-ZIP und liefert in Azure Werte, die aus den App Settings kommen sollen.
-// 2. Kein Secret in einer VITE_-Variable — nur die erreichen das Bundle überhaupt.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
@@ -18,7 +13,6 @@ function appDirs() {
         .map((entry) => join(appsDir, entry.name));
 }
 
-// .env.example ist bewusst ausgenommen: es dokumentiert die NAMEN der Variablen, nie Werte.
 function envFiles(dir) {
     return readdirSync(dir, { withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.startsWith('.env') && entry.name !== '.env.example')
@@ -27,7 +21,6 @@ function envFiles(dir) {
 
 const label = (abs) => relative(ROOT, abs) || abs;
 
-// --- Regel 1: keine .env in einem Package ------------------------------------------------------
 const misplaced = appDirs().flatMap(envFiles);
 if (misplaced.length > 0) {
     console.error('.env in einem apps/*-Package gefunden — es gibt genau EINE .env, im Repo-Root:\n');
@@ -38,7 +31,6 @@ if (misplaced.length > 0) {
     process.exit(1);
 }
 
-// --- Regel 2: kein Secret in einer VITE_-Variable ----------------------------------------------
 const findings = [];
 for (const dir of [ROOT, ...appDirs()]) {
     for (const abs of envFiles(dir)) {

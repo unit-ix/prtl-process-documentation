@@ -8,7 +8,6 @@ interface PersonaCapabilities {
     readonly edit: readonly string[];
 }
 
-// '*' means every resource.
 const CAPABILITIES: Record<Persona, PersonaCapabilities> = {
     admin: { see: ['*'], edit: ['*'] },
     manager: { see: ['*'], edit: ['company', 'contact'] },

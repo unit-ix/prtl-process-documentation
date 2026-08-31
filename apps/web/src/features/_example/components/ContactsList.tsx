@@ -30,8 +30,6 @@ export function ContactsList(props: ContactsListProps) {
 
     return (
         <AsyncBoundary
-            // isLoading (first load), not isFetching: the latter unmounts the table on every
-            // page append and the list jumps back to the top.
             isLoading={query.isLoading}
             error={query.error}
             isEmpty={contacts.length === 0}
