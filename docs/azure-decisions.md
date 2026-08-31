@@ -205,6 +205,11 @@ kannst du das nur mit `--allow-destructive`, Details in
 Als Sicherheitsnetz gibt `db:migrate` vor dem Lauf `→ Ziel: <user>@<host>/<db>` aus. Diese Zeile
 liest du zweimal. Sie steht auch da, wenn das Ziel aus der Datei kam.
 
+In Claude Code kommt ein zweites Netz dazu: `db:migrate`, `db:grant`, `drizzle-kit` und `psql`
+lösen immer eine Rückfrage aus, auch im Autopilot und auch indirekt (`pnpm --filter @app/api
+db:migrate`, direkter `tsx`-Aufruf). Verdrahtet ist das in `.claude/settings.json` → `permissions.ask`
+plus `.claude/hooks/block-unsafe-bash.mjs`. `db:generate` bleibt frei — es schreibt nur SQL-Dateien.
+
 ### Beim Einrichten stehen die Ziele inline im Befehl
 
 Das Ziel steht dabei besser sichtbar im Befehl als still in einer Datei. Im laufenden Betrieb
