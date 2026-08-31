@@ -101,7 +101,7 @@ Der `entra`-Block trägt neben `tenantId`, `clientId` und `apiAudience` optional
 Normalfall — heißt gewöhnlicher Firmen-Mandant; gesetzt wird es nur, wenn sich firmenfremde Personen selbst
 registrieren sollen (Entra External ID, Anmeldung unter `*.ciamlogin.com`). Authority, Aussteller und
 Schlüsselliste werden daraus gebildet, nie von Hand eingetragen:
-[Optional: Entra External ID](azure-setup.md#optional-entra-external-id-statt-entra-id).
+[Optional: Entra External ID](azure-runbook.md#optional-entra-external-id).
 
 ## ⚠️ Was *nicht* geprüft wird
 
@@ -154,7 +154,7 @@ Entra meldet Fehler als `AADSTS`-Nummer, in der Fehlerseite oder in der Browser-
 | `AADSTS65001` — consent required | Die SPA hat keine Freigabe für den API-Scope | *API permissions* → `access_as_user` hinzufügen |
 | `AADSTS700016` — application not found | Falsche `entra.clientId` oder falscher Mandant | Werte gegen die *Overview*-Seite der Registrierung prüfen |
 | `AADSTS50058` — silent sign-in, no user signed in | Beim Erneuern gab es keine Sitzung mehr am Mandanten (abgelaufen, oder der Browser blockt den Cookie im iframe als Third-Party) | Für sich **kein** Fehler: MSAL wirft `InteractionRequiredAuthError`, `auth.ts` schickt in den Redirect-Flow. Bleibt die Seite hängen, fehlt `'self'` in `frame-src` |
-| **401**, Login lief aber durch | App setting `ENTRA_API_AUDIENCE` passt nicht zu `entra.apiAudience` — die SPA fordert einen Scope für die eine App, die API erwartet die andere. Der häufigste Selbstschuss | Beide gegen die *Overview*-Seite der **API**-Registrierung prüfen ([Schritt 1](azure-setup.md)). Das Start-Log der API zeigt, mit welchen Werten sie läuft |
+| **401**, Login lief aber durch | App setting `ENTRA_API_AUDIENCE` passt nicht zu `entra.apiAudience` — die SPA fordert einen Scope für die eine App, die API erwartet die andere. Der häufigste Selbstschuss | Beide gegen die *Overview*-Seite der **API**-Registrierung prüfen ([Schritt 1](azure-runbook.md#1-entra-zwei-app-registrierungen)). Das Start-Log der API zeigt, mit welchen Werten sie läuft |
 | **401**, `iss`-Fehler im Log | `requestedAccessTokenVersion` steht nicht auf `2` → Entra stellt Alt-Format-Token aus. Oder `ENTRA_SUBDOMAIN` falsch gesetzt (leer = Firmen-Mandant) | Manifest der **API**-Registrierung, Feld auf `2`, Save |
 | Token ohne Scope `access_as_user` | Die SPA hat ein „ist eingeloggt"-Token statt eines „darf die API"-Tokens geholt | `entra.apiAudience` muss die **blanke Client-ID der API**-Registrierung sein (kein `api://…`, nicht die der SPA) — `auth.ts` baut den Scope daraus zusammen |
 | **429** | Drosselung, siehe oben | Kein Fehler — Client-Schleife suchen |
@@ -168,7 +168,7 @@ Bundle — er wirkt für die **SPA** erst nach Rebuild + Redeploy und für die *
 zählen die App settings; lokal liest sie die Datei direkt). Und ein Endpunkt, den man in `server.ts` zu
 `isPublic` hinzufügt, ist ab sofort **ohne jede Anmeldung** aus dem Internet erreichbar.
 
-Schnellste Gesamtprüfung ist der letzte Punkt des [Smoke-Tests](azure-setup.md#7-smoke-test):
+Schnellste Gesamtprüfung ist der letzte Punkt des [Smoke-Tests](azure-runbook.md#7-smoke-test):
 `https://<web-app>.azurewebsites.net/api/contacts` ohne Ausweis muss **401** liefern.
 
 ## Entschieden und abgehakt

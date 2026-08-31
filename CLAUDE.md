@@ -28,7 +28,8 @@
 | Datenmodell | [`docs/datamodel.md`](docs/datamodel.md) + [`docs/datamodel.mmd`](docs/datamodel.mmd) |
 | Umgebungen & Branches | [`docs/environments.md`](docs/environments.md) |
 | Hosting Mock-Prototyp (Cloudflare) | [`docs/hosting.md`](docs/hosting.md) |
-| Azure-Setup (Fork `mock → azure`) | [`docs/azure-setup.md`](docs/azure-setup.md) |
+| Azure-Setup, Klick-für-Klick (Fork `mock → azure`) | [`docs/azure-runbook.md`](docs/azure-runbook.md) |
+| Azure-Architektur und Entscheidungen | [`docs/azure-decisions.md`](docs/azure-decisions.md) |
 | Anmeldung & Absicherung (`platform: azure`) | [`docs/auth.md`](docs/auth.md) |
 | Dateien in Blob Storage (`platform: azure`) | [`docs/blob-storage.md`](docs/blob-storage.md) |
 | Prototyp-Artefakte | [`docs/prototype-manifest.md`](docs/prototype-manifest.md) |

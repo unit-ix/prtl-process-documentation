@@ -1,7 +1,7 @@
 # Hosting — der Mock-Prototyp auf Cloudflare Pages
 
 > **Gilt bei `platform: mock`.** Der Host des Mock-Prototyps. Die Azure-Umgebungen (`platform: azure`)
-> stehen in [`environments.md`](environments.md), das Azure-Setup in [`azure-setup.md`](azure-setup.md).
+> stehen in [`environments.md`](environments.md), das Azure-Setup in [`azure-runbook.md`](azure-runbook.md).
 >
 > **localhost-first für die Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` gegen den Mock-Adapter, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft dagegen auf dem Cloudflare-Deploy von `main` (weiterhin Mock-Daten) — das ist der Regelfall, nicht die Ausnahme.
 

@@ -21,8 +21,6 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
-            // Als Alias statt '../../../../../': der relative Pfad bricht sonst still, sobald
-            // jemand eine Datei im src-Baum verschiebt.
             '@unitix': fileURLToPath(new URL('../../.unitix', import.meta.url)),
         },
     },

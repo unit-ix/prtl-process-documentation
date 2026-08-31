@@ -5,7 +5,7 @@
 //                                 [--allow-destructive] [--yes]
 //                                 [--resource-group=<rg>] [--app-name=<name>]
 //
-// Modell, Gates und Ressourcen-Konvention: docs/environments.md. Setup: docs/azure-setup.md.
+// Modell, Gates und Ressourcen-Konvention: docs/environments.md. Setup: docs/azure-runbook.md.
 
 import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'
@@ -169,7 +169,7 @@ function deployApi(env, alreadyBuilt) {
     const resourceGroup = argValue('--resource-group') || env.azure.resourceGroup
     const appName = argValue('--app-name') || env.azure.apiAppName
     if (!resourceGroup || !appName) {
-        fail(`environments.${env.name}.azure braucht resourceGroup und apiAppName — docs/azure-setup.md.`)
+        fail(`environments.${env.name}.azure braucht resourceGroup und apiAppName — docs/azure-runbook.md.`)
     }
     // Azure benennt die Managed Identity nach der Web App, und dieser Name IST die DB-Rolle.
     if (env.pg.user && env.pg.user !== appName) {
@@ -266,7 +266,7 @@ async function main() {
     const tag = isProd ? tagProd() : null
     console.log(
         `\n✓ ${env.name.toUpperCase()} deployt${tag ? `, Tag ${tag}` : ''}.` +
-            `${env.url ? ` → ${env.url}` : ''}\n  Smoke-Test: docs/azure-setup.md, Schritt 7.`,
+            `${env.url ? ` → ${env.url}` : ''}\n  Smoke-Test: docs/azure-runbook.md, Schritt 7.`,
     )
 }
 

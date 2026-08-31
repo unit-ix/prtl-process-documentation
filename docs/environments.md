@@ -29,7 +29,7 @@ main ──●────●────●────●────●──
 | Schritt | Wo läuft was | Befehl |
 | --- | --- | --- |
 | 1. Prototyp | alles lokal, Seed-Daten | `platform: mock`, `pnpm dev` |
-| 2. Dev-Umgebung aufsetzen | Entra + DB in Azure | `platform: azure`, [`azure-setup.md`](azure-setup.md), dann `pnpm deploy:dev` |
+| 2. Dev-Umgebung aufsetzen | Entra + DB in Azure | `platform: azure`, [`azure-runbook.md`](azure-runbook.md), dann `pnpm deploy:dev` |
 | 3. Entwickeln | SPA + API lokal, **DB in Azure-Dev** | `pnpm dev:full` |
 | 4. Freigabe an den Kunden | Prod in Azure | `pnpm deploy:prod` |
 | 5. Weiterentwickeln | wie 3, dann deployen | `feature/*` → `main` → `deploy:dev` → später `deploy:prod` |
@@ -71,7 +71,7 @@ pnpm deploy:dev --only=web      # nur die SPA (API neu zu starten kostet Sekunde
 
 Beides läuft über [`scripts/deploy-azure.mjs`](../scripts/deploy-azure.mjs), **lokal von Hand** — es gibt
 bewusst noch keinen CI-Deploy nach Azure (Begründung und der spätere OIDC-Pfad:
-[`azure-setup.md`](azure-setup.md#scope)). CI läuft `pnpm verify` auf jeden Push und PR.
+[`azure-decisions.md`](azure-decisions.md#scope)). CI läuft `pnpm verify` auf jeden Push und PR.
 
 Die Schritt-Reihenfolge ist fest und der Grund, warum es ein Script statt drei ist: **Migrationen vor
 dem Deploy.** Neuer Code auf altem Schema stirbt beim ersten Query.
@@ -89,7 +89,7 @@ Vor dem ersten Schritt, jeder ein Abbruch:
 
 Nach erfolgreichem Deploy setzt und pusht das Script den Tag `prod-YYYY-MM-DD`. Ein fehlgeschlagener
 Deploy hinterlässt keinen Tag — **was getaggt ist, ist deployt.** Ob es auch läuft, sagt der
-Smoke-Test von Hand: [`azure-setup.md`](azure-setup.md#7-smoke-test).
+Smoke-Test von Hand: [`azure-runbook.md`](azure-runbook.md#7-smoke-test).
 
 ## Lokal gegen eine andere Umgebung
 

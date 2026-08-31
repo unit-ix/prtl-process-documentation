@@ -34,7 +34,7 @@ if (misplaced.length > 0) {
     misplaced.forEach((abs) => console.error(`  ${label(abs)}`));
     console.error('\n`pnpm deploy` kopiert das Package-Verzeichnis, eine .env darin landet im Deploy-ZIP.');
     console.error('Inhalt in die Root-.env verschieben (Vorlage: .env.example) — serverseitige Defaults');
-    console.error('stehen ohnehin in .unitix/project.json, siehe docs/azure-setup.md, Schritt 3.');
+    console.error('stehen ohnehin in .unitix/project.json, siehe docs/azure-runbook.md, Schritt 3b.');
     process.exit(1);
 }
 

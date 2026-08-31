@@ -3,7 +3,7 @@
 > Das Dateikonzept für `platform: azure`. Es deckt DEV und PROD ab und kommt ohne ein einziges
 > Secret aus. Die **Regeln** stehen in
 > [`.claude/docs/patterns-azure.md`](../.claude/docs/patterns-azure.md), die **Reihenfolge des
-> Setups** gehört nach [`azure-setup.md`](azure-setup.md), das **Umgebungsmodell** steht in
+> Setups** gehört nach [`azure-runbook.md`](azure-runbook.md), das **Umgebungsmodell** steht in
 > [`environments.md`](environments.md). Bei Widerspruch gewinnt der Regelsatz.
 
 ## Der Satz, auf den alles hinausläuft
@@ -47,7 +47,7 @@ st<projekt>                    ein Storage Account
 
 **Warum ein Konto und nicht zwei.** Der Container ist ein vollwertiger RBAC-Scope, und die Datenrolle
 wird pro Container zugewiesen — die Dev-Identity kann den Prod-Container nicht lesen (Schnittmengen-
-Regel, siehe [Setup c](#c-zwei-rollenzuweisungen-je-umgebung)). Ein zweites Konto brächte also keine
+Regel, siehe [die Rollenzuweisungen](azure-runbook.md#e-zwei-rollenzuweisungen-je-umgebung)). Ein zweites Konto brächte also keine
 zusätzliche Grenze, kostet aber die doppelte Pflege von CORS-Regel, Data-Protection-Einstellungen und
 CSP-Eintrag. **Umkehrbar bleibt es trotzdem:** `storage.account` steht im Umgebungsblock, nicht global.
 
@@ -60,7 +60,7 @@ CSP-Eintrag. **Umkehrbar bleibt es trotzdem:** `storage.account` steht im Umgebu
 
 Nach der Regel *ein Wert, ein Name* heißen die App Settings `STORAGE_ACCOUNT` und
 `STORAGE_CONTAINER` — zu kopieren, nicht herzuleiten
-([Schritt 3](azure-setup.md#environment-variables--app-settings-nicht-connection-strings)).
+([Schritt 3b](azure-runbook.md#3b-app-settings)).
 Kontonamen sind global eindeutig, 3–24 Zeichen, nur Kleinbuchstaben und Ziffern, keine Bindestriche;
 Container-Namen erlauben sie.
 
@@ -175,82 +175,12 @@ Adapter (ESLint-erzwungen).
 Data-Seam wäre an dieser Stelle gelogen: `File`-Objekte im Store, `URL.createObjectURL(file)` als
 Download-URL, ~30 Zeilen — und `pnpm dev` zeigt dieselbe UI wie Produktion.
 
-## Setup
+## Setup und Smoke-Test
 
-Beim Einbauen wandert das als **Schritt 2b** (anlegen) und **Schritt 4b** (Rollen) nach
-[`azure-setup.md`](azure-setup.md) und lebt dort weiter; die Rollen brauchen die Object-ID der
-Managed Identity aus Schritt 3.
-
-### a) Konto und Container
-
-**Portal → Storage accounts → Create**, dieselbe EU-Region wie App Service und Datenbank. Danach
-**Data storage → Containers → + Container**: `files` bzw. `files-dev`, Public access **Private**.
-Nicht-Defaults:
-
-| Feld | Wert | Default |
-| --- | --- | --- |
-| Redundancy | **LRS** | GRS — kostet doppelt |
-| **Allow storage account key access** | **Disabled** | erlaubt |
-| **Allow Blob anonymous access** | **Disabled** | bei neuen Konten aus ✓ |
-| Minimum TLS version | 1.2 | 1.2 ✓ |
-| Enable soft delete for blobs | 7 Tage | an ✓ |
-| Versioning / Change feed | aus | aus ✓ |
-
-> **Die eine Einstellung, die zählt, ist `Allow storage account key access = Disabled`.** Sie macht
-> Invariante 1 mechanisch: ein Account-Key existiert danach für keinen Aufrufer, Service- und
-> Account-SAS werden mit `403` abgelehnt, der User-Delegation-SAS funktioniert weiter — er hängt an
-> Entra, nicht am Key. Dasselbe Argument wie „Entra authentication only" am PostgreSQL-Server.
-> `AllowSharedKeyAccess` ist bei neuen Konten **nicht gesetzt** und verhält sich wie `true`, der
-> Schalter muss also aktiv umgelegt werden.
->
-> Der zweite Schalter ist billiger zu haben und derselbe Gedanke: **`Allow Blob anonymous access`**
-> auf Kontoebene macht die verworfene Alternative „öffentlich lesbarer Container" unerreichbar — auch
-> für den, der später versehentlich einen Container auf Public stellt. Ein privater Container ist eine
-> Einstellung pro Container, dieser Schalter gilt für alle.
-
-### b) CORS-Regel
-
-Der Browser lädt direkt zum Blob-Endpunkt, das ist cross-origin. Ohne Regel scheitert der `PUT` mit
-einem CORS-Fehler in der Konsole und ohne Server-Log. **Settings → Resource sharing (CORS) → Blob
-service:** Origins = `http://localhost:5173` plus beide SWA-Origins (**kein `*`**), Methods
-`PUT`/`GET`/`HEAD`, Allowed headers `content-type,x-ms-blob-type`, Exposed `etag`, Max age `3600`.
-
-Dieselbe Liste wie die Redirect-URIs der SPA-Registrierung, und aus demselben Grund an **einer**
-Stelle: ein Build-Artefakt für beide Umgebungen.
-
-### c) Zwei Rollenzuweisungen je Umgebung
-
-```bash
-SCOPE_ACCOUNT=$(az storage account show -n <konto> -g <rg> --query id -o tsv)
-
-# Datenrolle: NUR auf den Container der Umgebung
-az role assignment create --role "Storage Blob Data Contributor" \
-  --assignee-object-id <object-id-der-web-app> --assignee-principal-type ServicePrincipal \
-  --scope "$SCOPE_ACCOUNT/blobServices/default/containers/files"
-
-# Delegation: auf das Konto, weil die Key-Operation kontoweit ist
-az role assignment create --role "Storage Blob Delegator" \
-  --assignee-object-id <object-id-der-web-app> --assignee-principal-type ServicePrincipal \
-  --scope "$SCOPE_ACCOUNT"
-```
-
-Dasselbe zweimal — `<name>` mit `files`, `<name>-dev` mit `files-dev`. Für `pnpm dev:full` bekommt
-**dein eigenes Konto** dieselben zwei Rollen, aber nur auf `files-dev`; das Gegenstück zur
-Firewall-Regel für die eigene IP.
-
-> **`Storage Blob Delegator` muss auf Konto-, RG- oder Subscription-Ebene liegen** — auf einem
-> Container ist die Rolle wirkungslos. Microsoft beschreibt genau diese Kombination als den
-> vorgesehenen Weg. **Trotzdem ist der Container die Grenze:** die Rechte eines SAS sind die
-> **Schnittmenge** aus SAS-Rechten und RBAC der signierenden Identität, geprüft bei **jedem** Request
-> gegen die `skoid`. Die Dev-Identity kann einen SAS auf `files` bauen — einlösen kann ihn niemand.
-
-> [!WARNING]
-> **`Owner` auf der Resource Group gibt keinen Datenzugriff.** Steuerungs- und Datenebene sind
-> getrennt: `Owner`/`Contributor` verwalten das Konto, lesen aber keinen Blob. Der übliche Ausweg
-> wäre der Account-Key — und der ist abgeschaltet. Ohne Datenrolle zeigt der Storage-Browser im
-> Portal `AuthorizationPermissionMismatch`.
-
-### d) Smoke-Test
+Die Klickfolge im Portal steht im Runbook: [Blob Storage](azure-runbook.md#optional-blob-storage)
+legt Konto, Container und CORS-Regel an, [Schritt e\)](azure-runbook.md#e-zwei-rollenzuweisungen-je-umgebung) die
+zwei Rollen — die brauchen die Object-ID der Managed Identity aus Schritt 3. Steht das, prüft diese
+Liste die Invarianten und nicht nur, dass etwas läuft:
 
 - Upload → die Größe in der Liste stimmt mit der Datei überein, nicht mit einer Behauptung des Clients
 - Download → Originalname, öffnet **nicht** im Browser-Tab

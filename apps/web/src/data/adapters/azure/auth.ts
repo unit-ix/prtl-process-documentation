@@ -9,7 +9,7 @@ const apiScope = (): string => `api://${entra.apiAudience}/${API_SCOPE_NAME}`;
 function client(): PublicClientApplication {
     const missing = (['tenantId', 'clientId', 'apiAudience'] as const).filter((key) => !entra[key]);
     if (missing.length > 0) {
-        throw new Error(`.unitix/project.json → entra: ${missing.join(', ')} fehlt (siehe docs/azure-setup.md).`);
+        throw new Error(`.unitix/project.json → entra: ${missing.join(', ')} fehlt (siehe docs/azure-runbook.md).`);
     }
 
     const authority = entra.subdomain

@@ -1,5 +1,5 @@
 // Rolle + Rechte für die Managed Identity auf genau DIESER Datenbank — Azure kann sie nur zum
-// Server-Administrator machen, was zu viel wäre. Aufruf: docs/azure-setup.md, Schritt 4.
+// Server-Administrator machen, was zu viel wäre. Aufruf: docs/azure-runbook.md, Schritt 4.
 import { createPool, pool } from './client.js';
 
 const name = process.env.API_IDENTITY_NAME;
@@ -10,7 +10,7 @@ if (!name || !objectId) {
 }
 
 // Rollennamen sind Bezeichner und nicht parametrisierbar — deshalb zitiert statt gebunden.
-// Der Name ist der der Web App (docs/azure-setup.md, Schritt 3), nicht eine freie Eingabe.
+// Der Name ist der der Web App (docs/azure-runbook.md, Schritt 3), nicht eine freie Eingabe.
 const role = `"${name.replace(/"/g, '""')}"`;
 
 const grants = (database: string): string[] => [

@@ -117,7 +117,7 @@ apps/api/                 Node-API (Fastify + Drizzle). Im mock-Prototyp ungenut
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 
-Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-setup.md`](docs/azure-setup.md), Modell: [`docs/environments.md`](docs/environments.md).
+Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-runbook.md`](docs/azure-runbook.md), Begründungen: [`docs/azure-decisions.md`](docs/azure-decisions.md), Modell: [`docs/environments.md`](docs/environments.md).
 Beim `powerapps`-Fork kommt die Power-Platform-Toolchain ins Spiel (`npx power-apps run` / `push`).
 
 ## Shared-Ressourcen aktualisieren

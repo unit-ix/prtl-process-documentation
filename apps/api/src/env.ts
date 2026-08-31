@@ -2,7 +2,7 @@
 //
 // Zwei Quellen: explizite Umgebungsvariablen gewinnen, `.unitix/project.json` liefert die Defaults.
 // Lokal deckt die Datei alles ausser PGUSER; in Azure wird sie nicht mitgeliefert, dort sind die
-// gleichnamigen App Settings Pflicht (docs/azure-setup.md, Schritt 3).
+// gleichnamigen App Settings Pflicht (docs/azure-runbook.md, Schritt 3b).
 //
 // Die Defaults kommen fest aus `environments.dev` — es gibt keine Variable, die das umschaltet, weil
 // die App lokal gegen die Produktions-Datenbank laufen zu lassen kein Anwendungsfall ist. Wer es
@@ -16,7 +16,7 @@ import { z } from 'zod';
 const dbSchema = z.object({
     PGHOST: z.string().min(1),
     PGPORT: z.coerce.number().int().positive().default(5432),
-    /** Feste Konvention, siehe docs/azure-setup.md, Schritt 2. */
+    /** Feste Konvention, siehe docs/azure-runbook.md, Schritt 2. */
     PGDATABASE: z.string().min(1).default('app'),
     /** Lokal dein UPN (Root-`.env`), in Azure der Name der Managed Identity. */
     PGUSER: z.string().min(1),
@@ -103,7 +103,7 @@ function parse<S extends z.ZodTypeAny>(schema: S, label: string): z.infer<S> {
     const details = result.error.issues.map((i) => `  ${i.path.join('.') || '(root)'}: ${i.message}`).join('\n');
     throw new Error(
         `Ungültige ${label}-Konfiguration:\n${details}\n` +
-            `Lokal aus .unitix/project.json, in Azure aus den App Settings — docs/azure-setup.md, Schritt 3.`,
+            `Lokal aus .unitix/project.json, in Azure aus den App Settings — docs/azure-runbook.md, Schritt 3b.`,
     );
 }
 

@@ -11,7 +11,7 @@
 // IPs aller App Services, die ihn benutzen.
 //
 // Warum possibleOutboundIpAddresses statt outboundIpAddresses, was die Liste ungültig macht und
-// warum nur Regeln mit dem eigenen Präfix angefasst werden: docs/azure-setup.md, Schritt 3.
+// warum nur Regeln mit dem eigenen Präfix angefasst werden: docs/azure-decisions.md.
 
 import { spawnSync } from 'node:child_process'
 import { argValue, hasFlag, readProjectConfig, repoRoot } from './lib/environment.mjs'
@@ -80,7 +80,7 @@ function resolveTargets() {
         '      "pg": { "host": "<psql-name>.postgres.database.azure.com", … } } }\n' +
         (broken.length > 0 ? `Unvollständig: ${broken.map((t) => t.name).join(', ')}\n` : '') +
         'Oder einmalig: pnpm db:firewall --resource-group=<rg> --app-name=<name> --db-server=<psql-name>\n' +
-        '--db-server erwartet den Server-Namen ohne .postgres.database.azure.com. Details: docs/azure-setup.md.',
+        '--db-server erwartet den Server-Namen ohne .postgres.database.azure.com. Details: docs/azure-runbook.md.',
     )
   }
   return targets

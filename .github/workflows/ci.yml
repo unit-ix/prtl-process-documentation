@@ -63,7 +63,7 @@ jobs:
     # dort deployt `pnpm deploy:dev` / `pnpm deploy:prod` von Hand. Siehe docs/environments.md.
     #
     # Der Azure-Deploy läuft bewusst NICHT in CI: er bräuchte Entra-OIDC-Federated-Credentials und
-    # eine temporäre DB-Firewall-Regel für die wechselnde Runner-IP. Siehe docs/azure-setup.md → Scope.
+    # eine temporäre DB-Firewall-Regel für die wechselnde Runner-IP. Siehe docs/azure-decisions.md → Scope.
     deploy:
         runs-on: ubuntu-latest
         needs: verify

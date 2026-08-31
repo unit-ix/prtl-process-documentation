@@ -11,7 +11,7 @@ export interface Claims {
 }
 
 // External ID (CIAM): `iss` trägt die Tenant-ID als Host, `jwks_uri` die Subdomain — kein Tippfehler,
-// sondern Microsofts tatsächliches Verhalten. docs/azure-setup.md, „Die eine zusätzliche Angabe".
+// sondern Microsofts tatsächliches Verhalten. docs/azure-decisions.md, „Der Host-Unterschied bei ciamlogin.com".
 function issuer(): string {
     const { ENTRA_TENANT_ID, ENTRA_SUBDOMAIN } = serverEnv();
     const host = ENTRA_SUBDOMAIN ? `${ENTRA_TENANT_ID}.ciamlogin.com` : 'login.microsoftonline.com';
