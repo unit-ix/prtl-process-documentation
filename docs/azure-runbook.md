@@ -261,12 +261,6 @@ Portal → **Static Web Apps → Create**. Plan **Standard**, Region **West Euro
 SWA → **APIs** → Kachel **Production** → **Link** → Backend resource type **App Service** →
 Subscription und die Web App aus Schritt 3 → **Link**.
 
-Prüfen, wobei die leere Ausgabe `[]` eine fehlende Verknüpfung bedeutet:
-
-```bash
-az staticwebapp backends show -n <swa-name> -g <rg>
-```
-
 ### b) SWA-URL als zweite Redirect-URI nachtragen
 
 Kopiere die URL aus SWA → **Overview** in der Form `https://<name>.<n>.azurestaticapps.net`. Dann
@@ -280,42 +274,14 @@ Slash am Ende. `http://localhost:5173` bleibt daneben stehen.
 
 Die **Environment variables** der SWA bleiben leer.
 
-Die Origin gehört zusätzlich in `environments.<env>.url` in
+Die URL gehört zusätzlich in `environments.<env>.url` in
 [`.unitix/project.json`](../.unitix/project.json).
-
-Fertig, wenn:
-
-- `az staticwebapp backends show` die Web App zeigt
-- die SPA-Registrierung beide Redirect-URIs führt
-- das Token kopiert ist
 
 ## 6. Deployen
 
 Ziel: Migrationen, API und SPA in der Ziel-Umgebung mit einem Befehl.
 
-Fülle vorher den `environments`-Block in [`.unitix/project.json`](../.unitix/project.json):
-
-```json
-"environments": {
-  "dev":  { "url": "https://<swa-dev>.azurestaticapps.net",
-            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>-dev" },
-            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app_dev", "user": "<name>-dev" } },
-  "prod": { "url": "https://<swa>.azurestaticapps.net",
-            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>" },
-            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app", "user": "<name>" } }
-}
-```
-
-Fülle dazu die Root-`.env`. Sie ist gitignored, die Vorlage ist [`.env.example`](../.env.example):
-
-```dotenv
-SWA_DEPLOYMENT_TOKEN_DEV=<token der dev-SWA aus Schritt 5>
-SWA_DEPLOYMENT_TOKEN_PROD=<token der prod-SWA>
-PGUSER=<dein-upn>          # für pnpm dev:full und jede Migration
-```
-
-Die Root-`.env` ist die einzige `.env` im Repo. `pnpm verify` bricht ab, sobald `apps/api/.env`
-auftaucht.
+Wichtig ist, dass der `environments`-Block in [`.unitix/project.json`](../.unitix/project.json) befüllt ist sowie die Root-`.env`-File. Sie ist gitignored, die Vorlage ist [`.env.example`](../.env.example).
 
 ```bash
 pnpm deploy:dev              # Migrationen → API → SPA, ohne Rückfrage
