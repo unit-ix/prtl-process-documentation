@@ -75,6 +75,15 @@ export default tseslint.config(
     {
         plugins: { import: importPlugin },
         rules: {
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    varsIgnorePattern: '^_',
+                    argsIgnorePattern: '^_',
+                    destructuredArrayIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                },
+            ],
             'no-restricted-globals': ['error', 'localStorage', 'sessionStorage', 'fetch'],
             'no-restricted-syntax': ['error', ...forbiddenFetch],
             'import/no-restricted-paths': ['error', { zones: dependencyZones }],

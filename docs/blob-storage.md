@@ -161,15 +161,43 @@ vorher explizit. Eine Lifecycle-Regel ersetzt sie nicht: die sieht nur das Alter
 
 | Bereich | Aktion |
 | --- | --- |
-| `apps/api/src/storage/blob.ts` | **neu** — Container-Client, gecachter Delegation-Key, `uploadSas` / `readSas` / `properties` / `remove` |
-| `apps/api/src/router/files.ts` | **neu** — die vier Endpoints |
-| `apps/api/src/{db/schema,router/registry,router/handle,server,env}.ts` | Tabelle, **exportierter** Registry-Eintrag (nicht in `RESOURCES`), Zweig für `/files*`, `claims` im `RouterRequest`, engeres Limit auf `upload-url`, zwei Env-Variablen |
-| `apps/web/src/data/ports/FileRepository.ts` + `adapters/{azure,mock}/` | **neu** — Port, HTTP-Adapter mit dem direkten `PUT`, Mock-Adapter |
+| `apps/api/src/storage/blob.ts` | **Vorlage vorhanden** (`.example`) — Container-Client, gecachter Delegation-Key, `uploadSas` / `readSas` / `properties` / `remove` |
+| `apps/web/src/data/ports/FileStore.ts` | **Vorlage vorhanden** (`.example`) — der Port |
+| `apps/api/src/router/files.ts` | **neu** — die vier Endpoints, siehe [Der Ablauf](#der-ablauf) |
+| `apps/api/src/storage/limits.ts` | **neu** — `MAX_UPLOAD_BYTES` und die Typ-Allowlist aus Schritt 1, **ohne** `image/svg+xml` |
+| `apps/api/src/{db/schema,router/registry,router/handle,server}.ts` | Tabelle, **exportierter** Registry-Eintrag (nicht in `RESOURCES`), Zweig für `/files*`, `claims` im `RouterRequest`, engeres Limit auf `upload-url` |
+| `apps/web/src/data/adapters/{azure,mock}/fileStore.ts` | **neu** — HTTP-Adapter mit dem direkten `PUT`, Mock-Adapter |
 | `staticwebapp.config.json`, `.unitix/project.json` | Blob-Host in `connect-src` (und `img-src`, sobald Bilder inline angezeigt werden), `storage`-Block je Umgebung |
 
 Zusammen **≈ 300 Zeilen** und **eine** neue Abhängigkeit: `@azure/storage-blob` in `apps/api`. Im
 Frontend keine — der Upload ist ein `fetch`-`PUT` mit zwei Headern, und der gehört ohnehin in den
 Adapter (ESLint-erzwungen).
+
+`apps/api/src/env.ts` ist **schon fertig**: `storageEnv()` liest `STORAGE_ACCOUNT` und
+`STORAGE_CONTAINER` lazy, damit ein fehlender Wert die Ablage scheitern lässt und nicht den Start.
+
+### Aktivieren
+
+Die Reihenfolge ist so gewählt, dass `pnpm verify` nach jedem Schritt grün bleibt.
+
+1. `.example`-Endung an `storage/blob.ts.example` und `ports/FileStore.ts.example` entfernen
+2. `pnpm --filter @app/api add @azure/storage-blob@^12.33.0`
+3. `storage`-Block je Umgebung in [`.unitix/project.json`](../.unitix/project.json), dazu die App
+   settings `STORAGE_ACCOUNT` / `STORAGE_CONTAINER` ([Runbook d\)](azure-runbook.md#d-app-settings-und-projectjson))
+4. Blob-Host in `connect-src` der CSP — **`pnpm check:csp` sagt jetzt, wenn er fehlt**, und lehnt
+   ein `*.blob.core.windows.net` ab
+5. `files`-Tabelle nach `db/schema.ts` (Snippet oben), `pnpm db:generate`, `pnpm db:migrate`
+6. `router/files.ts` und `storage/limits.ts` schreiben; Registry-Eintrag exportieren, **nicht** in
+   `RESOURCES` (Begründung oben), `/files*`-Zweig in `handle.ts` **vor** `resolveTarget()` — das
+   wirft heute bei mehr als zwei Segmenten, und `/files/:id/url` hat drei
+7. `claims` in `RouterRequest` und Durchreichen in `server.ts` — **zusammen mit** der Regel, die
+   sie auswertet, nicht auf Vorrat
+8. Die beiden Adapter, `fileStore` in `data/index.ts` verdrahten (Muster: `companyRepository`)
+9. `"storage:verify": "tsx --env-file-if-exists=../../.env src/storage/verify.ts"` in
+   `apps/api/package.json`, `"storage:verify": "pnpm --filter @app/api storage:verify"` in der
+   Root, und `src/storage/verify.ts` in [`knip.jsonc`](../knip.jsonc) → `entry` nachtragen —
+   sonst meldet knip einen unbenutzten Einstiegspunkt
+10. [Smoke-Test](#setup-und-smoke-test) — er prüft die Invarianten, nicht nur dass etwas läuft
 
 **Der Mock-Adapter ist nicht optional.** Ohne ihn hätte der Prototyp keine Datei-Oberfläche und die
 Data-Seam wäre an dieser Stelle gelogen: `File`-Objekte im Store, `URL.createObjectURL(file)` als

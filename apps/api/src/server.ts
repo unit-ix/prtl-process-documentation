@@ -2,10 +2,10 @@
 // Rate Limit danach: docs/azure-decisions.md, „Code-Fallen".
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import Fastify, { LogController, type FastifyReply, type FastifyRequest } from 'fastify';
 import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
 import { allowedOrigins, dbTarget, serverEnv } from './env.js';
-import { toProblem } from './http/errors.js';
+import { badRequest, toProblem, unsupportedMediaType } from './http/errors.js';
 import { handle } from './router/handle.js';
 
 declare module 'fastify' {
@@ -19,7 +19,21 @@ const env = serverEnv();
 const app = Fastify({
     bodyLimit: env.BODY_LIMIT_BYTES,
     logger: { level: 'info' },
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
+});
+
+app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+    if (body === '') return done(null, undefined);
+    try {
+        done(null, JSON.parse(body as string));
+    } catch {
+        done(badRequest('Body ist kein gültiges JSON.'));
+    }
+});
+
+app.addContentTypeParser('*', { parseAs: 'buffer' }, (request, body, done) => {
+    if ((body as Buffer).length === 0) return done(null, undefined);
+    done(unsupportedMediaType(`content-type "${request.headers['content-type']}" wird nicht unterstützt.`));
 });
 
 const isPublic = (url: string): boolean => url === '/health' || url.startsWith('/health?');
