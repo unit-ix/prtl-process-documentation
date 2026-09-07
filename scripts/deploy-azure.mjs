@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Azure-Deploy: Migrationen → API → SPA. Flags, Gates und Reihenfolge: docs/environments.md.
+// Azure-Deploy: Migrationen → API → SPA. Flags, Gates und Reihenfolge:
+// .claude/docs/patterns-azure.md → Umgebungen.
 
 import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline/promises'

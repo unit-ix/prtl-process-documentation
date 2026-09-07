@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Der Upload geht als PUT des Browsers DIREKT gegen Blob Storage — der Speicherkonto-Host ist
 // damit eine fremde Origin und muss in connect-src stehen. Fehlt er, stellt die API eine gültige
-// SAS aus und der Browser weigert sich, sie zu benutzen. Konzept: docs/blob-storage.md.
+// SAS aus und der Browser weigert sich, sie zu benutzen. Konzept: .claude/docs/patterns-azure.md.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

@@ -1,5 +1,5 @@
 // Gegenstück zu apps/api/src/router/registry.ts. Warum `toString()` statt `params.size`:
-// docs/azure-decisions.md, „Code-Fallen".
+// .claude/docs/patterns-azure.md, „Code-Fallen".
 import type { Page } from '../../ports/Query';
 import type { Repository } from '../../ports/Repository';
 import { apiDelete, apiGet, apiGetOrNull, apiSend } from './client';

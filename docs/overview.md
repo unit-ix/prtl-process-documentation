@@ -44,7 +44,7 @@ main ──●────●────●────●────●──
 | Azure-Dev | `pnpm deploy:dev` | Testumgebung. Hier testet das Team, hier hängt auch die lokale Entwicklung dran. |
 | Azure-Prod | `pnpm deploy:prod` | Produktion. Der einzige gegatete Schritt, Tag `prod-YYYY-MM-DD`. |
 
-`feature/*` deployt nie. Warum ein Branch-Modell hier nicht trägt, und was Dev und Prod teilen: [`environments.md`](environments.md).
+`feature/*` deployt nie. Warum ein Branch-Modell hier nicht trägt, und was Dev und Prod teilen: [`patterns-azure.md`](../.claude/docs/patterns-azure.md) → Umgebungen.
 
 ### Plattform = woher die Daten kommen und wo es liegt
 
@@ -52,11 +52,16 @@ Steht in [`.unitix/project.json`](../.unitix/project.json) — **die** Wahrheit 
 
 | `platform` | Bedeutung | Host |
 | --- | --- | --- |
-| `mock` | Erfundene Daten aus dem Seed. Kein Backend. Default eines frischen Templates. | Cloudflare Pages |
-| `azure` | Eigene Node-API + PostgreSQL + Entra ID. **Strategisch der Haupt-Weg.** | Azure Static Web Apps |
-| `powerapps` | Microsoft Power Platform Code App auf Dataverse. | Power Platform |
+| `mock` | **Prototyp.** Erfundene Daten aus dem Seed, kein Backend. Default eines frischen Templates. | Cloudflare Pages |
+| `azure` | **Vollstack.** Eigene Node-API + PostgreSQL + Entra ID. Strategisch der Haupt-Weg. | Azure Static Web Apps |
+| `powerapps` | **Vollstack, zweite Variante.** Power Platform Code App auf Dataverse. | Power Platform |
 
 Ein Feld, nicht zwei: die Zuordnung Plattform → Host ist 1:1 und von den Regelsätzen erzwungen.
+
+Es sind also zwei Betriebs-Formen, und sie folgen aufeinander: **Mock-Prototyp** (lokal per
+`pnpm dev`, geteilt über Cloudflare) und **Vollstack** (Azure oder Power Platform). Im Vollstack
+laufen lokal nur SPA und API — **eine lokale Datenbank gibt es nicht**, `pnpm dev:full` spricht
+passwortlos die Azure-Dev-DB.
 
 Neue Projekte entstehen als Code Apps; Canvas Apps laufen aus (sie sind nicht KI-ready). Produktiv geht die Richtung „mehr Azure, weniger Power Platform" — Bestehendes wird selektiv migriert, nicht per Hauruck.
 
@@ -69,8 +74,8 @@ apps/web/src/data/index.ts        ← der eine Swap-Punkt
 apps/web/src/data/ports/          ← Interfaces + Query-Vertrag. Ändern sich nicht mehr AM FORK.
 apps/web/src/data/adapters/
     mock/                ← Seed-Daten
-    azure/               ← echtes Backend (eigene API + MSAL)
-    dataverse/           ← echtes Backend (Power Platform Code App)
+    azure/               ← Vollstack: eigene API + PostgreSQL + MSAL
+    dataverse/           ← Vollstack: Power Platform Code App (`platform: powerapps`)
 ```
 
 Die Regel, die das zusammenhält: **UI und Hooks sprechen nur den Port an (`@/data`), nie einen Adapter** — mechanisch erzwungen über ESLint-Boundaries. Die Domain-Typen in `apps/web/src/domain/` sind der Vertrag: eine Entität = eine künftige Tabelle. Backend-Naming lebt ausschließlich im Adapter.
@@ -125,9 +130,9 @@ Grund: SQL kennt keine Case-Sensitivity, und der Datentyp steht im Schema — ei
 - **Wir entwickeln auf localhost** (`pnpm dev`) und machen dort den internen Review — nicht über einen Deploy.
 - **Der Kunde stimmt auf Cloudflare ab** — immer noch Mock-Daten.
 - **Der Link entsteht über GitHub Actions** auf `main`. Kein PR und kein `feature/*` deployt — Build-Minuten sind ein echtes Budget.
-- **Nach dem Azure-Fork** übernimmt `pnpm deploy:dev` / `pnpm deploy:prod`.
+- **Nach dem Azure-Fork** entwickelst du mit `pnpm dev:full` (SPA + API lokal, DB in Azure-Dev) und deployst über `pnpm deploy:dev` / `pnpm deploy:prod`.
 
-Cloudflare-Details und Secrets: [`hosting.md`](hosting.md). Die Azure-Umgebungen: [`environments.md`](environments.md).
+Cloudflare-Details und Secrets: [`hosting.md`](hosting.md). Die Azure-Umgebungen: [`patterns-azure.md`](../.claude/docs/patterns-azure.md).
 
 ## Wann ist der Prototyp fertig?
 

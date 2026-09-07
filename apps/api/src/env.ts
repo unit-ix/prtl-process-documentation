@@ -62,7 +62,7 @@ function projectConfigDefaults(): Record<string, string> {
         throw new Error(
             `${PROJECT_JSON} → environments.${LOCAL_ENVIRONMENT} fehlt.` +
                 (known.length > 0 ? ` Vorhanden: ${known.join(', ')}.` : ' Der environments-Block ist leer.') +
-                ` Lokal läuft die API immer gegen "${LOCAL_ENVIRONMENT}" — docs/environments.md.`,
+                ` Lokal läuft die API immer gegen "${LOCAL_ENVIRONMENT}" — .claude/docs/patterns-azure.md.`,
         );
     }
 

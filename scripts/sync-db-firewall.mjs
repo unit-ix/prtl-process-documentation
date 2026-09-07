@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Firewall des PostgreSQL-Servers auf die Outbound-IPs der App Services abgleichen.
 // Warum kein --env, warum possibleOutboundIpAddresses, warum die Flags erfragt werden:
-// docs/azure-decisions.md. Klickpfad: docs/azure-runbook.md.
+// .claude/docs/patterns-azure.md. Klickpfad: docs/azure-runbook.md.
 
 import { spawnSync } from 'node:child_process'
 import { argValue, hasFlag, readProjectConfig, repoRoot } from './lib/environment.mjs'

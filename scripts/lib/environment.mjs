@@ -39,7 +39,7 @@ export function resolveEnvironment() {
                 (known.length > 0
                     ? ` Erwartet: ${known.join(' | ')}.`
                     : ` Der environments-Block in ${PROJECT_JSON} ist leer.`) +
-                '\nDetails: docs/environments.md.',
+                '\nDetails: .claude/docs/patterns-azure.md.',
         )
     }
 

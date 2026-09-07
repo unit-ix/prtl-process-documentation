@@ -1,5 +1,5 @@
 // Anmeldung per Entra-Token, kein DB-Passwort. Der `error`-Listener ist Pflicht:
-// docs/azure-decisions.md, „Code-Fallen".
+// .claude/docs/patterns-azure.md, „Code-Fallen".
 import { DefaultAzureCredential } from '@azure/identity';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';

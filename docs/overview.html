@@ -826,9 +826,9 @@
 
             <h2><span class="num">2</span>Die zwei Achsen</h2>
             <p class="sub small">
-                Alles hängt an genau zwei Schaltern, und sie sind <strong>unabhängig</strong>: <em>welcher Branch</em>
-                (Reifegrad) und <em>welches Backend</em> (Datenquelle). Die Matrix zeigt, was in jeder Kombination
-                deployt wird — und wo es gar keine Kombination gibt.
+                Alles hängt an genau zwei Schaltern, und sie sind <strong>unabhängig</strong>: <em>welche Umgebung</em>
+                (Deploy-Ziel, kein Branch) und <em>welche Plattform</em> (Datenquelle und Host). Die Matrix zeigt, was
+                in jeder Kombination deployt wird — und wo es gar keine Kombination gibt.
             </p>
             <figure>
                 <div class="scroll">
@@ -882,8 +882,11 @@
                 <p class="swipe">→ horizontal scrollen</p>
                 <figcaption>
                     Die aktive Plattform steht in <code>.unitix/project.json</code> — <strong>die</strong> Wahrheit
-                    dieser Achse, nie aus dem Branch abgeleitet. <code>mock</code> ist der Default eines frischen
-                    Templates, <code>azure</code> strategisch der Haupt-Weg.
+                    dieser Achse, nie aus dem Branch abgeleitet. Zwei Betriebs-Formen, die aufeinander folgen:
+                    <b>Mock-Prototyp</b> (<code>mock</code>, Default eines frischen Templates) und <b>Vollstack</b> —
+                    <code>azure</code> als Haupt-Weg, <code>powerapps</code> als zweite Vollstack-Variante. Lokal
+                    laufen im Vollstack nur SPA und API; <strong>eine lokale Datenbank gibt es nicht</strong>,
+                    <code>pnpm dev:full</code> spricht passwortlos die Azure-Dev-DB.
                 </figcaption>
             </figure>
 
@@ -1178,15 +1181,20 @@
                 </div>
                 <div class="fact">
                     <b>Kunden-Abstimmung</b>
-                    <span>Cloudflare-Deploy des <code>prototype</code>-Branches — weiterhin Mock-Daten.</span>
+                    <span>Cloudflare-Deploy von <code>main</code> — weiterhin Mock-Daten.</span>
                 </div>
                 <div class="fact">
                     <b>Der Link entsteht über GitHub Actions</b>
-                    <span>Nicht jeder Commit deployt. Build-Minuten sind ein echtes Budget.</span>
+                    <span>Nur <code>main</code> deployt. Build-Minuten sind ein echtes Budget.</span>
+                </div>
+                <div class="fact">
+                    <b>Entwicklung nach dem Azure-Fork</b>
+                    <span><code>pnpm dev:full</code> — SPA + API lokal, DB in Azure-Dev. Keine lokale Datenbank.</span>
                 </div>
             </div>
             <p class="small muted">
-                Details, Secrets und die drei Umgebungen: <a href="hosting.md">hosting.md</a> · Kanonische
+                Details und Secrets: <a href="hosting.md">hosting.md</a> · Umgebungs-Modell und Gates:
+                <a href="../.claude/docs/patterns-azure.md">patterns-azure.md</a> · Kanonische
                 Beschreibung aller Commands und Regelsätze: <code>.claude/CLAUDE.md</code> · Lesbare Langfassung
                 dieser Seite: <a href="overview.md">overview.md</a>
             </p>

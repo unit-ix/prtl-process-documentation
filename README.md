@@ -21,7 +21,7 @@ Die aktive Plattform steht in [`.unitix/project.json`](.unitix/project.json) und
 
 Ein Feld und nicht zwei, weil die Zuordnung Plattform → Host 1:1 ist: `mock` → Cloudflare Pages, `azure` → Azure Static Web Apps, `powerapps` → Power Platform.
 
-**Es gibt einen Branch, `main`** (plus kurzlebige `feature/*`). Umgebungen sind Deploy-Ziele, keine Branches — ein Branch pro Umgebung wäre dasselbe Modell doppelt kodiert, einmal in Git und einmal in der Config. Das Modell: [`docs/environments.md`](docs/environments.md).
+**Es gibt einen Branch, `main`** (plus kurzlebige `feature/*`). Umgebungen sind Deploy-Ziele, keine Branches — ein Branch pro Umgebung wäre dasselbe Modell doppelt kodiert, einmal in Git und einmal in der Config. Das Modell: [`.claude/docs/patterns-azure.md`](.claude/docs/patterns-azure.md) → Umgebungen.
 
 ## Der Data-Seam
 
@@ -117,7 +117,7 @@ apps/api/                 Node-API (Fastify + Drizzle). Im mock-Prototyp ungenut
 3. `RoleProvider` auf den Host-User umstellen, `RoleSwitcher` entfernen.
 4. Prototyp-Artefakte gemäß [`docs/prototype-manifest.md`](docs/prototype-manifest.md) auf `forked`/`n/a` ziehen.
 
-Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-runbook.md`](docs/azure-runbook.md), Begründungen: [`docs/azure-decisions.md`](docs/azure-decisions.md), Modell: [`docs/environments.md`](docs/environments.md).
+Beim `azure`-Fork kommen Node-API, PostgreSQL, Entra ID und die zwei Umgebungen dazu — Ablauf: [`docs/azure-runbook.md`](docs/azure-runbook.md), Regeln, Begründungen und das Umgebungs-Modell: [`.claude/docs/patterns-azure.md`](.claude/docs/patterns-azure.md).
 Beim `powerapps`-Fork kommt die Power-Platform-Toolchain ins Spiel (`pa app run` / `pa app push`).
 
 ## Shared-Ressourcen aktualisieren

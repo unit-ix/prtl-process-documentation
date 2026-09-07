@@ -1,4 +1,5 @@
-// Entra ID über MSAL Browser. Ablauf, Begründungen und Fehlertabelle: docs/auth.md.
+// Entra ID über MSAL Browser. Regeln: .claude/docs/patterns-azure.md.
+// Fehlercodes und Symptome: docs/azure-runbook.md.
 import { BrowserAuthError, InteractionRequiredAuthError, PublicClientApplication } from '@azure/msal-browser';
 import { entra } from '@/shared/lib/projectConfig';
 

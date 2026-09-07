@@ -1,4 +1,4 @@
-// Vorlage — Endung .example entfernen zum Aktivieren. Konzept: docs/blob-storage.md.
+// Vorlage — Endung .example entfernen zum Aktivieren. Konzept: .claude/docs/patterns-azure.md.
 //
 // Kein Pfad-Segment kommt vom Client, und `upload()` liefert eine Id statt einer URL: eine
 // dauerhafte Adresse wäre die Pfad-Spalte, die Invariante 2 gerade ausschliesst.

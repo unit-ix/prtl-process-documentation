@@ -1,4 +1,4 @@
-// JWT-Prüfung gegen Entra ID. Was ohne die jeweilige Prüfung möglich wäre: docs/auth.md.
+// JWT-Prüfung gegen Entra ID. Warum alle fünf Prüfungen: .claude/docs/patterns-azure.md.
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { serverEnv } from '../env.js';
 import { ApiError, unauthorized } from '../http/errors.js';

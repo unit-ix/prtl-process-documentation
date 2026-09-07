@@ -4,7 +4,7 @@ Diese Anleitung führt Klick für Klick durch den Fork `mock → azure`. Die Sch
 Umgebung ein, Schritt 8 die zweite. Zwei optionale Blöcke stehen am Ende und greifen in die
 Schritte 1–7 nicht ein: Blob Storage und Entra External ID.
 
-Begründungen liefert [`azure-decisions.md`](azure-decisions.md), die verbindlichen Regeln stehen in
+Die verbindlichen Regeln und die Begründungen stehen in
 [`patterns-azure.md`](../.claude/docs/patterns-azure.md). Bei Widerspruch gewinnt der Regelsatz.
 
 ## Voraussetzungen
@@ -17,7 +17,7 @@ Begründungen liefert [`azure-decisions.md`](azure-decisions.md), die verbindlic
 ## Namenskonvention
 
 Alle Platzhalter folgen Azure CAF: `<Präfix>-<projekt>` in Prod, `<Präfix>-<projekt>-dev` in Dev.
-Das Umgebungsmodell steht in [`environments.md`](environments.md).
+Das Umgebungsmodell steht in [`patterns-azure.md`](../.claude/docs/patterns-azure.md#umgebungen--dev-und-prod).
 
 | Ressource                                  | Präfix   | Beispiel Prod   |
 | ------------------------------------------ | -------- | --------------- |
@@ -200,8 +200,8 @@ Lass das Script nach jedem dieser Ereignisse erneut laufen:
 - PITR-Restore der Datenbank, denn der wiederhergestellte Server hat keine Firewall-Regeln
 
 Bleib bei Basic, Standard, PremiumV2 oder PremiumV3. Premium V4 hat keinen stabilen Satz von
-Outbound-IPs, deshalb bricht `pnpm db:firewall` dort ab. Der Ausweg wäre VNet-Integration, siehe
-[`azure-decisions.md`](azure-decisions.md#kein-premium-v4).
+Outbound-IPs, deshalb bricht `pnpm db:firewall` dort ab. Der Ausweg wäre VNet-Integration plus NAT
+Gateway.
 
 Fertig, wenn `pnpm db:firewall --dry-run` keine Änderung mehr meldet und Regeln mit dem Präfix
 `api-outbound-` unter **Networking** stehen. Die Regel für deine eigene IP bleibt daneben.
@@ -281,7 +281,29 @@ Die URL gehört zusätzlich in `environments.<env>.url` in
 
 Ziel: Migrationen, API und SPA in der Ziel-Umgebung mit einem Befehl.
 
-Wichtig ist, dass der `environments`-Block in [`.unitix/project.json`](../.unitix/project.json) befüllt ist sowie die Root-`.env`-File. Sie ist gitignored, die Vorlage ist [`.env.example`](../.env.example).
+Fülle vorher den `environments`-Block in [`.unitix/project.json`](../.unitix/project.json):
+
+```json
+"environments": {
+  "dev":  { "url": "https://<swa-dev>.azurestaticapps.net",
+            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>-dev" },
+            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app_dev", "user": "<name>-dev" } },
+  "prod": { "url": "https://<swa>.azurestaticapps.net",
+            "azure": { "resourceGroup": "<rg>", "apiAppName": "<name>" },
+            "pg": { "host": "<psql>.postgres.database.azure.com", "database": "app", "user": "<name>" } }
+}
+```
+
+Fülle dazu die Root-`.env`. Sie ist gitignored, die Vorlage ist [`.env.example`](../.env.example):
+
+```dotenv
+SWA_DEPLOYMENT_TOKEN_DEV=<token der dev-SWA aus Schritt 5>
+SWA_DEPLOYMENT_TOKEN_PROD=<token der prod-SWA>
+PGUSER=<dein-upn>          # für pnpm dev:full und jede Migration
+```
+
+Die Root-`.env` ist die einzige `.env` im Repo. `pnpm verify` bricht ab, sobald `apps/api/.env`
+auftaucht.
 
 ```bash
 pnpm deploy:dev              # Migrationen → API → SPA, ohne Rückfrage
@@ -295,7 +317,7 @@ Einmalig gegen eine andere Ressourcengruppe, ohne Config-Änderung:
 pnpm deploy:dev --resource-group=<rg> --app-name=<name>
 ```
 
-Die Gates von `pnpm deploy:prod` stehen in [`environments.md`](environments.md#die-prod-gates).
+Die Gates von `pnpm deploy:prod` stehen in [`patterns-azure.md`](../.claude/docs/patterns-azure.md#die-prod-gates).
 
 Fertig, wenn das Script ohne Fehler durchläuft und die Ziel-URL ausgibt.
 
@@ -350,7 +372,7 @@ Fertig, wenn der [Smoke-Test](#7-smoke-test) auch gegen die zweite SWA-URL durch
 ## Optional: Blob Storage
 
 Dieser Block gilt nur, wenn das Projekt Dateien speichert. Er greift in die Schritte 1–7 nicht ein.
-Das Konzept dahinter beschreibt [`blob-storage.md`](blob-storage.md).
+Das Konzept dahinter steht in [`patterns-azure.md`](../.claude/docs/patterns-azure.md#blob-storage--optional).
 
 Ziel: ein Storage Account ohne Account-Key, ein privater Container, CORS für den Browser-Upload und
 zwei Rollenzuweisungen.
@@ -613,7 +635,15 @@ Spain Central, West Europe, North Europe oder Sweden Central, unter DSGVO sind a
 | `AADSTS9002326` beim Einlösen des Auth-Codes                              | SPA-Registrierung hat Plattform-Typ Web                   | Plattform als SPA neu anlegen, [1b](#b-spa-registrierung)                                |
 | `AADSTS50011`, Login endet auf der Entra-Seite                            | aufrufende Origin fehlt in den Redirect-URIs              | Origin exakt nachtragen, [5b](#b-swa-url-als-zweite-redirect-uri-nachtragen)             |
 | Jede Token-Prüfung schlägt fehl, `iss` ohne `/v2.0`                       | `requestedAccessTokenVersion` steht nicht auf `2`         | Manifest korrigieren, [1a](#a-api-registrierung)                                         |
-| Login gelingt, jeder Request bringt `401`                                 | `ENTRA_API_AUDIENCE` ist nicht die Client-ID der API      | Wert gegen **Overview** der API prüfen, weitere Fälle in [`auth.md`](auth.md)            |
+| Login gelingt, jeder Request bringt `401`                                 | `ENTRA_API_AUDIENCE` ist nicht die Client-ID der API      | Wert gegen **Overview** der API prüfen, [1a](#a-api-registrierung)                       |
+| Token trägt den Scope `access_as_user` nicht                              | `entra.apiAudience` ist nicht die blanke Client-ID der API | kein `api://…`, nicht die der SPA — `auth.ts` baut den Scope daraus zusammen             |
+| `AADSTS65001` — consent required                                          | SPA hat keine Freigabe für den API-Scope                  | **API permissions** → `access_as_user`, [1b](#b-spa-registrierung)                       |
+| `AADSTS700016` — application not found                                    | falsche `entra.clientId` oder falscher Mandant             | Werte gegen die **Overview**-Seite der Registrierung prüfen                              |
+| `AADSTS50058` — silent sign-in, no user signed in                         | keine Sitzung mehr am Mandanten (abgelaufen, oder Cookie im iframe als Third-Party geblockt) | für sich kein Fehler, `auth.ts` geht in den Redirect-Flow. Hängt die Seite, fehlt `'self'` in `frame-src` |
+| `Refused to connect` / `Refused to frame` in der Konsole                  | Domain fehlt in der CSP                                   | `connect-src` **und** `frame-src` in `staticwebapp.config.json`, [f\)](#f-csp)           |
+| `Framing '<eigene SWA-URL>' violates … frame-ancestors 'none'`            | die **eigene** Origin fehlt: die stille Erneuerung redirectet in die `redirectUri`, im iframe | `'self'` in `frame-src` **und** `frame-ancestors 'self'` statt `'none'`                  |
+| `timed_out` / `monitor_window_timeout`, keine CSP-Meldung                 | die App startet im Erneuerungs-iframe mit und verbraucht die Antwort vor dem Elternfenster | `main.tsx` bremst das ab — tritt auf, wenn Konto gecacht und Refresh-Token abgelaufen ist (SPA: ~24 h) |
+| `429`                                                                     | Drosselung (`RATE_LIMIT_MAX`, Default 200/min pro `oid`)  | kein Fehler — Client-Schleife suchen                                                     |
 | `GET /api/… 404`, Tabellen bleiben leer                                   | Backend-Link der SWA fehlt                                | [5a](#a-api-proxy-verknüpfen), prüfen mit `az staticwebapp backends show`                |
 | DB-Zugriff der API sieht im Log wie ein Timeout aus                       | Outbound-IPs fehlen in der DB-Firewall                    | `pnpm db:firewall`, [3c](#3c-firewall-der-db-auf-die-api-ips-abgleichen)                 |
 | `ERR_MODULE_NOT_FOUND: Cannot find package '@azure/…'`                    | ZIP ohne `--config.node-linker=hoisted` gebaut            | über `pnpm deploy:*` deployen, [6](#6-deployen)                                          |

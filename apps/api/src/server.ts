@@ -1,5 +1,5 @@
 // Transport und Absicherung, Fachwirkung in router/handle.ts. Warum CORS vor der Auth und das
-// Rate Limit danach: docs/azure-decisions.md, „Code-Fallen".
+// Rate Limit danach: .claude/docs/patterns-azure.md, „Code-Fallen".
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController, type FastifyReply, type FastifyRequest } from 'fastify';
