@@ -1,0 +1,5 @@
+{
+  "name": "code-apps-template",
+  "backend": "mock",
+  "frontend": "cloudflare"
+}

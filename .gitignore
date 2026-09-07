@@ -1,0 +1,39 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node modules and build output
+node_modules
+dist
+dist-ssr
+*.local
+
+# Power Platform Code Apps build artifacts
+.power
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env & secrets
+.env*
+
+# pnpm
+.pnpm-store
+
+# Test coverage
+coverage
+
+# Claude Code personal overrides
+.claude/settings.local.json

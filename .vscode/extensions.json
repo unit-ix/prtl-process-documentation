@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
+        "yoavbls.pretty-ts-errors",
+        "christian-kohler.npm-intellisense",
+        "meganrogge.template-string-converter",
+        "bierner.markdown-mermaid",
+        "vitest.explorer"
+    ],
+    "unwantedRecommendations": ["rodrigovallades.es7-react-js-snippets"]
+}

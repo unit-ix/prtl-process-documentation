@@ -1,0 +1,22 @@
+{
+    "$schema": "https://unpkg.com/knip@5/schema.json",
+    "entry": ["src/app/main.tsx"],
+    "project": ["src/**/*.{ts,tsx}"],
+    "ignore": ["src/shared/components/ui/**"],
+
+    // Template-Vorhaltung, keine Leichen: date-fns und zod sind in fast jedem echten Projekt
+    // sofort nötig. Beim ersten Import aus src/ diesen Eintrag entfernen.
+    "ignoreDependencies": ["date-fns", "zod"],
+
+    "ignoreExportsUsedInFile": true,
+    "rules": {
+        // Das Referenz-Feature src/features/_example/ exportiert seine öffentliche API als Muster
+        // für echte Features — diese Exports sind per Definition (noch) ungenutzt. In einem echten
+        // Projekt ohne _example kann "exports" wieder an.
+        "exports": "off",
+        "types": "off",
+        "nsExports": "off",
+        "nsTypes": "off",
+        "enumMembers": "off"
+    }
+}
