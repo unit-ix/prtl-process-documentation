@@ -1,8 +1,8 @@
 # Azure-Runbook — vom leeren Abo zur laufenden App
 
 Diese Anleitung führt Klick für Klick durch den Fork `mock → azure`. Die Schritte 1–7 richten eine
-Umgebung ein, Schritt 8 die zweite. Zwei optionale Blöcke stehen am Ende und greifen in die
-Schritte 1–7 nicht ein: Blob Storage und Entra External ID.
+Umgebung ein, Schritt 8 die zweite. Drei optionale Blöcke stehen am Ende und greifen in die
+Schritte 1–7 nicht ein: Blob Storage, Entra External ID und E-Mail-Versand.
 
 Die verbindlichen Regeln und die Begründungen stehen in
 [`patterns-azure.md`](../.claude/docs/patterns-azure.md). Bei Widerspruch gewinnt der Regelsatz.
@@ -36,21 +36,23 @@ Trage jeden Wert ein, sobald er entsteht. `project.json` meint
 [`.unitix/project.json`](../.unitix/project.json), App setting die Web App aus
 [Schritt 3b](#3b-app-settings), `.env` die eine Datei im Repo-Root.
 
-| Wert                                       | entsteht in                                    | wohin                                 | Key-Name                                                         |
-| ------------------------------------------ | ---------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
-| Resource Group `<rg>`                      | [Voraussetzungen](#voraussetzungen)            | `project.json`                        | `azure.resourceGroup`                                            |
-| Dein UPN im Mandanten                      | [Voraussetzungen](#voraussetzungen)            | `.env`                                | `PGUSER`                                                         |
-| Directory (tenant) ID                      | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting          | `entra.tenantId` / `ENTRA_TENANT_ID`                             |
-| Client-ID der SPA                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json`                        | `entra.clientId`                                                 |
-| Client-ID der API                          | [Schritt 1](#1-entra-zwei-app-registrierungen) | `project.json` + App setting          | `entra.apiAudience` / `ENTRA_API_AUDIENCE`                       |
-| Server-Name `<psql-name>`                  | [Schritt 2](#2-postgresql-flexible-server)     | `project.json` + App setting          | `pg.host` / `PGHOST`, als FQDN                                   |
-| Name der Web App `<name>`                  | [Schritt 3](#3-app-service)                    | `project.json` + App setting + `.env` | `azure.apiAppName` und `pg.user` / `PGUSER`, `API_IDENTITY_NAME` |
-| Object (principal) ID der Managed Identity | [Schritt 3](#3-app-service)                    | `.env`                                | `API_IDENTITY_OBJECT_ID`                                         |
-| SWA-Origin                                 | [Schritt 5](#5-static-web-app)                 | `project.json`                        | `url`                                                            |
-| SWA-Deployment-Token                       | [Schritt 5](#5-static-web-app)                 | `.env`                                | `SWA_DEPLOYMENT_TOKEN_DEV` / `_PROD`                             |
-| Storage-Konto `st<projekt>`                | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting          | `storage.account` / `STORAGE_ACCOUNT`                            |
-| Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)         | `project.json` + App setting          | `storage.container` / `STORAGE_CONTAINER`                        |
-| Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)     | `project.json` + App setting          | `entra.subdomain` / `ENTRA_SUBDOMAIN`                            |
+| Wert                                       | entsteht in                                                             | wohin                                 | Key-Name                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| Resource Group `<rg>`                      | [Voraussetzungen](#voraussetzungen)                                     | `project.json`                        | `azure.resourceGroup`                                            |
+| Dein UPN im Mandanten                      | [Voraussetzungen](#voraussetzungen)                                     | `.env`                                | `PGUSER`                                                         |
+| Directory (tenant) ID                      | [Schritt 1](#1-entra-zwei-app-registrierungen)                          | `project.json` + App setting          | `entra.tenantId` / `ENTRA_TENANT_ID`                             |
+| Client-ID der SPA                          | [Schritt 1](#1-entra-zwei-app-registrierungen)                          | `project.json`                        | `entra.clientId`                                                 |
+| Client-ID der API                          | [Schritt 1](#1-entra-zwei-app-registrierungen)                          | `project.json` + App setting          | `entra.apiAudience` / `ENTRA_API_AUDIENCE`                       |
+| Server-Name `<psql-name>`                  | [Schritt 2](#2-postgresql-flexible-server)                              | `project.json` + App setting          | `pg.host` / `PGHOST`, als FQDN                                   |
+| Name der Web App `<name>`                  | [Schritt 3](#3-app-service)                                             | `project.json` + App setting + `.env` | `azure.apiAppName` und `pg.user` / `PGUSER`, `API_IDENTITY_NAME` |
+| Object (principal) ID der Managed Identity | [Schritt 3](#3-app-service)                                             | `.env`                                | `API_IDENTITY_OBJECT_ID`                                         |
+| SWA-Origin                                 | [Schritt 5](#5-static-web-app)                                          | `project.json`                        | `url`                                                            |
+| SWA-Deployment-Token                       | [Schritt 5](#5-static-web-app)                                          | `.env`                                | `SWA_DEPLOYMENT_TOKEN_DEV` / `_PROD`                             |
+| Storage-Konto `st<projekt>`                | [Blob Storage](#optional-blob-storage)                                  | `project.json` + App setting          | `storage.account` / `STORAGE_ACCOUNT`                            |
+| Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)                                  | `project.json` + App setting          | `storage.container` / `STORAGE_CONTAINER`                        |
+| Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)                              | `project.json` + App setting          | `entra.subdomain` / `ENTRA_SUBDOMAIN`                            |
+| ACS-Absenderadresse `DoNotReply@…`         | [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) | `project.json` + App setting          | `mail.senderAddress` / `MAIL_SENDER_ADDRESS`                     |
+| ACS-Connection-String                      | [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) | `.env` + App setting                  | `MAIL_CONNECTION_STRING`                                         |
 
 ---
 
@@ -174,7 +176,9 @@ Diese Variablen bleiben ungesetzt: `PORT`, `PGPORT`, `RATE_LIMIT_MAX`, `BODY_LIM
 Web-Origin. Trage genau eine Origin ein und kein Wildcard.
 
 Mit [Blob Storage](#optional-blob-storage) kommen `STORAGE_ACCOUNT` und `STORAGE_CONTAINER` dazu, mit
-[External ID](#optional-entra-external-id) `ENTRA_SUBDOMAIN`.
+[External ID](#optional-entra-external-id) `ENTRA_SUBDOMAIN`, mit
+[E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) `MAIL_SENDER_ADDRESS`,
+`MAIL_CONNECTION_STRING` und `APP_URL`.
 
 Fertig, wenn die API beim Start `Datenbank-Ziel: <user>@<host>/<db>` mit den erwarteten Werten loggt.
 
@@ -566,6 +570,94 @@ steht und eine Anmeldung darüber durchläuft. Quelle für diesen Unterabschnitt
 
 ---
 
+## Optional: E-Mail-Versand (Azure Communication Services)
+
+Dieser Block gilt nur, wenn die App Mails verschickt. Er greift in die Schritte 1–7 nicht ein.
+
+Ziel: ein Email Communication Service mit einer Azure-verwalteten Absender-Domain, eine
+Communication-Services-Ressource, die sie verbindet, und drei App settings.
+
+Zwei Eigenschaften bestimmen den Entwurf und stehen deshalb vorne:
+
+- **Die Azure-verwaltete Domain ist auf 5 Mails/Minute und 10 Mails/Stunde begrenzt, und diese Grenze
+  ist nicht erhöhbar** — höhere Kontingente gibt es laut
+  [Service limits](https://learn.microsoft.com/en-us/azure/communication-services/concepts/service-limits)
+  nur für eine verifizierte eigene Domain. Für den laufenden Betrieb reicht das; ein Blockversand an
+  eine ganze Firma läuft in ein `429`, und die Antwort darauf ist ein zweiter Anlauf von Hand.
+- **Der Connection String ist ein Secret** und damit die einzige Stelle im Setup, an der ein
+  Schlüssel steht statt einer Managed Identity. ACS unterstützt Entra-Auth auch für den Mail-Versand
+  ([Authentication](https://learn.microsoft.com/en-us/azure/communication-services/concepts/authentication)),
+  das kostet aber eine Rollenzuweisung auf der ganzen ACS-Ressource — ein Gegenstück zur schmalen
+  Datenrolle `Storage Blob Data Contributor` gibt es dort nicht. Bis dahin gilt für den Schlüssel,
+  was [`patterns-azure.md`](../.claude/docs/patterns-azure.md) über Key Vault sagt: App settings,
+  solange es bei einem Secret bleibt.
+
+Die Kosten sind vernachlässigbar, aber nicht null: 0,00025 $ je Mail plus 0,00012 $ je MB, kein
+Freikontingent ([Email pricing](https://learn.microsoft.com/en-us/azure/communication-services/concepts/email-pricing)).
+1.000 Mails kosten rund 0,25 $. Die Ressourcen selbst kosten im Leerlauf nichts.
+
+### a) Email Communication Service anlegen
+
+Portal → **Email Communication Services → Create**. Resource Group `<rg>`, Name `email-<projekt>`,
+Data location **Europe**. Die Data location legt fest, wo die Nachrichten-Metadaten liegen, und ist
+nach dem Anlegen nicht mehr änderbar.
+
+### b) Azure-verwaltete Domain hinzufügen
+
+Auf der Ressource → **Provision domains → + Add domain → Azure domain**. Die Domain entsteht als
+`<guid>.azurecomm.net` und ist sofort verifiziert — kein DNS, kein SPF, kein DKIM. Genau dafür
+handelt man sich die Mengengrenze von oben ein.
+
+### c) Absenderadresse notieren
+
+Auf der Domain → **MailFrom addresses**. Die volle Adresse `DoNotReply@<guid>.azurecomm.net` ist der
+Wert für `MAIL_SENDER_ADDRESS`.
+
+### d) Communication Service anlegen und die Domain verbinden
+
+Portal → **Communication Services → Create**. Resource Group `<rg>`, Name `acs-<projekt>`, Data
+location wie in Schritt a. Danach auf der Ressource → **Email → Domains → Connect domain** und die
+Domain aus Schritt b auswählen.
+
+Zwei Ressourcen für eine Aufgabe ist die vorgesehene Aufteilung: der Email Communication Service
+besitzt die Domain, der Communication Service verschickt.
+
+### e) Connection String auslesen
+
+Auf dem Communication Service → **Settings → Keys**, `Connection string` des primären Schlüssels.
+Er gehört in die Root-`.env` als `MAIL_CONNECTION_STRING` (Vorlage: [`.env.example`](../.env.example))
+und in die App settings der Web App — **nirgends sonst**, insbesondere nicht in `project.json`
+(committet).
+
+### f) App settings und `project.json`
+
+Die Absenderadresse ist kein Secret und gehört in den `mail`-Block der Umgebung in
+[`.unitix/project.json`](../.unitix/project.json). Weil `project.json` nicht mitdeployt wird, braucht
+die Web App in Azure jeden Wert zusätzlich als App setting:
+
+| in `project.json`    | App setting              | Wert                                |
+| -------------------- | ------------------------ | ----------------------------------- |
+| `mail.senderAddress` | `MAIL_SENDER_ADDRESS`    | `DoNotReply@<guid>.azurecomm.net`   |
+| `url` der Umgebung   | `APP_URL`                | die SWA-Origin, ohne Slash am Ende  |
+| — (Secret)           | `MAIL_CONNECTION_STRING` | der Connection String aus Schritt e |
+
+Ein `MAIL_SENDER_NAME` gibt es bewusst nicht: der Anzeigename ist auf einer Azure-verwalteten Domain
+nicht setzbar (Schritt c), also wäre die Variable ein Wert ohne Wirkung. Mit einer eigenen Domain
+kommt sie dazu.
+
+`APP_URL` ist die Origin, auf die Links in den Mails zeigen. Sie steht schon als `url` der Umgebung
+in `project.json` ([Schritt 5](#5-static-web-app)) und deckt lokal alles ab; in Azure zählen nur die
+App settings, deshalb steht sie hier ein zweites Mal.
+
+Der Mail-Versand läuft ausschließlich in der API — keine ACS-Domain in der CSP, kein
+`MAIL_CONNECTION_STRING` im Bundle. Ein `VITE_MAIL_CONNECTION_STRING` in einer `.env` wäre ein
+Secret im Client und bricht `pnpm check:env`.
+
+Fertig, wenn eine Testmail ankommt: Communication Service → **Email → Try Email**, Absender ist die
+Adresse aus Schritt c.
+
+---
+
 ## Lokal entwickeln
 
 Beide Modi laufen ohne lokale Datenbank.
@@ -606,16 +698,18 @@ Fertig, wenn die Ziel-Zeile beim Start deine Adresse zeigt. Steht dort der Name 
 |           | zweite Umgebung Dev              | zweite SWA Standard  | +8          |
 |           |                                  | Summe, Dev + Prod    | ~45         |
 
-| Optionaler Posten               | Kosten                  |
-| ------------------------------- | ----------------------- |
-| Blob Storage, Grundpreis        | 0 €                     |
-| Blob Storage, 20 GB LRS         | ~0,35 €/Monat           |
-| Storage-Redundanz GRS statt LRS | doppelt so viel wie LRS |
-| Private Endpoint für die DB     | ~8 €/Monat              |
-| VNet-Integration + NAT Gateway  | ~35 €/Monat             |
-| External ID, bis 50.000 MAU     | 0 €                     |
-| SMS-MFA in externen Mandanten   | ~0,03 $ pro Versuch     |
-| Federation weiterer Mandanten   | 0 €                     |
+| Optionaler Posten               | Kosten                   |
+| ------------------------------- | ------------------------ |
+| Blob Storage, Grundpreis        | 0 €                      |
+| Blob Storage, 20 GB LRS         | ~0,35 €/Monat            |
+| Storage-Redundanz GRS statt LRS | doppelt so viel wie LRS  |
+| Private Endpoint für die DB     | ~8 €/Monat               |
+| VNet-Integration + NAT Gateway  | ~35 €/Monat              |
+| External ID, bis 50.000 MAU     | 0 €                      |
+| SMS-MFA in externen Mandanten   | ~0,03 $ pro Versuch      |
+| Federation weiterer Mandanten   | 0 €                      |
+| E-Mail-Versand, Ressourcen      | 0 €                      |
+| E-Mail-Versand, je Mail         | 0,00025 $ + 0,00012 $/MB |
 
 ### Regionen
 
@@ -630,35 +724,36 @@ Spain Central, West Europe, North Europe oder Sweden Central, unter DSGVO sind a
 
 ### Fehlercodes und Symptome
 
-| Code / Symptom                                                            | Ursache                                                   | Behebung                                                                                 |
-| ------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `AADSTS9002326` beim Einlösen des Auth-Codes                              | SPA-Registrierung hat Plattform-Typ Web                   | Plattform als SPA neu anlegen, [1b](#b-spa-registrierung)                                |
-| `AADSTS50011`, Login endet auf der Entra-Seite                            | aufrufende Origin fehlt in den Redirect-URIs              | Origin exakt nachtragen, [5b](#b-swa-url-als-zweite-redirect-uri-nachtragen)             |
-| Jede Token-Prüfung schlägt fehl, `iss` ohne `/v2.0`                       | `requestedAccessTokenVersion` steht nicht auf `2`         | Manifest korrigieren, [1a](#a-api-registrierung)                                         |
-| Login gelingt, jeder Request bringt `401`                                 | `ENTRA_API_AUDIENCE` ist nicht die Client-ID der API      | Wert gegen **Overview** der API prüfen, [1a](#a-api-registrierung)                       |
-| Token trägt den Scope `access_as_user` nicht                              | `entra.apiAudience` ist nicht die blanke Client-ID der API | kein `api://…`, nicht die der SPA — `auth.ts` baut den Scope daraus zusammen             |
-| `AADSTS65001` — consent required                                          | SPA hat keine Freigabe für den API-Scope                  | **API permissions** → `access_as_user`, [1b](#b-spa-registrierung)                       |
-| `AADSTS700016` — application not found                                    | falsche `entra.clientId` oder falscher Mandant             | Werte gegen die **Overview**-Seite der Registrierung prüfen                              |
-| `AADSTS50058` — silent sign-in, no user signed in                         | keine Sitzung mehr am Mandanten (abgelaufen, oder Cookie im iframe als Third-Party geblockt) | für sich kein Fehler, `auth.ts` geht in den Redirect-Flow. Hängt die Seite, fehlt `'self'` in `frame-src` |
-| `Refused to connect` / `Refused to frame` in der Konsole                  | Domain fehlt in der CSP                                   | `connect-src` **und** `frame-src` in `staticwebapp.config.json`, [f\)](#f-csp)           |
-| `Framing '<eigene SWA-URL>' violates … frame-ancestors 'none'`            | die **eigene** Origin fehlt: die stille Erneuerung redirectet in die `redirectUri`, im iframe | `'self'` in `frame-src` **und** `frame-ancestors 'self'` statt `'none'`                  |
-| `timed_out` / `monitor_window_timeout`, keine CSP-Meldung                 | die App startet im Erneuerungs-iframe mit und verbraucht die Antwort vor dem Elternfenster | `main.tsx` bremst das ab — tritt auf, wenn Konto gecacht und Refresh-Token abgelaufen ist (SPA: ~24 h) |
-| `429`                                                                     | Drosselung (`RATE_LIMIT_MAX`, Default 200/min pro `oid`)  | kein Fehler — Client-Schleife suchen                                                     |
-| `GET /api/… 404`, Tabellen bleiben leer                                   | Backend-Link der SWA fehlt                                | [5a](#a-api-proxy-verknüpfen), prüfen mit `az staticwebapp backends show`                |
-| DB-Zugriff der API sieht im Log wie ein Timeout aus                       | Outbound-IPs fehlen in der DB-Firewall                    | `pnpm db:firewall`, [3c](#3c-firewall-der-db-auf-die-api-ips-abgleichen)                 |
-| `ERR_MODULE_NOT_FOUND: Cannot find package '@azure/…'`                    | ZIP ohne `--config.node-linker=hoisted` gebaut            | über `pnpm deploy:*` deployen, [6](#6-deployen)                                          |
-| `permission denied for table …`                                           | `GRANT` fehlt für neue Tabellen                           | `pnpm db:grant` erneut laufen lassen, [4](#4-datenbank-füllen)                           |
-| CORS-Fehler beim Upload, kein Server-Log                                  | CORS-Regel fehlt für diese Origin                         | [Blob Storage c\)](#c-cors)                                                              |
-| `403` auf Blob-Operationen direkt nach der Zuweisung                      | Zuweisung greift nach bis zu 10 Minuten                   | warten                                                                                   |
-| Service- oder Account-SAS wird mit `403` abgelehnt                        | Account-Key-Zugriff ist abgewählt                         | User-Delegation-SAS verwenden                                                            |
-| `AuthorizationPermissionMismatch` im Storage browser                      | Datenrolle fehlt, `Owner` auf der RG genügt nicht         | [Blob Storage e\)](#e-zwei-rollenzuweisungen-je-umgebung)                                |
-| **+ Add** unter **Access Control (IAM)** ausgegraut                       | `Microsoft.Authorization/roleAssignments/write` fehlt     | **RBAC Administrator** anfordern                                                         |
-| Im IAM-Assistenten bleibt **Next** grau                                   | Rollenzeile ist nicht markiert                            | Zeile anklicken, [Blob Storage e\)](#e-zwei-rollenzuweisungen-je-umgebung)               |
-| `endpoints_resolution_error` in `ensureSignedIn()`                        | Host-Unterschied bei External ID                          | nichts zu tun, `auth.ts` verdrahtet die Tenant-ID                                        |
-| „No email address was obtained from the external OIDC identity provider." | `email`-Claim fehlt in der Registrierung                  | **Token configuration** → `email`, [g 1.](#g-weitere-mandanten-anbinden-über-federation) |
-| Fehlercode `40015` bei der Federation                                     | Issuer oder Endpunkte passen nicht zum Discovery-Dokument | Endpoints vergleichen, [g 2.](#g-weitere-mandanten-anbinden-über-federation)             |
-| Der Federation-Knopf erscheint nie                                        | Provider hängt nicht am User Flow                         | [g 3.](#g-weitere-mandanten-anbinden-über-federation)                                    |
-| Login bricht ab, alle Werte stimmen, External ID                          | SPA-Registrierung hängt nicht am User Flow                | [External ID c\)](#c-user-flow-anlegen)                                                  |
-| Konten heißen in der Kontoauswahl und der Nutzerliste `unknown`           | Display Name wird im User Flow nicht abgefragt            | [External ID c\)](#c-user-flow-anlegen)                                                  |
-| Registrierungen sind da, funktionieren aber nicht                         | im Arbeitsmandanten statt im externen angelegt            | Mandanten oben rechts im Portal prüfen                                                   |
-| External ID nach 30 Tagen abgeschaltet                                    | externer Mandant hat keine Subscription                   | [External ID a\)](#a-externen-mandanten-anlegen)                                         |
+| Code / Symptom                                                            | Ursache                                                                                       | Behebung                                                                                                  |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `AADSTS9002326` beim Einlösen des Auth-Codes                              | SPA-Registrierung hat Plattform-Typ Web                                                       | Plattform als SPA neu anlegen, [1b](#b-spa-registrierung)                                                 |
+| `AADSTS50011`, Login endet auf der Entra-Seite                            | aufrufende Origin fehlt in den Redirect-URIs                                                  | Origin exakt nachtragen, [5b](#b-swa-url-als-zweite-redirect-uri-nachtragen)                              |
+| Jede Token-Prüfung schlägt fehl, `iss` ohne `/v2.0`                       | `requestedAccessTokenVersion` steht nicht auf `2`                                             | Manifest korrigieren, [1a](#a-api-registrierung)                                                          |
+| Login gelingt, jeder Request bringt `401`                                 | `ENTRA_API_AUDIENCE` ist nicht die Client-ID der API                                          | Wert gegen **Overview** der API prüfen, [1a](#a-api-registrierung)                                        |
+| Token trägt den Scope `access_as_user` nicht                              | `entra.apiAudience` ist nicht die blanke Client-ID der API                                    | kein `api://…`, nicht die der SPA — `auth.ts` baut den Scope daraus zusammen                              |
+| `AADSTS65001` — consent required                                          | SPA hat keine Freigabe für den API-Scope                                                      | **API permissions** → `access_as_user`, [1b](#b-spa-registrierung)                                        |
+| `AADSTS700016` — application not found                                    | falsche `entra.clientId` oder falscher Mandant                                                | Werte gegen die **Overview**-Seite der Registrierung prüfen                                               |
+| `AADSTS50058` — silent sign-in, no user signed in                         | keine Sitzung mehr am Mandanten (abgelaufen, oder Cookie im iframe als Third-Party geblockt)  | für sich kein Fehler, `auth.ts` geht in den Redirect-Flow. Hängt die Seite, fehlt `'self'` in `frame-src` |
+| `Refused to connect` / `Refused to frame` in der Konsole                  | Domain fehlt in der CSP                                                                       | `connect-src` **und** `frame-src` in `staticwebapp.config.json`, [f\)](#f-csp)                            |
+| `Framing '<eigene SWA-URL>' violates … frame-ancestors 'none'`            | die **eigene** Origin fehlt: die stille Erneuerung redirectet in die `redirectUri`, im iframe | `'self'` in `frame-src` **und** `frame-ancestors 'self'` statt `'none'`                                   |
+| `timed_out` / `monitor_window_timeout`, keine CSP-Meldung                 | die App startet im Erneuerungs-iframe mit und verbraucht die Antwort vor dem Elternfenster    | `main.tsx` bremst das ab — tritt auf, wenn Konto gecacht und Refresh-Token abgelaufen ist (SPA: ~24 h)    |
+| `429`                                                                     | Drosselung (`RATE_LIMIT_MAX`, Default 200/min pro `oid`)                                      | kein Fehler — Client-Schleife suchen                                                                      |
+| `429` beim Mail-Versand                                                   | Grenze der Azure-verwalteten Domain: 5 Mails/min, 10/h                                        | nicht erhöhbar, [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services)                   |
+| `GET /api/… 404`, Tabellen bleiben leer                                   | Backend-Link der SWA fehlt                                                                    | [5a](#a-api-proxy-verknüpfen), prüfen mit `az staticwebapp backends show`                                 |
+| DB-Zugriff der API sieht im Log wie ein Timeout aus                       | Outbound-IPs fehlen in der DB-Firewall                                                        | `pnpm db:firewall`, [3c](#3c-firewall-der-db-auf-die-api-ips-abgleichen)                                  |
+| `ERR_MODULE_NOT_FOUND: Cannot find package '@azure/…'`                    | ZIP ohne `--config.node-linker=hoisted` gebaut                                                | über `pnpm deploy:*` deployen, [6](#6-deployen)                                                           |
+| `permission denied for table …`                                           | `GRANT` fehlt für neue Tabellen                                                               | `pnpm db:grant` erneut laufen lassen, [4](#4-datenbank-füllen)                                            |
+| CORS-Fehler beim Upload, kein Server-Log                                  | CORS-Regel fehlt für diese Origin                                                             | [Blob Storage c\)](#c-cors)                                                                               |
+| `403` auf Blob-Operationen direkt nach der Zuweisung                      | Zuweisung greift nach bis zu 10 Minuten                                                       | warten                                                                                                    |
+| Service- oder Account-SAS wird mit `403` abgelehnt                        | Account-Key-Zugriff ist abgewählt                                                             | User-Delegation-SAS verwenden                                                                             |
+| `AuthorizationPermissionMismatch` im Storage browser                      | Datenrolle fehlt, `Owner` auf der RG genügt nicht                                             | [Blob Storage e\)](#e-zwei-rollenzuweisungen-je-umgebung)                                                 |
+| **+ Add** unter **Access Control (IAM)** ausgegraut                       | `Microsoft.Authorization/roleAssignments/write` fehlt                                         | **RBAC Administrator** anfordern                                                                          |
+| Im IAM-Assistenten bleibt **Next** grau                                   | Rollenzeile ist nicht markiert                                                                | Zeile anklicken, [Blob Storage e\)](#e-zwei-rollenzuweisungen-je-umgebung)                                |
+| `endpoints_resolution_error` in `ensureSignedIn()`                        | Host-Unterschied bei External ID                                                              | nichts zu tun, `auth.ts` verdrahtet die Tenant-ID                                                         |
+| „No email address was obtained from the external OIDC identity provider." | `email`-Claim fehlt in der Registrierung                                                      | **Token configuration** → `email`, [g 1.](#g-weitere-mandanten-anbinden-über-federation)                  |
+| Fehlercode `40015` bei der Federation                                     | Issuer oder Endpunkte passen nicht zum Discovery-Dokument                                     | Endpoints vergleichen, [g 2.](#g-weitere-mandanten-anbinden-über-federation)                              |
+| Der Federation-Knopf erscheint nie                                        | Provider hängt nicht am User Flow                                                             | [g 3.](#g-weitere-mandanten-anbinden-über-federation)                                                     |
+| Login bricht ab, alle Werte stimmen, External ID                          | SPA-Registrierung hängt nicht am User Flow                                                    | [External ID c\)](#c-user-flow-anlegen)                                                                   |
+| Konten heißen in der Kontoauswahl und der Nutzerliste `unknown`           | Display Name wird im User Flow nicht abgefragt                                                | [External ID c\)](#c-user-flow-anlegen)                                                                   |
+| Registrierungen sind da, funktionieren aber nicht                         | im Arbeitsmandanten statt im externen angelegt                                                | Mandanten oben rechts im Portal prüfen                                                                    |
+| External ID nach 30 Tagen abgeschaltet                                    | externer Mandant hat keine Subscription                                                       | [External ID a\)](#a-externen-mandanten-anlegen)                                                          |
