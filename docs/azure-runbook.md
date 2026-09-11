@@ -51,8 +51,7 @@ Trage jeden Wert ein, sobald er entsteht. `project.json` meint
 | Storage-Konto `st<projekt>`                | [Blob Storage](#optional-blob-storage)                                  | `project.json` + App setting          | `storage.account` / `STORAGE_ACCOUNT`                            |
 | Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)                                  | `project.json` + App setting          | `storage.container` / `STORAGE_CONTAINER`                        |
 | Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)                              | `project.json` + App setting          | `entra.subdomain` / `ENTRA_SUBDOMAIN`                            |
-| ACS-Absenderadresse `DoNotReply@…`         | [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) | `project.json` + App setting          | `mail.senderAddress` / `MAIL_SENDER_ADDRESS`                     |
-| ACS-Connection-String                      | [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) | `.env` + App setting                  | `MAIL_CONNECTION_STRING`                                         |
+| Absenderadresse des Sammelpostfachs        | [E-Mail-Versand](#optional-e-mail-versand-microsoft-graph-sendmail)                                                    | `project.json` + App setting          | `mail.senderUpn` / `MAIL_SENDER_UPN`                             |
 
 ---
 
@@ -177,8 +176,7 @@ Web-Origin. Trage genau eine Origin ein und kein Wildcard.
 
 Mit [Blob Storage](#optional-blob-storage) kommen `STORAGE_ACCOUNT` und `STORAGE_CONTAINER` dazu, mit
 [External ID](#optional-entra-external-id) `ENTRA_SUBDOMAIN`, mit
-[E-Mail-Versand](#optional-e-mail-versand-azure-communication-services) `MAIL_SENDER_ADDRESS`,
-`MAIL_CONNECTION_STRING` und `APP_URL`.
+[E-Mail-Versand](#optional-e-mail-versand-microsoft-graph-sendmail) `MAIL_SENDER_UPN` und `APP_URL`.
 
 Fertig, wenn die API beim Start `Datenbank-Ziel: <user>@<host>/<db>` mit den erwarteten Werten loggt.
 
@@ -570,93 +568,108 @@ steht und eine Anmeldung darüber durchläuft. Quelle für diesen Unterabschnitt
 
 ---
 
-## Optional: E-Mail-Versand (Azure Communication Services)
+## Optional: E-Mail-Versand (Microsoft Graph `sendMail`)
 
 Dieser Block gilt nur, wenn die App Mails verschickt. Er greift in die Schritte 1–7 nicht ein.
 
-Ziel: ein Email Communication Service mit einer Azure-verwalteten Absender-Domain, eine
-Communication-Services-Ressource, die sie verbindet, und drei App settings.
+Ziel: ein Shared Mailbox im M365-Mandanten des Kunden, die Graph-Berechtigung `Mail.Send` auf der
+Managed Identity der Web App, eine **Access Policy**, die sie auf genau dieses Postfach einschränkt,
+und zwei App settings.
 
-Zwei Eigenschaften bestimmen den Entwurf und stehen deshalb vorne:
+> **Abweichung vom Template.** Die Vorlage dieses Runbooks benutzte Azure Communication Services.
+> Für PRETTL trägt das nicht: die Azure-verwaltete ACS-Domain ist auf **10 Mails/Stunde** begrenzt
+> und die Grenze ist nicht erhöhbar. Eine Sammelunterweisung mit 40 Teilnehmern bräuchte vier
+> Stunden, und die Unterweisungs-Mail *ist* hier der Nachweis. Die ACS-Alternative — eine verifizierte
+> eigene Domain — kostet DNS-Arbeit beim Kunden und startet mit unbeschriebener Zustell-Reputation;
+> bei einem Medizintechnik-Zulieferer ist eine Unterweisungs-Mail im Spam-Ordner ein Audit-Befund.
+> Graph liefert stattdessen aus einem echten `@prettl.com`-Postfach (mandantenintern, kein
+> Reputationsrisiko), schafft ~30 Mails/Minute, braucht **kein Secret** — und legt jede Mail in
+> *Gesendete Elemente* ab, was den Versandnachweis zu einer Exchange-Frage statt einer Log-Frage macht.
 
-- **Die Azure-verwaltete Domain ist auf 5 Mails/Minute und 10 Mails/Stunde begrenzt, und diese Grenze
-  ist nicht erhöhbar** — höhere Kontingente gibt es laut
-  [Service limits](https://learn.microsoft.com/en-us/azure/communication-services/concepts/service-limits)
-  nur für eine verifizierte eigene Domain. Für den laufenden Betrieb reicht das; ein Blockversand an
-  eine ganze Firma läuft in ein `429`, und die Antwort darauf ist ein zweiter Anlauf von Hand.
-- **Der Connection String ist ein Secret** und damit die einzige Stelle im Setup, an der ein
-  Schlüssel steht statt einer Managed Identity. ACS unterstützt Entra-Auth auch für den Mail-Versand
-  ([Authentication](https://learn.microsoft.com/en-us/azure/communication-services/concepts/authentication)),
-  das kostet aber eine Rollenzuweisung auf der ganzen ACS-Ressource — ein Gegenstück zur schmalen
-  Datenrolle `Storage Blob Data Contributor` gibt es dort nicht. Bis dahin gilt für den Schlüssel,
-  was [`patterns-azure.md`](../.claude/docs/patterns-azure.md) über Key Vault sagt: App settings,
-  solange es bei einem Secret bleibt.
+Drei Eigenschaften bestimmen den Entwurf:
 
-Die Kosten sind vernachlässigbar, aber nicht null: 0,00025 $ je Mail plus 0,00012 $ je MB, kein
-Freikontingent ([Email pricing](https://learn.microsoft.com/en-us/azure/communication-services/concepts/email-pricing)).
-1.000 Mails kosten rund 0,25 $. Die Ressourcen selbst kosten im Leerlauf nichts.
+- **Kein Secret.** `Mail.Send` hängt als App-Rolle an der Managed Identity, `DefaultAzureCredential`
+  holt das Graph-Token — dieselbe Mechanik wie bei PostgreSQL und Blob Storage. Damit bleibt die
+  Aussage aus [`patterns-azure.md`](../.claude/docs/patterns-azure.md) intakt, dass es in diesem
+  Stack kein Secret gibt, das ein Tresor verwahren müsste.
+- **`Mail.Send` als Anwendungsberechtigung gilt zunächst für JEDES Postfach im Mandanten.** Ohne
+  Schritt c) darf die App als beliebiger Mitarbeiter senden. Das ist kein theoretisches Risiko,
+  sondern die Standardwirkung der Rolle — Schritt c) ist deshalb **nicht optional**.
+- **Nie im Request senden.** Exchange drosselt bei ~30 Mails/Minute, der SWA-Proxy bricht nach 45 s
+  ab. Die API schreibt Ereigniszeilen mit `isSent = false` und antwortet sofort; ein Sweep versendet
+  sie. Ein `429` von Graph ist damit ein erneuter Versuch statt eines Fehlers beim Nutzer.
 
-### a) Email Communication Service anlegen
+Kosten: keine. Ein Shared Mailbox unter 50 GB braucht keine Lizenz.
 
-Portal → **Email Communication Services → Create**. Resource Group `<rg>`, Name `email-<projekt>`,
-Data location **Europe**. Die Data location legt fest, wo die Nachrichten-Metadaten liegen, und ist
-nach dem Anlegen nicht mehr änderbar.
+### a) Shared Mailbox anlegen
 
-### b) Azure-verwaltete Domain hinzufügen
+Microsoft 365 Admin Center → **Teams & groups → Shared mailboxes → + Add a shared mailbox**.
+Name z. B. `Prozessdokumentation`, Adresse `prozessdokumentation@prettl.com`. Die Adresse ist der
+Wert für `MAIL_SENDER_UPN`.
 
-Auf der Ressource → **Provision domains → + Add domain → Azure domain**. Die Domain entsteht als
-`<guid>.azurecomm.net` und ist sofort verifiziert — kein DNS, kein SPF, kein DKIM. Genau dafür
-handelt man sich die Mengengrenze von oben ein.
+Das Postfach braucht **keine Lizenz** und niemand meldet sich daran an — die App sendet als dieses
+Postfach, sie liest es nicht.
 
-### c) Absenderadresse notieren
+### b) `Mail.Send` an die Managed Identity vergeben
 
-Auf der Domain → **MailFrom addresses**. Die volle Adresse `DoNotReply@<guid>.azurecomm.net` ist der
-Wert für `MAIL_SENDER_ADDRESS`.
+Nicht im Portal klickbar: App-Rollen an eine Managed Identity vergibt man über Graph. Die Object-ID
+der Identity stammt aus [Schritt 3](#3-app-service).
 
-### d) Communication Service anlegen und die Domain verbinden
+```bash
+GRAPH_SP=$(az ad sp list --filter "appId eq '00000003-0000-0000-c000-000000000000'" --query "[0].id" -o tsv)
+MAILSEND=$(az ad sp show --id "$GRAPH_SP" \
+  --query "appRoles[?value=='Mail.Send' && contains(allowedMemberTypes,'Application')].id | [0]" -o tsv)
 
-Portal → **Communication Services → Create**. Resource Group `<rg>`, Name `acs-<projekt>`, Data
-location wie in Schritt a. Danach auf der Ressource → **Email → Domains → Connect domain** und die
-Domain aus Schritt b auswählen.
+# je Umgebung, mit der Object (principal) ID der jeweiligen Web App
+az rest --method post \
+  --url "https://graph.microsoft.com/v1.0/servicePrincipals/<principal-id>/appRoleAssignments" \
+  --headers "Content-Type=application/json" \
+  --body "{\"principalId\":\"<principal-id>\",\"resourceId\":\"$GRAPH_SP\",\"appRoleId\":\"$MAILSEND\"}"
+```
 
-Zwei Ressourcen für eine Aufgabe ist die vorgesehene Aufteilung: der Email Communication Service
-besitzt die Domain, der Communication Service verschickt.
+Braucht **Privileged Role Administrator** oder **Global Administrator** im Mandanten — eine
+App-Rollen-Zuweisung auf einem Service Principal ist ein privilegierter Schreibvorgang.
 
-### e) Connection String auslesen
+Gegenprobe:
 
-Auf dem Communication Service → **Settings → Keys**, `Connection string` des primären Schlüssels.
-Er gehört in die Root-`.env` als `MAIL_CONNECTION_STRING` (Vorlage: [`.env.example`](../.env.example))
-und in die App settings der Web App — **nirgends sonst**, insbesondere nicht in `project.json`
-(committet).
+```bash
+az rest --method get \
+  --url "https://graph.microsoft.com/v1.0/servicePrincipals/<principal-id>/appRoleAssignments" \
+  --query "[].{role:appRoleId,resource:resourceDisplayName}" -o table
+```
 
-### f) App settings und `project.json`
+### c) Auf das eine Postfach einschränken — Pflicht
+
+Exchange Online PowerShell, einmal je Umgebung. Ohne diesen Schritt darf die App als **jedes**
+Postfach im Mandanten senden.
+
+```powershell
+Connect-ExchangeOnline
+New-DistributionGroup -Name "sg-prtl-processdoc-mail" -Type Security `
+  -Members "prozessdokumentation@prettl.com"
+New-ApplicationAccessPolicy -AppId "<client-id-der-managed-identity>" `
+  -PolicyScopeGroupId "sg-prtl-processdoc-mail" -AccessRight RestrictAccess `
+  -Description "PRETTL Prozessdokumentation darf nur aus dem Sammelpostfach senden"
+Test-ApplicationAccessPolicy -Identity "prozessdokumentation@prettl.com" -AppId "<client-id>"
+```
+
+`Test-ApplicationAccessPolicy` muss `AccessCheckResult: Granted` liefern, und dieselbe Abfrage gegen
+ein beliebiges anderes Postfach `Denied`. Beide Richtungen prüfen — nur die zweite belegt, dass die
+Einschränkung wirkt. Die Policy greift mit bis zu 30 Minuten Verzögerung.
+
+### d) App settings und `project.json`
 
 Die Absenderadresse ist kein Secret und gehört in den `mail`-Block der Umgebung in
 [`.unitix/project.json`](../.unitix/project.json). Weil `project.json` nicht mitdeployt wird, braucht
 die Web App in Azure jeden Wert zusätzlich als App setting:
 
-| in `project.json`    | App setting              | Wert                                |
-| -------------------- | ------------------------ | ----------------------------------- |
-| `mail.senderAddress` | `MAIL_SENDER_ADDRESS`    | `DoNotReply@<guid>.azurecomm.net`   |
-| `url` der Umgebung   | `APP_URL`                | die SWA-Origin, ohne Slash am Ende  |
-| — (Secret)           | `MAIL_CONNECTION_STRING` | der Connection String aus Schritt e |
+| in `project.json` | App setting       | Wert                                |
+| ----------------- | ----------------- | ----------------------------------- |
+| `mail.senderUpn`  | `MAIL_SENDER_UPN` | `prozessdokumentation@prettl.com`   |
+| `url` der Umgebung | `APP_URL`        | die SWA-Origin, ohne Slash am Ende  |
 
-Ein `MAIL_SENDER_NAME` gibt es bewusst nicht: der Anzeigename ist auf einer Azure-verwalteten Domain
-nicht setzbar (Schritt c), also wäre die Variable ein Wert ohne Wirkung. Mit einer eigenen Domain
-kommt sie dazu.
-
-`APP_URL` ist die Origin, auf die Links in den Mails zeigen. Sie steht schon als `url` der Umgebung
-in `project.json` ([Schritt 5](#5-static-web-app)) und deckt lokal alles ab; in Azure zählen nur die
-App settings, deshalb steht sie hier ein zweites Mal.
-
-Der Mail-Versand läuft ausschließlich in der API — keine ACS-Domain in der CSP, kein
-`MAIL_CONNECTION_STRING` im Bundle. Ein `VITE_MAIL_CONNECTION_STRING` in einer `.env` wäre ein
-Secret im Client und bricht `pnpm check:env`.
-
-Fertig, wenn eine Testmail ankommt: Communication Service → **Email → Try Email**, Absender ist die
-Adresse aus Schritt c.
-
----
+Es gibt **keinen** Connection String und keinen Schlüssel — das ist der Punkt der Übung. `APP_URL`
+baut die `?pid=`-Absprunglinks in den Mails; ohne ihn zeigen sie ins Leere.
 
 ## Lokal entwickeln
 
@@ -738,7 +751,7 @@ Spain Central, West Europe, North Europe oder Sweden Central, unter DSGVO sind a
 | `Framing '<eigene SWA-URL>' violates … frame-ancestors 'none'`            | die **eigene** Origin fehlt: die stille Erneuerung redirectet in die `redirectUri`, im iframe | `'self'` in `frame-src` **und** `frame-ancestors 'self'` statt `'none'`                                   |
 | `timed_out` / `monitor_window_timeout`, keine CSP-Meldung                 | die App startet im Erneuerungs-iframe mit und verbraucht die Antwort vor dem Elternfenster    | `main.tsx` bremst das ab — tritt auf, wenn Konto gecacht und Refresh-Token abgelaufen ist (SPA: ~24 h)    |
 | `429`                                                                     | Drosselung (`RATE_LIMIT_MAX`, Default 200/min pro `oid`)                                      | kein Fehler — Client-Schleife suchen                                                                      |
-| `429` beim Mail-Versand                                                   | Grenze der Azure-verwalteten Domain: 5 Mails/min, 10/h                                        | nicht erhöhbar, [E-Mail-Versand](#optional-e-mail-versand-azure-communication-services)                   |
+| `429` beim Mail-Versand                                                   | Exchange drosselt (~30 Mails/min pro Postfach)                                                | kein Fehler — der Sweep versendet beim nächsten Lauf weiter, [E-Mail-Versand](#optional-e-mail-versand-microsoft-graph-sendmail)                         |
 | `GET /api/… 404`, Tabellen bleiben leer                                   | Backend-Link der SWA fehlt                                                                    | [5a](#a-api-proxy-verknüpfen), prüfen mit `az staticwebapp backends show`                                 |
 | DB-Zugriff der API sieht im Log wie ein Timeout aus                       | Outbound-IPs fehlen in der DB-Firewall                                                        | `pnpm db:firewall`, [3c](#3c-firewall-der-db-auf-die-api-ips-abgleichen)                                  |
 | `ERR_MODULE_NOT_FOUND: Cannot find package '@azure/…'`                    | ZIP ohne `--config.node-linker=hoisted` gebaut                                                | über `pnpm deploy:*` deployen, [6](#6-deployen)                                                           |
