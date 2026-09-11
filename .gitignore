@@ -27,10 +27,16 @@ dist-ssr
 *.sw?
 
 # Env & secrets
+# .env.example ist bewusst ausgenommen: es dokumentiert die NAMEN der Variablen (nie Werte)
+# und wird von scripts/check-env-secrets.mjs übersprungen.
 .env*
+!.env.example
 
 # pnpm
 .pnpm-store
+
+# Azure-Deploy-Artefakte (ZIP-Payload für den App Service)
+.artifacts
 
 # Test coverage
 coverage

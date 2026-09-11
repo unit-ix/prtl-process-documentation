@@ -1,0 +1,14 @@
+# pnpm-Workspace: zwei Deployables, eine Root als Orchestrator.
+#
+#   apps/web  — die SPA (Vite + React 19). Wird statisch deployt.
+#   apps/api  — Node-API. Im mock-Prototyp ein leeres /health-Skelett; der Azure-Fork
+#               füllt sie (Fastify + Drizzle), siehe docs/hosting.md.
+#
+# Warum zwei Packages und nicht ein `api/`-Ordner im SPA-Package: die Package-Grenze ist
+# der einzige MECHANISCHE Schutz davor, dass Server-Code (pg, drizzle, Secrets) im
+# Browser-Bundle landet. Dieses Repo argumentiert überall mechanisch statt per Konvention.
+#
+# Die Root ist bewusst KEIN Package: `pnpm -r` überspringt die Workspace-Root still,
+# und ein vergessenes --include-workspace-root wäre ein grünes CI ohne SPA-Build.
+packages:
+    - apps/*

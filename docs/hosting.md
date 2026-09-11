@@ -1,12 +1,38 @@
-# Hosting — Prototyp, Testumgebung & Produktion (Cloudflare Pages)
+# Hosting — der Mock-Prototyp auf Cloudflare Pages
 
-> **localhost-first für die Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` gegen den Mock-Adapter, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft dagegen auf dem Cloudflare-Deploy des `prototype`-Branches (weiterhin Mock-Daten) — das ist der Regelfall, nicht die Ausnahme.
+> **Gilt bei `platform: mock`.** Der Host des Mock-Prototyps.
 
-Es gibt **einen** automatisierten Weg: **GitHub Actions**. Der Deploy sitzt im Golden Template — niemand klickt sich durchs Cloudflare-Dashboard.
+## Wo dieses Dokument sitzt
 
-## Der Deploy-Weg
+Es gibt zwei Betriebs-Formen, und sie folgen aufeinander:
 
-Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy.mjs`](../scripts/deploy.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik**; welches Cloudflare-Projekt getroffen wird, bestimmt der Branch (`--branch=${{ github.ref_name }}`, lokal der aktuelle Checkout).
+| | **Mock-Prototyp** | **Vollstack** |
+| --- | --- | --- |
+| `platform` | `mock` | `azure` — oder `powerapps` als zweite Vollstack-Variante |
+| Daten | Seed im Browser, kein Backend | PostgreSQL + Node-API — bzw. Dataverse |
+| Lokal | `pnpm dev` — alles im Browser | `pnpm dev:full` — SPA + API lokal, **DB immer in Azure-Dev** |
+| Geteilt über | **Cloudflare Pages** (dieses Dokument) | Azure Static Web Apps, `dev` und `prod` ([`patterns-azure.md`](../.claude/docs/patterns-azure.md)) |
+| Umgebungen | eine | zwei (Deploy-Ziele, keine Branches) |
+
+**Es gibt keine lokale Datenbank** — auch nicht im Vollstack. Die lokale API spricht passwortlos
+über `az login` die Azure-Dev-DB und testet damit dieselbe Authentifizierung wie Produktion.
+
+**localhost-first für die Entwicklung.** Entwickelt und **intern** reviewt wird am laufenden `pnpm dev` gegen den Mock-Adapter, nicht über einen Deploy. Die **Kunden-Abstimmung** läuft dagegen auf dem Cloudflare-Deploy von `main` (weiterhin Mock-Daten) — das ist der Regelfall, nicht die Ausnahme.
+
+## Der automatisierte Weg
+
+Es gibt **einen**: **GitHub Actions**. Der Deploy sitzt im Golden Template — niemand klickt sich durchs Cloudflare-Dashboard.
+
+Der Deploy-Job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) baut und lädt den fertigen `apps/web/dist/`-Build via `wrangler` als Direct Upload hoch. Er ruft dafür [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) auf — dasselbe Script, das man auch lokal startet. **Eine Deploy-Logik** — und genau ein Cloudflare-Projekt, `<slug>`.
+
+**Ein Script pro Host**, benannt nach dem Host:
+
+| Befehl | Script | Ziel |
+| --- | --- | --- |
+| `pnpm deploy:cloudflare` | [`scripts/deploy-cloudflare.mjs`](../scripts/deploy-cloudflare.mjs) | SPA → Cloudflare Pages (dieses Dokument) |
+| `pnpm deploy:dev` / `pnpm deploy:prod` | [`scripts/deploy-azure.mjs`](../scripts/deploy-azure.mjs) | Migrationen + Node-API + SPA → Azure ([`patterns-azure.md`](../.claude/docs/patterns-azure.md)) |
+
+Welchen Host ein Projekt hat, sagt `.unitix/project.json` → `platform` — die Scripts prüfen es selbst (siehe host-aware unten).
 
 Er ist **gegatet und standardmäßig aus** und läuft nur, wenn *beides* zutrifft:
 
@@ -15,20 +41,19 @@ Er ist **gegatet und standardmäßig aus** und läuft nur, wenn *beides* zutriff
 
 Bis dahin ist der Job dokumentiert, aber inert.
 
-## Drei Umgebungen, `feature/*` nie
+## Eine Umgebung
 
-Pro Kundenprojekt gibt es **drei** Cloudflare-Pages-Projekte, je Branch eines:
+Pro Kundenprojekt gibt es **ein** Cloudflare-Pages-Projekt, `<slug>`, deployt von `main`.
 
-| Branch | Cloudflare-Projekt | Rolle | Deployt? |
-| --- | --- | --- | --- |
-| `prototype` | `<slug>-prototype` | Eingefrorene Kunden-Referenz (immer Mock) | **Immer** |
-| `dev` | `<slug>-dev` | Testumgebung — hier testet das Team | **backend-aware** |
-| `main` | `<slug>` | Produktion | **backend-aware** |
-| `feature/*` | — | Feature-Arbeit | **Nie** |
+Ein Mock-Prototyp braucht keine zweite Umgebung: keine Datenbank, keine Anmeldung, nichts zu trennen. Der abgestimmte Stand wird mit dem Tag `prototype-ok` markiert statt mit einem eingefrorenen Branch und einem zweiten Pages-Projekt. Umgebungs-Trennung beginnt erst am Azure-Fork, und dort als Deploy-Ziel statt als Branch — [`patterns-azure.md`](../.claude/docs/patterns-azure.md).
 
-**backend-aware** heißt: `prototype` ist per Definition Mock und deployt immer auf Cloudflare. Für `dev`/`main` liest das Script `.unitix/project.json` → `backend`: bei `mock`/`supabase` deployt es auf Cloudflare, bei `dataverse` läuft die App **in Power Platform** — dann überspringt das Script den Cloudflare-Deploy sauber (exit 0, kein CI-Fehler; der Power-Platform-Deploy ist eigene Folge-Arbeit).
+**host-aware** heißt: das Script liest `.unitix/project.json` → `platform`. Bei `mock` deployt es auf Cloudflare; bei `azure` (Static Web Apps) und `powerapps` (Power Platform) hostet ein anderer Dienst — dann steigt es sauber aus (exit 0, kein CI-Fehler) und der jeweilige Pfad übernimmt. So läuft derselbe CI-Job unverändert in jedem Projekt.
 
-**Build-Minuten sind ein reales Budget.** GitHub Actions hat weniger davon als Cloudflare. `feature/*` deployt deshalb nie — erst in der CI fertig arbeiten, dann auf einen Umgebungs-Branch promoten. `dev` deployt pro Merge, aber der Job hat je Branch eine `concurrency`-Gruppe mit `cancel-in-progress`, sodass zwei schnelle Pushes nicht doppelt zählen.
+Am `platform`-Feld und nicht an einem zweiten Host-Feld: die drei Kombinationen sind 1:1 und von den Regelsätzen erzwungen. Eine Cloudflare-SPA vor einer Azure-API wäre cross-origin — was `patterns-azure.md` mit relativer API-Basis und „CORS nur SWA-Origin" ausschließt.
+
+**Build-Minuten sind ein reales Budget.** Nur `main` deployt, kein PR und kein `feature/*` — erst in der CI fertig arbeiten, dann mergen. Der Job hat eine `concurrency`-Gruppe mit `cancel-in-progress`, sodass zwei schnelle Pushes nicht doppelt zählen.
+
+Lokal deployt das Script ebenfalls nur von `main`: der Cloudflare-Link ist der Stand, den der Kunde sieht, und ein Zwischenstand von einem Feature-Branch würde ihn still überschreiben. Wenn das wirklich gewollt ist: `pnpm deploy:cloudflare --force`.
 
 ## Warum nicht git-connect
 
@@ -43,16 +68,21 @@ GitHub Actions läuft über Cloudflare-URL + API-Token (Env-Vars) und ist deshal
 ## Lokaler Ad-hoc-Deploy
 
 ```bash
-pnpm build               # erzeugt dist/
-pnpm deploy              # = node scripts/deploy.mjs — Umgebung = aktueller Git-Branch
-pnpm deploy -- --env=dev # oder explizit (prototype|dev|main)
+pnpm build                          # erzeugt apps/web/dist/
+pnpm deploy:cloudflare              # = node scripts/deploy-cloudflare.mjs
+pnpm deploy:cloudflare --force      # auch von einem anderen Branch als main
 ```
 
-- Ruft `pnpm dlx wrangler pages deploy dist --project-name=<projekt>` auf (Direct Upload).
-- Die **Umgebung** (`--env=` / `--branch=` / aktueller Branch) bestimmt Ziel-Projekt und production-branch. `feature/*` deployt nicht.
+- Ruft `pnpm dlx wrangler pages deploy apps/web/dist --project-name=<projekt>` auf (Direct Upload).
+- Das Script heißt `deploy:cloudflare` und nicht `deploy`, weil **`pnpm deploy` ein eingebautes
+  Kommando ist** (es zieht ein Workspace-Package für den Versand flach) und Vorrang vor einem
+  gleichnamigen Script hat. Ein Script namens `deploy` wäre nur über `pnpm run deploy` erreichbar —
+  der Azure-Pfad braucht das Builtin: `deploy-azure.mjs` ruft es intern auf (siehe
+  [`patterns-azure.md`](../.claude/docs/patterns-azure.md)).
+- **Nur von `main`** — sonst Abbruch mit Hinweis auf `--force`. Der Link ist der Stand, den der Kunde sieht.
 - **Legt das Pages-Projekt vorher explizit an** und toleriert ein bereits existierendes — `wrangler` würde ein fehlendes Projekt beim Deploy nur *interaktiv* anlegen, sonst failt der allererste CI-Lauf.
-- **Basis-Slug** (`--project-name`): Priorität `Argument` > `.unitix/project.json` (`name`) > `package.json` (`name`), normalisiert auf einen gültigen Cloudflare-Slug (`a-z0-9-`, max. 58, kein führender/abschließender Bindestrich). Das Umgebungs-Suffix hängt das Script an. `.unitix/project.json` ist die vorgesehene Quelle, damit CI und lokal **denselben** Slug treffen.
-- **Fail loud:** fehlt bei einem tatsächlichen Deploy `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder `dist/`, bricht das Script mit klarer Meldung ab.
+- **Slug** (`--project-name`): Priorität `Argument` > `.unitix/project.json` (`name`) > `package.json` (`name`), normalisiert auf einen gültigen Cloudflare-Slug (`a-z0-9-`, max. 58, kein führender/abschließender Bindestrich). `.unitix/project.json` ist die vorgesehene Quelle, damit CI und lokal **denselben** Slug treffen.
+- **Fail loud:** fehlt bei einem tatsächlichen Deploy `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` oder `apps/web/dist/`, bricht das Script mit klarer Meldung ab.
 
 ## Benötigte Secrets
 
@@ -65,24 +95,25 @@ pnpm deploy -- --env=dev # oder explizit (prototype|dev|main)
 
 ## Voraussetzung: das Template ist eine SPA
 
-Der Deploy lädt ein **statisches `dist/`** hoch. Das Golden Template **ist** per Design eine SPA — der HashRouter ist ein irreversibler Constraint (Pflicht für den späteren Dataverse-iframe, funktioniert auf Cloudflare, macht `_redirects` überflüssig) und mechanisch über ESLint erzwungen.
+Der Deploy lädt ein **statisches `apps/web/dist/`** hoch. Das Golden Template **ist** per Design eine SPA — der HashRouter ist ein irreversibler Constraint (Pflicht für den späteren Dataverse-iframe, funktioniert auf Cloudflare, macht `_redirects` überflüssig) und mechanisch über ESLint erzwungen.
 
 **SSR-Projekte laufen nicht über diesen Pfad.** Bestehende Prototypen auf TanStack Router/SSR sind Wegwerf-Referenz für Konzepte, kein Migrationsziel — sie sind keine Golden-Template-Projekte. Das ist eine bewusste Grenze: der Deploy wird nicht für einen Nicht-Template-Fall verbogen.
 
 ## Pricing
 
 - **Cloudflare Pages:** für unseren Bedarf **kostenlos** — unbegrenzte statische Requests/Bandwidth, kein Bandbreiten-Bill-Shock. Das Free-Tier erlaubt **kommerzielle Nutzung** (Vercel verbietet sie).
-- **Supabase:** ca. **25 USD/Monat** (Pro-Tier), sobald ein echtes Backend dranhängt.
-- Direct Upload verbraucht **keine** Cloudflare-Build-Minuten — gebaut wird in der GitHub-CI, hochgeladen wird nur `dist/`. Das relevante Budget ist deshalb das von GitHub Actions.
+- **Azure-Stack:** ca. **45 €/Monat** für Dev **und** Prod zusammen — SWA Standard 2 × ~8 €, App Service B1 ~12 € (ein Plan, zwei Apps), PostgreSQL B1ms ~17 € (ein Server, zwei Datenbanken). Zwei vollständig getrennte Stacks wären ~74 €.
+- Direct Upload verbraucht **keine** Cloudflare-Build-Minuten — gebaut wird in der GitHub-CI, hochgeladen wird nur `apps/web/dist/`. Das relevante Budget ist deshalb das von GitHub Actions.
 
 ## Was gehört wohin
 
 | Zweck | Wo |
 | --- | --- |
-| Entwicklung + interner Review | `pnpm dev` (localhost), nie über einen Deploy |
-| Kunden-Abstimmung | Cloudflare-Deploy von `prototype` (`<slug>-prototype`) |
-| Team-Test der Produkt-Phase | Cloudflare-Deploy von `dev` (`<slug>-dev`); bei `dataverse` stattdessen Power Platform |
-| Produktion | Deploy von `main` (`<slug>`) — backend-aware |
-| Link zwischendurch | `pnpm deploy` lokal, gleiche Logik |
+| Entwicklung + interner Review am Prototyp | `pnpm dev` (localhost), nie über einen Deploy |
+| Kunden-Abstimmung des Prototyps | Cloudflare-Deploy von `main` (`<slug>`), Tag `prototype-ok` |
+| Link zwischendurch | `pnpm deploy:cloudflare` lokal, gleiche Logik |
+| Entwicklung nach dem Azure-Fork | `pnpm dev:full` — SPA + API lokal, DB in Azure-Dev |
+| Team-Test nach dem Azure-Fork | `pnpm deploy:dev` — Azure-Dev-Umgebung ([`patterns-azure.md`](../.claude/docs/patterns-azure.md)) |
+| Produktion | `pnpm deploy:prod` — der eine gegatete Schritt |
 
-Die Power-Platform-Toolchain (`npx power-apps …`) ist erst am `dataverse`-Fork relevant — für den Mock-Prototyp nie.
+Die Power-Platform-Toolchain (`pa …`) ist erst am `powerapps`-Fork relevant — für den Mock-Prototyp nie.

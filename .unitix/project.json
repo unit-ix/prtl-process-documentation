@@ -1,5 +1,36 @@
 {
-  "name": "code-apps-template",
-  "backend": "mock",
-  "frontend": "cloudflare"
+    "name": "code-apps-template",
+    "platform": "mock",
+    "entra": {
+        "tenantId": "",
+        "clientId": "",
+        "apiAudience": "",
+        "subdomain": ""
+    },
+    "environments": {
+        "dev": {
+            "url": "",
+            "azure": {
+                "resourceGroup": "",
+                "apiAppName": ""
+            },
+            "pg": {
+                "host": "",
+                "database": "app_dev",
+                "user": ""
+            }
+        },
+        "prod": {
+            "url": "",
+            "azure": {
+                "resourceGroup": "",
+                "apiAppName": ""
+            },
+            "pg": {
+                "host": "",
+                "database": "app",
+                "user": ""
+            }
+        }
+    }
 }

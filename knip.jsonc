@@ -1,18 +1,37 @@
 {
     "$schema": "https://unpkg.com/knip@5/schema.json",
-    "entry": ["src/app/main.tsx"],
-    "project": ["src/**/*.{ts,tsx}"],
-    "ignore": ["src/shared/components/ui/**"],
 
-    // Template-Vorhaltung, keine Leichen: date-fns und zod sind in fast jedem echten Projekt
-    // sofort nötig. Beim ersten Import aus src/ diesen Eintrag entfernen.
-    "ignoreDependencies": ["date-fns", "zod"],
+    // .claude/** = Submodul mit eigenem Repo und eigener Lint-Hoheit (identische Begründung wie
+    // in eslint.config.js). Seit dem Workspace-Umbau zählt knip die Repo-Root als eigenen
+    // Workspace mit; ohne diesen Eintrag meldet es die Hooks des Submoduls als "unused files",
+    // weil sie nur aus .claude/settings.json referenziert werden.
+    "ignore": [".claude/**"],
+
+    // Ein Workspace pro Deployable. Pfade innerhalb eines Workspace-Eintrags sind relativ
+    // zu dessen Verzeichnis, nicht zur Repo-Root.
+    "workspaces": {
+        "apps/web": {
+            "entry": ["src/app/main.tsx"],
+            "project": ["src/**/*.{ts,tsx}"],
+            "ignore": ["src/shared/components/ui/**"],
+
+            // Template-Vorhaltung, keine Leichen: date-fns und zod sind in fast jedem echten
+            // Projekt sofort nötig. Beim ersten Import aus src/ diesen Eintrag entfernen.
+            "ignoreDependencies": ["date-fns", "zod"]
+        },
+        "apps/api": {
+            // Vier Einstiegspunkte: drei eigene Prozesse plus die drizzle-kit-Config, die von
+            // drizzle-kit geladen und nirgends importiert wird.
+            "entry": ["src/server.ts", "src/db/migrate.ts", "src/db/grant-identity.ts", "drizzle.config.ts"],
+            "project": ["src/**/*.ts", "drizzle.config.ts"]
+        }
+    },
 
     "ignoreExportsUsedInFile": true,
     "rules": {
-        // Das Referenz-Feature src/features/_example/ exportiert seine öffentliche API als Muster
-        // für echte Features — diese Exports sind per Definition (noch) ungenutzt. In einem echten
-        // Projekt ohne _example kann "exports" wieder an.
+        // Das Referenz-Feature apps/web/src/features/_example/ exportiert seine öffentliche API
+        // als Muster für echte Features — diese Exports sind per Definition (noch) ungenutzt. In
+        // einem echten Projekt ohne _example kann "exports" wieder an.
         "exports": "off",
         "types": "off",
         "nsExports": "off",
