@@ -1,9 +1,278 @@
-%% Snapshot — nicht die Live-Wahrheit. Stand: <YYYY-MM-DD> · Quelle: SharePoint (lokal via OneDrive-Sync) · Aktualisieren: /prototype-Ingest erneut ([O]verwrite).
-%% SharePoint ist die laufend gepflegte Single Source of Truth; diese Kopie kann veralten.
 erDiagram
-    %% Stub — Datenmodell hier als Mermaid ERD eintragen
-    %% Beispiel:
-    %% USER {
-    %%     string id PK
-    %%     string name
-    %% }
+
+%% ============================================================
+%% PRETTL - Prozessdokumentation | SharePoint-Datenmodell
+%% Konvention wie MHL Tooldatenbank (tbl / str / mstr / opt / ref / int / dte / bln)
+%% Bereiche-Seed (18 Bereiche, Stand Vorschlag 2026): siehe Bereiche.md
+%% Beziehungen aus den ref*-Feldern der Tabellen abgeleitet (2026-09-08)
+%% ============================================================
+
+%% -------------------- Stammdaten --------------------
+
+    tblUser {
+        integer     ID
+        string      strAzureId          "PK"
+        string      strDisplayName
+        string      strMail             "leer bei MA ohne M365"
+        boolean     blnIsProcessOwner       "Prozessverantwortlicher (= Abteilungsleiter)"
+        boolean     blnIsAuthor             "Verfasser"
+        boolean     blnIsQM                 "Qualitaetsmanagement (finale Pruefung)"
+        boolean     blnIsAdministrator      "Admin"
+        reference   refEmployee
+        reference   refArea
+    }
+
+    tblArea {
+        integer     ID
+        string      strTitle            "z.B. Purchasing, Operation + Technology, Facility Management"
+        string      strShortCode        "PUR, F/T, FM ... (Seed: Bereiche.md)"
+        choice      optProcessCategory  "Fuehrung, Kern, Unterstuetzung"
+        integer     intCategoryNumber   "1, 2, 3"
+        Formular    fxProcessCategory
+        Formular    fxProcessOwner
+        reference   refProcessOwner     "tblUser (Prozessverantwortlicher = Abteilungsleiter)"
+    }
+
+%% -------------------- Prozesse --------------------
+
+    tblProcess {
+        integer     ID
+        string      strTitle
+        string      strIdentifier           "VA PE 1 IMS.001 (halbautomatisch)"
+        integer     intDocumentNumber       "lfd. Nr., final QMB"
+        integer     intEdition              "Ausgabe-Nr., nur bei Freigabe gesetzt"
+        string      mstrShortDescription    "Bezeichnung"
+        choice      optSpecificationType    "VA, AA"
+        choice      optTemplateType         "IMS, PROD"
+        choice      optScope                "PE, PER, PEL"
+        choice      optStatus               "Backlog, In Erfassung, Inhaltliche Pruefung, Formelle Pruefung, Freigegeben, Abgelehnt, Abgeloest, Zurueckgezogen"
+        choice      optConfidentiality      "Oeffentlich, Intern, Vertraulich (Label, keine Zugriffssteuerung)"
+        string      mstrPurpose             "Zweck"
+        string      mstrScopeDetail         "IMS: Geltungsbereich"
+        string      mstrTerms               "IMS: Begriffe"
+        string      mstrResponsibilities    "IMS: Zustaendigkeiten"
+        string      mstrProcessDescription  "Prozessbeschreibung"
+        string      mstrWorkSequence        "PROD: Arbeitsabfolge"
+        string      mstrProcessParameters   "PROD: Prozessparameter"
+        string      mstrDocumentationRef    "PROD: Dokumentation"
+        string      mstrDeviationHandling   "PROD: Reaktion b. Abweichungen"
+        string      mstrMaintenanceRef      "PROD: Wartung (ULTIMO/TPM)"
+        string      mstrTaskDistribution
+        string      mstrMethod
+        date        dteSubmitted
+        date        dteContentReviewed
+        date        dteApproved
+        reference   refArea
+        reference   refAuthor               "tblUser (Verfasser / Ersteller)"
+        reference   refProcessOwner         "tblUser (inhaltliche Pruefung, aus Bereich)"
+        reference   refApprovedByQM         "tblUser (QM, finale Freigabe)"
+        reference   refRootProcess          "tblProcess (1. Ausgabe = Prozess-Familie; leer = Wurzel)"
+        reference   refCurrentVersion       "tblProcessVersion (aktive Ausgabe/Entwurf) -- ERGAENZT"
+        boolean     blnHasActiveDraft
+    }
+
+    tblProcessVersion {
+        integer     ID
+        string      strTitle
+        string      strIdentifier           "VA PE 1 IMS.001 (halbautomatisch)"
+        integer     intDocumentNumber       "lfd. Nr., final QMB"
+        integer     intEdition              "Ausgabe-Nr., nur bei Freigabe gesetzt"
+        string      mstrShortDescription    "Bezeichnung"
+        string      strChangeReason
+        choice      optSpecificationType    "VA, AA"
+        choice      optTemplateType         "IMS, PROD"
+        choice      optScope                "PE, PER, PEL"
+        choice      optStatus               "Backlog, In Erfassung, Inhaltliche Pruefung, Formelle Pruefung, Freigegeben, Abgelehnt, Abgeloest, Zurueckgezogen"
+        choice      optConfidentiality      "Oeffentlich, Intern, Vertraulich (Label, keine Zugriffssteuerung)"
+        Formular    fxOptStatus             "Textspiegel von optStatus fuer Lookup-Projektion -- ERGAENZT"
+        string      mstrPurpose             "Zweck"
+        string      mstrScopeDetail         "IMS: Geltungsbereich"
+        string      mstrTerms               "IMS: Begriffe"
+        string      mstrResponsibilities    "IMS: Zustaendigkeiten"
+        string      mstrProcessDescription  "Prozessbeschreibung"
+        string      mstrWorkSequence        "PROD: Arbeitsabfolge"
+        string      mstrProcessParameters   "PROD: Prozessparameter"
+        string      mstrDocumentationRef    "PROD: Dokumentation"
+        string      mstrDeviationHandling   "PROD: Reaktion b. Abweichungen"
+        string      mstrMaintenanceRef      "PROD: Wartung (ULTIMO/TPM)"
+        string      mstrTaskDistribution
+        string      mstrMethod
+        string      strSnapshotHtml
+        date        dteSubmitted
+        date        dteContentReviewed
+        date        dteApproved
+        reference   refArea
+        reference   refProcess
+        reference   refAuthor               "tblUser (Verfasser / Ersteller)"
+        reference   refProcessOwner         "tblUser (inhaltliche Pruefung, aus Bereich)"
+        reference   refApprovedByQM         "tblUser (QM, finale Freigabe)"
+    }
+
+    tblProcessAdditionalField {
+        integer     ID
+        string      strTitle
+        string      mstrValue
+        reference   refProcess
+        reference   refProcessVersion
+    }
+
+    tblProcessLink {
+        integer     tblProcessLinkId
+        string      strTitle
+        string      strUrl              "bei externem Dokument/Link"
+        choice      optLinkType         "InternerProzess, ExternesDokument"
+        reference   refProcess
+        reference   refLinkedProcess    "tblProcess (bei interner Verknuepfung)"
+        reference   refProcessVersion
+    }
+
+    tblProcessEvent {
+        integer     ID
+        string      strMail
+        string      strText
+        choice      optNewStatus        "In Erfassung, InhaltlichePruefung, FormellePruefung, Freigegeben, Abgelehnt"
+        choice      optEvent            "Zugewiesen, Eingereicht, InhaltlichFreigegeben, InhaltlichAbgelehnt, FormellFreigegeben, FormellAbgelehnt, NachtestGefordert, Zurueckgezogen, UeberarbeitungGestartet"
+        date        dteEvent
+        string      strRecipientEmail
+        string      mstrComment         "Pflicht bei Ablehnung/Nachtest"
+        boolean     blnIsSent
+        reference   refProcess          "betroffene Ausgabe/Entwurf"
+        reference   refActor            "tblUser (wer die Aktion ausgeloest hat)"
+    }
+
+    libProcessDocument {
+        integer     tblProcessDocumentId
+        string      strType             "Diagramm, Formular, Dokument"
+        reference   refProcess
+    }
+
+%% -------------------- Unterweisungen --------------------
+
+    tblInstruction {
+        integer     tblInstructionId
+        choice      optType             "Einzel, Sammel"
+        choice      optStatus           "Offen, Ueberfaellig, Abgeschlossen (berechnet, nicht gespeichert)"
+        choice      optRecurrence       "Jaehrlich, Halbjaehrlich, Vierteljaehrlich, Keine Wiederholung"
+        date        dteDue              "Frist"
+        date        dteCreated
+        string      mstrNote
+        integer     intParticipants
+        integer     intConfirmed
+        reference   refProcess
+        reference   refCreatedBy        "tblUser"
+    }
+
+    tblInstructionParticipant {
+        integer     ID
+        choice      optStatus           "Offen, Bestaetigt, Abgelehnt"
+        date        dteNotified
+        date        dteConfirmed
+        reference   refInstruction
+        reference   refProcess
+        reference   refUser
+        choice      optFlowStatus       "In Bearbeitung, Fertig, Fehler"
+    }
+
+    libInstructionDocument {
+        integer     tblInstructionDocumentId
+        string      strType             "Unterschriftenliste (Scan)"
+        reference   refInstruction
+    }
+
+%% -------------------- Qualifikationsmatrix --------------------
+
+    tblQualification {
+        integer     ID
+        string      strTitle
+        string      mstrDescription
+        date        dteAcquired
+        date        dteExpiry
+        integer     intSkillPoints      "1-4, Prozessstabilitaet/Vertretung, keine Leistungsbewertung"
+        reference   refUser
+        boolean     blnIsActive
+        boolean     blnReminderSent
+    }
+
+    tblUserTask {
+        integer     ID
+        string      strTitle
+        string      mstrDescription
+        reference   refUser
+        boolean     blnIsActive
+    }
+
+    libQualificationDocument {
+        integer     tblQualificationDocumentId
+        string      strType
+        reference   refQualification
+    }
+
+%% -------------------- Beziehungen --------------------
+%% Jede Zeile = ein ref*-Feld. Links steht die Ziel-Tabelle (1),
+%% rechts die Tabelle, die das Lookup-Feld traegt (0..n).
+
+    %% Stammdaten
+    tblArea           ||--o{ tblUser                    : refArea
+    tblUser           ||--o{ tblArea                    : refProcessOwner
+
+    %% Prozess-Huelle
+    tblArea           ||--o{ tblProcess                 : refArea
+    tblUser           ||--o{ tblProcess                 : refAuthor
+    tblUser           ||--o{ tblProcess                 : refProcessOwner
+    tblUser           ||--o{ tblProcess                 : refApprovedByQM
+    tblProcess        ||--o{ tblProcess                 : refRootProcess
+    tblProcessVersion ||--o| tblProcess                 : refCurrentVersion
+
+    %% Prozess-Ausgaben
+    tblProcess        ||--o{ tblProcessVersion          : refProcess
+    tblArea           ||--o{ tblProcessVersion          : refArea
+    tblUser           ||--o{ tblProcessVersion          : refAuthor
+    tblUser           ||--o{ tblProcessVersion          : refProcessOwner
+    tblUser           ||--o{ tblProcessVersion          : refApprovedByQM
+
+    %% Prozess-Inhalte
+    tblProcess        ||--o{ tblProcessAdditionalField  : refProcess
+    tblProcessVersion ||--o{ tblProcessAdditionalField  : refProcessVersion
+    tblProcess        ||--o{ tblProcessLink             : refProcess
+    tblProcessVersion ||--o{ tblProcessLink             : refProcessVersion
+    tblProcess        ||--o{ tblProcessLink             : refLinkedProcess
+    tblProcess        ||--o{ libProcessDocument         : refProcess
+
+    %% Audit / Benachrichtigung
+    tblProcess        ||--o{ tblProcessEvent            : refProcess
+    tblUser           ||--o{ tblProcessEvent            : refActor
+
+    %% Unterweisungen
+    tblProcess        ||--o{ tblInstruction             : refProcess
+    tblUser           ||--o{ tblInstruction             : refCreatedBy
+    tblInstruction    ||--o{ tblInstructionParticipant  : refInstruction
+    tblProcess        ||--o{ tblInstructionParticipant  : refProcess
+    tblUser           ||--o{ tblInstructionParticipant  : refUser
+    tblInstruction    ||--o{ libInstructionDocument     : refInstruction
+
+    %% Qualifikationsmatrix
+    tblUser           ||--o{ tblQualification           : refUser
+    tblUser           ||--o{ tblUserTask                : refUser
+    tblQualification  ||--o{ libQualificationDocument   : refQualification
+
+    %% OFFEN: tblUser.refEmployee zeigt auf eine Tabelle tblEmployee,
+    %% die im Modell nicht definiert ist. Entweder tblEmployee ergaenzen
+    %% und die naechste Zeile aktivieren, oder refEmployee entfernen.
+    %% tblEmployee     ||--o{ tblUser                    : refEmployee
+
+%% -------------------- Optionsets --------------------
+OptionSets {
+    Choices choProcessCategory   "Fuehrung, Kern, Unterstuetzung"
+    Choices choSpecificationType "VA, AA"
+    Choices choTemplateType      "IMS, PROD"
+    Choices choScope             "PE, PER, PEL"
+    Choices choProcessStatus     "Backlog, InErfassung, InhaltlichePruefung, FormellePruefung, Freigegeben, Abgeloest, Zurueckgezogen"
+    Choices choReviewEvent       "Zugewiesen, Eingereicht, InhaltlichFreigegeben, InhaltlichAbgelehnt, FormellFreigegeben, FormellAbgelehnt, NachtestGefordert, Zurueckgezogen, UeberarbeitungGestartet"
+    Choices choConfidentiality   "Oeffentlich, Intern, Vertraulich"
+    Choices choFieldType         "Text, Zahl, Datum, JaNein"
+    Choices choLinkType          "InternerProzess, ExternesDokument"
+    Choices choInstructionType   "Einzel, Sammel"
+    Choices choParticipantStatus "Offen, Bestaetigt, Abgelehnt"
+    Choices choRecurrence        "KeineWiederholung, Vierteljaehrlich, Halbjaehrlich, Jaehrlich"
+    Choices choFlowStatus        "InBearbeitung, Fertig, Fehler"
+}
