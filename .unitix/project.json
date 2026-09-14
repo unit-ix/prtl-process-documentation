@@ -11,25 +11,25 @@
         "dev": {
             "url": "",
             "azure": {
-                "resourceGroup": "",
-                "apiAppName": ""
+                "resourceGroup": "rg-process-documentation-tool",
+                "apiAppName": "app-prettl-process-documentation-dev"
             },
             "pg": {
-                "host": "",
+                "host": "psql-prettl-process-documentation.postgres.database.azure.com",
                 "database": "app_dev",
-                "user": ""
+                "user": "app-prettl-process-documentation-dev"
             }
         },
         "prod": {
             "url": "",
             "azure": {
-                "resourceGroup": "",
-                "apiAppName": ""
+                "resourceGroup": "rg-process-documentation-tool",
+                "apiAppName": "app-prettl-process-documentation"
             },
             "pg": {
-                "host": "",
+                "host": "psql-prettl-process-documentation.postgres.database.azure.com",
                 "database": "app",
-                "user": ""
+                "user": "app-prettl-process-documentation"
             }
         }
     }
