@@ -21,7 +21,7 @@
             }
         },
         "prod": {
-            "url": "",
+            "url": "https://agreeable-cliff-0fc09af03.5.azurestaticapps.net",
             "azure": {
                 "resourceGroup": "rg-process-documentation-tool",
                 "apiAppName": "app-prettl-process-documentation"
