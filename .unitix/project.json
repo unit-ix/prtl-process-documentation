@@ -9,7 +9,7 @@
     },
     "environments": {
         "dev": {
-            "url": "",
+            "url": "https://black-glacier-04941f903.6.azurestaticapps.net",
             "azure": {
                 "resourceGroup": "rg-process-documentation-tool",
                 "apiAppName": "app-prettl-process-documentation-dev"
