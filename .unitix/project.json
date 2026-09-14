@@ -15,7 +15,7 @@
                 "apiAppName": "app-prettl-process-documentation-dev"
             },
             "pg": {
-                "host": "psql-prettl-process-documentation.postgres.database.azure.com",
+                "host": "psql-process-documentation.postgres.database.azure.com",
                 "database": "app_dev",
                 "user": "app-prettl-process-documentation-dev"
             }
@@ -27,7 +27,7 @@
                 "apiAppName": "app-prettl-process-documentation"
             },
             "pg": {
-                "host": "psql-prettl-process-documentation.postgres.database.azure.com",
+                "host": "psql-process-documentation.postgres.database.azure.com",
                 "database": "app",
                 "user": "app-prettl-process-documentation"
             }
