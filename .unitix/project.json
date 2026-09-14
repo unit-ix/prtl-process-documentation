@@ -18,6 +18,10 @@
                 "host": "psql-process-documentation.postgres.database.azure.com",
                 "database": "app_dev",
                 "user": "app-prettl-process-documentation-dev"
+            },
+            "storage": {
+                "account": "stprocessdocumentation",
+                "container": "files-dev"
             }
         },
         "prod": {
@@ -30,6 +34,10 @@
                 "host": "psql-process-documentation.postgres.database.azure.com",
                 "database": "app",
                 "user": "app-prettl-process-documentation"
+            },
+            "storage": {
+                "account": "stprocessdocumentation",
+                "container": "files"
             }
         }
     }
