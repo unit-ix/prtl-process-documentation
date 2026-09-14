@@ -263,6 +263,31 @@ Portal → **Static Web Apps → Create**. Plan **Standard**, Region **West Euro
 SWA → **APIs** → Kachel **Production** → **Link** → Backend resource type **App Service** →
 Subscription und die Web App aus Schritt 3 → **Link**.
 
+> **Das Verknüpfen schaltet Easy Auth auf dem App Service EIN.** Azure setzt dabei
+> `requireAuthentication: true`, `unauthenticatedClientAction: RedirectToLoginPage` und einen
+> `azureStaticWebApps`-Provider — ohne `excludedPaths`. Folge: `/health` antwortet `401`, die
+> Integritätsprüfung sieht die Instanz dauerhaft als fehlerhaft und ersetzt sie stündlich. Der
+> Fehler sieht aus wie eine kaputte App und ist keiner.
+>
+> [`patterns-azure.md`](../.claude/docs/patterns-azure.md) verwirft Easy Auth ausdrücklich — die API
+> prüft Token selbst in `auth/verify.ts`. Also nach dem Verknüpfen **abschalten**:
+>
+> ```bash
+> az rest --method put \
+>   --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Web/sites/<app>/config/authsettingsV2?api-version=2023-01-01" \
+>   --headers "Content-Type=application/json" \
+>   --body '{"properties":{"platform":{"enabled":false},"globalValidation":{"requireAuthentication":false,"unauthenticatedClientAction":"AllowAnonymous"},"identityProviders":{}}}'
+> az webapp restart -g <rg> -n <app>
+> ```
+>
+> `az webapp auth update --enabled false` quittiert das mit `Bad Request` — der ARM-PUT ist der Weg.
+> Der Neustart ist Pflicht: die Middleware hält die alte Einstellung sonst im Speicher und antwortet
+> weiter mit `401`. Danach kommt jede `401` als `application/problem+json` aus der eigenen API,
+> erkennbar am Body; eine leere `401` mit `x-ms-middleware-request-id` ist Easy Auth.
+>
+> Dass der App Service damit öffentlich erreichbar ist, ist bewusst: der SWA-Proxy unterstützt keine
+> netzwerkisolierten Backends, der Schutz ist die Token- und Rate-Limit-Schicht.
+
 ### b) SWA-URL als zweite Redirect-URI nachtragen
 
 Kopiere die URL aus SWA → **Overview** in der Form `https://<name>.<n>.azurestaticapps.net`. Dann

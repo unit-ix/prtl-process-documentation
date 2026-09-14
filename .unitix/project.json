@@ -1,6 +1,6 @@
 {
     "name": "prtl-process-documentation",
-    "platform": "mock",
+    "platform": "azure",
     "entra": {
         "tenantId": "3e8afe1d-ae53-4657-ac1e-20180346d82c",
         "clientId": "723ee7d4-1f9c-4e20-9afe-88ad8a9ce215",
