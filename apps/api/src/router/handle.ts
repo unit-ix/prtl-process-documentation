@@ -20,6 +20,17 @@ import {
     listFiles,
     uploadUrlSchema,
 } from './files.js';
+import { getInstruction, listInstructions } from './instructions.js';
+import {
+    acknowledge,
+    confirmAll,
+    confirmParticipant,
+    createInstruction,
+    deleteInstruction,
+    instructionSchema,
+    notifyParticipants,
+    updateInstruction,
+} from './instructionWrites.js';
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
@@ -72,6 +83,58 @@ const ROUTES: readonly Route[] = [
             status: 200,
             body: { html: await getSnapshot(user, params.id, params.versionId) },
         }),
+    },
+    { method: 'GET', path: '/instructions', handle: () => ok(listInstructions()) },
+    { method: 'GET', path: '/instructions/:id', handle: ({ user, params }) => ok(getInstruction(user, params.id)) },
+    {
+        method: 'POST',
+        path: '/instructions',
+        handle: async ({ user, body }) => ({
+            status: 201,
+            body: await createInstruction(user, parseBody(instructionSchema, body)),
+        }),
+    },
+    {
+        method: 'PATCH',
+        path: '/instructions/:id',
+        handle: async ({ user, params, body }) => {
+            await updateInstruction(user, params.id, parseBody(instructionSchema, body));
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'DELETE',
+        path: '/instructions/:id',
+        handle: async ({ user, params }) => {
+            await deleteInstruction(user, params.id);
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'POST',
+        path: '/instructions/:id/notify',
+        handle: ({ user, params }) => ok(notifyParticipants(user, params.id)),
+    },
+    {
+        method: 'POST',
+        path: '/instructions/:id/confirm-all',
+        handle: ({ user, params }) => ok(confirmAll(user, params.id)),
+    },
+    {
+        method: 'POST',
+        path: '/instructions/:id/participants/:participantId/confirm',
+        handle: async ({ user, params }) => {
+            await confirmParticipant(user, params.id, params.participantId);
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'POST',
+        path: '/instructions/:id/acknowledge',
+        handle: async ({ user, params }) => {
+            await acknowledge(user, params.id);
+            return { status: 204, body: null };
+        },
     },
     {
         method: 'POST',

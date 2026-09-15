@@ -1,10 +1,12 @@
 import { platform } from '@/shared/lib/projectConfig';
 import { AzureFileStore } from '@/data/adapters/azure/AzureFileStore';
+import { AzureInstructionRepository } from '@/data/adapters/azure/AzureInstructionRepository';
 import { AzureMasterDataRepository } from '@/data/adapters/azure/AzureMasterDataRepository';
 import { AzureProcessRepository } from '@/data/adapters/azure/AzureProcessRepository';
 import { AzureSessionRepository } from '@/data/adapters/azure/AzureSessionRepository';
 import { ensureSignedIn } from '@/data/adapters/azure/auth';
 import type { FileStore } from './ports/FileStore';
+import type { InstructionRepository } from './ports/InstructionRepository';
 import type { MasterDataRepository } from './ports/MasterDataRepository';
 import type { ProcessRepository } from './ports/ProcessRepository';
 import type { SessionRepository } from './ports/SessionRepository';
@@ -27,3 +29,6 @@ export const masterDataRepository: MasterDataRepository =
     platform === 'azure' ? new AzureMasterDataRepository() : unsupported();
 
 export const fileStore: FileStore = platform === 'azure' ? new AzureFileStore() : unsupported();
+
+export const instructionRepository: InstructionRepository =
+    platform === 'azure' ? new AzureInstructionRepository() : unsupported();

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { InstructionDetailPage, InstructionsPage } from '@/features/unterweisungen';
 import {
     ProcessDescriptionPage,
     ProcessDetailPage,
@@ -51,6 +52,8 @@ export function App() {
                             <Route path="/processes/:id" element={<ProcessDetailPage />} />
                             <Route path="/processes/:id/description" element={<ProcessDescriptionPage />} />
                             <Route path="/processes/:id/edit" element={<ProcessEditPage />} />
+                            <Route path="/instructions" element={<InstructionsPage />} />
+                            <Route path="/instructions/:id" element={<InstructionDetailPage />} />
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </AppShell>

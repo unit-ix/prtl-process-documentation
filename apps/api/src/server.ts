@@ -6,7 +6,9 @@ import Fastify, { LogController, type FastifyReply, type FastifyRequest } from '
 import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
 import { allowedOrigins, dbTarget, serverEnv } from './env.js';
 import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './http/errors.js';
+import { renderConfirmPage, renderConfirmResult } from './router/confirmPageHtml.js';
 import { handle } from './router/handle.js';
+import { confirmPage, submitConfirmation } from './router/publicConfirm.js';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -36,7 +38,12 @@ app.addContentTypeParser('*', { parseAs: 'buffer' }, (request, body, done) => {
     done(unsupportedMediaType(`content-type "${request.headers['content-type']}" wird nicht unterstützt.`));
 });
 
-const isPublic = (url: string): boolean => url === '/health' || url.startsWith('/health?');
+// Die gefährlichste Liste im Repo: was hier steht, ist ohne jede Anmeldung aus dem Internet
+// erreichbar. /api/confirm/* ist die Bestätigung aus der Unterweisungs-Mail (§7.3) — sie
+// authentifiziert über ein einmal verwendbares, gehashtes Token statt über Entra, weil der
+// Empfänger oft gar kein M365-Konto hat.
+const isPublic = (url: string): boolean =>
+    url === '/health' || url.startsWith('/health?') || url.startsWith('/api/confirm/');
 
 await app.register(cors, { origin: allowedOrigins(), credentials: false });
 
@@ -52,7 +59,7 @@ app.addHook(
     app.rateLimit({
         max: env.RATE_LIMIT_MAX,
         keyGenerator: (request: FastifyRequest) => request.claims?.objectId ?? request.ip,
-        allowList: (request: FastifyRequest) => isPublic(request.url),
+        allowList: (request: FastifyRequest) => request.url === '/health' || request.url.startsWith('/health?'),
     }),
 );
 
@@ -63,6 +70,33 @@ app.setErrorHandler((error, _request, reply) => {
 });
 
 app.get('/health', async () => ({ status: 'ok' }));
+
+app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string' },
+    (_request, body, done) => done(null, Object.fromEntries(new URLSearchParams(body as string))),
+);
+
+// Zweistufig: GET zeigt nur, POST schreibt. Begründung in router/publicConfirm.ts.
+app.get('/api/confirm/:token', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { token } = request.params as { token: string };
+    const html = renderConfirmPage(token, await confirmPage(token));
+    return reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(html);
+});
+
+app.post('/api/confirm/:token', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { token } = request.params as { token: string };
+    const answer = (request.body as { answer?: string } | undefined)?.answer === 'no' ? 'no' : 'yes';
+    const result = await submitConfirmation(token, answer, {
+        ip: request.ip,
+        userAgent: request.headers['user-agent'] ?? null,
+    });
+
+    return reply
+        .type('text/html; charset=utf-8')
+        .header('cache-control', 'no-store')
+        .send(renderConfirmResult(result.ok ? answer : null));
+});
 
 app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
     const { claims } = request;
