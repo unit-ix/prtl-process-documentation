@@ -164,7 +164,7 @@ function deployApi(env, alreadyBuilt) {
         console.log(`⚠ pg.user "${env.pg.user}" ≠ apiAppName "${appName}" — sonst: permission denied for table.`)
     }
 
-    if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/api', 'build'])
+    if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/api...', 'build'])
 
     console.log(`→ API: Package nach ${DEPLOY_DIR}/ herausziehen (flach, ohne devDependencies) …`)
     rmSync(absPath(DEPLOY_DIR), { recursive: true, force: true })
@@ -192,7 +192,7 @@ function deployWeb(env, alreadyBuilt) {
         fail(`${tokenName} fehlt (Portal → Static Web App → Manage deployment token, dann Root-.env).${legacy}`)
     }
 
-    if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/web', 'build'])
+    if (!alreadyBuilt) run('Build', 'pnpm', ['--filter', '@app/web...', 'build'])
     if (!existsSync(absPath(WEB_DIST))) fail(`Build lief durch, aber ${WEB_DIST}/ fehlt.`)
 
     console.log(`→ SPA: ${WEB_DIST}/ hochladen (Token aus ${tokenName}) …`)

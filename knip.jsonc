@@ -19,6 +19,10 @@
             // Projekt sofort nötig. Beim ersten Import aus src/ diesen Eintrag entfernen.
             "ignoreDependencies": ["date-fns", "zod"]
         },
+        "packages/domain": {
+            "entry": ["src/index.ts"],
+            "project": ["src/**/*.ts"]
+        },
         "apps/api": {
             // Vier Einstiegspunkte: drei eigene Prozesse plus die drizzle-kit-Config, die von
             // drizzle-kit geladen und nirgends importiert wird.

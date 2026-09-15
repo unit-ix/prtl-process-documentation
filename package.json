@@ -9,10 +9,10 @@
         "pnpm": ">=10"
     },
     "scripts": {
-        "dev": "pnpm --filter @app/web dev",
-        "dev:api": "pnpm --filter @app/api dev",
-        "dev:full": "pnpm --parallel --filter \"./apps/*\" dev",
-        "build": "pnpm --filter \"./apps/*\" build",
+        "dev": "pnpm --filter @app/domain build && pnpm --filter @app/web dev",
+        "dev:api": "pnpm --filter @app/domain build && pnpm --filter @app/api dev",
+        "dev:full": "pnpm --filter @app/domain build && pnpm --parallel --filter \"./apps/*\" dev",
+        "build": "pnpm --recursive build",
         "lint": "eslint . --max-warnings 0",
         "knip": "knip --no-config-hints",
         "check:env": "node scripts/check-env-secrets.mjs",

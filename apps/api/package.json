@@ -12,6 +12,7 @@
         "db:grant": "tsx --env-file-if-exists=../../.env src/db/grant-identity.ts"
     },
     "dependencies": {
+        "@app/domain": "workspace:*",
         "@azure/identity": "^4.13.1",
         "@fastify/cors": "^11.3.0",
         "@fastify/rate-limit": "^11.2.0",

@@ -4,7 +4,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { dbEnv } from '../env.js';
-import * as schema from './schema.js';
+import * as schema from './schema/index.js';
 
 const POSTGRES_SCOPE = 'https://ossrdbms-aad.database.windows.net/.default';
 

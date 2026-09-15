@@ -5,7 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController, type FastifyReply, type FastifyRequest } from 'fastify';
 import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
 import { allowedOrigins, dbTarget, serverEnv } from './env.js';
-import { badRequest, toProblem, unsupportedMediaType } from './http/errors.js';
+import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './http/errors.js';
 import { handle } from './router/handle.js';
 
 declare module 'fastify' {
@@ -65,7 +65,11 @@ app.setErrorHandler((error, _request, reply) => {
 app.get('/health', async () => ({ status: 'ok' }));
 
 app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { claims } = request;
+    if (!claims) throw unauthorized('Kein geprüftes Token am Request.');
+
     const { status, body } = await handle({
+        claims,
         method: request.method,
         path: `/${(request.params as { '*': string })['*']}`,
         query: request.query as Record<string, string | undefined>,

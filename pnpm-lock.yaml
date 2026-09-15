@@ -38,6 +38,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@app/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@azure/identity':
         specifier: ^4.13.1
         version: 4.13.1
@@ -154,6 +157,12 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12)(yaml@2.9.0)
+
+  packages/domain:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
 packages:
 

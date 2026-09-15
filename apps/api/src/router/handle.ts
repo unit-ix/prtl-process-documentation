@@ -1,10 +1,13 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { badRequest, notFound } from '../http/errors.js';
+import type { Claims } from '../auth/verify.js';
 import { listRows } from './list.js';
-import { RESOURCES, toColumns, type Resource } from './registry.js';
+import { me } from './me.js';
+import { RESOURCES, type Resource } from './registry.js';
 
 export interface RouterRequest {
+    readonly claims: Claims;
     readonly method: string;
     readonly path: string;
     readonly query: Record<string, string | undefined>;
@@ -35,7 +38,7 @@ function parseBody(schema: Resource['createSchema'], body: unknown): Record<stri
         const detail = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; ');
         throw badRequest(detail);
     }
-    return toColumns(parsed.data as Record<string, unknown>);
+    return parsed.data as Record<string, unknown>;
 }
 
 async function getOne(resource: Resource, id: string): Promise<unknown> {
@@ -76,6 +79,11 @@ async function onItem(method: string, resource: Resource, id: string, req: Route
 }
 
 export async function handle(req: RouterRequest): Promise<RouterResponse> {
+    if (req.path === '/me') {
+        if (req.method !== 'GET') throw notFound(`${req.method} auf /me ist nicht vorgesehen.`);
+        return { status: 200, body: await me(req.claims) };
+    }
+
     const { resource, id } = resolveTarget(req.path);
     return id === null ? onCollection(req.method, resource, req) : onItem(req.method, resource, id, req);
 }

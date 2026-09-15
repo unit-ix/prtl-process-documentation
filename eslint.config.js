@@ -98,7 +98,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['apps/api/src/**/*.ts'],
+        files: ['apps/api/src/**/*.ts', 'packages/*/src/**/*.ts'],
         rules: {
             ...leanRules,
             'no-restricted-globals': ['error', 'localStorage', 'sessionStorage'],
