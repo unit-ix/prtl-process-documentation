@@ -28,6 +28,7 @@ const TITLES: Readonly<Record<number, string>> = {
     401: 'unauthorized',
     403: 'forbidden',
     404: 'not_found',
+    409: 'conflict',
     415: 'unsupported_media_type',
     429: 'rate_limited',
 };

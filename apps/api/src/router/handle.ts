@@ -10,7 +10,14 @@ import { matchPath, type PathParams } from './match.js';
 import { me } from './me.js';
 import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
+import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
+import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
+import { approveFormal } from '../workflow/release.js';
+import { reopenForRevision, reopenSchema } from '../workflow/revision.js';
+import { saveContent, saveContentSchema } from '../workflow/saveContent.js';
+import { approveContent, assignAuthor, rejectContent, rejectFormal, submitForReview } from '../workflow/statusMoves.js';
+import { z } from 'zod';
 
 export interface RouterRequest {
     readonly claims: Claims;
@@ -40,6 +47,9 @@ interface Route {
 
 const ok = async (body: unknown): Promise<RouterResponse> => ({ status: 200, body: await body });
 
+const assignAuthorSchema = z.object({ authorId: z.string().uuid() }).strict();
+const commentSchema = z.object({ comment: z.string().trim().min(1).max(2000) }).strict();
+
 const ROUTES: readonly Route[] = [
     { method: 'GET', path: '/areas', handle: () => ok(listAreas()) },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
@@ -52,6 +62,61 @@ const ROUTES: readonly Route[] = [
             status: 200,
             body: { html: await getSnapshot(user, params.id, params.versionId) },
         }),
+    },
+    {
+        method: 'POST',
+        path: '/processes',
+        handle: async ({ user, body }) => ({
+            status: 201,
+            body: await createProcess(user, parseBody(createProcessSchema, body)),
+        }),
+    },
+    {
+        method: 'PATCH',
+        path: '/processes/:id',
+        handle: ({ user, params, body }) => ok(saveContent(user, params.id, parseBody(saveContentSchema, body))),
+    },
+    {
+        method: 'DELETE',
+        path: '/processes/:id',
+        handle: async ({ user, params }) => {
+            await deleteProcess(user, params.id);
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'POST',
+        path: '/processes/:id/assign-author',
+        handle: ({ user, params, body }) =>
+            ok(assignAuthor(user, params.id, parseBody(assignAuthorSchema, body).authorId)),
+    },
+    { method: 'POST', path: '/processes/:id/submit', handle: ({ user, params }) => ok(submitForReview(user, params.id)) },
+    {
+        method: 'POST',
+        path: '/processes/:id/approve-content',
+        handle: ({ user, params }) => ok(approveContent(user, params.id)),
+    },
+    {
+        method: 'POST',
+        path: '/processes/:id/reject-content',
+        handle: ({ user, params, body }) =>
+            ok(rejectContent(user, params.id, parseBody(commentSchema, body).comment)),
+    },
+    {
+        method: 'POST',
+        path: '/processes/:id/approve-formal',
+        handle: ({ user, params }) => ok(approveFormal(user, params.id)),
+    },
+    {
+        method: 'POST',
+        path: '/processes/:id/reject-formal',
+        handle: ({ user, params, body }) => ok(rejectFormal(user, params.id, parseBody(commentSchema, body).comment)),
+    },
+    {
+        method: 'POST',
+        path: '/processes/:id/reopen',
+        handle: ({ user, params, body }) =>
+            ok(reopenForRevision(user, params.id, parseBody(reopenSchema, body).changeReason ?? null)),
     },
 ];
 

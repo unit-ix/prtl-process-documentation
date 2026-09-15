@@ -3,6 +3,7 @@ export * from './permissions.js';
 export * from './versionChoice.js';
 export * from './completeness.js';
 export * from './identifier.js';
+export * from './richText.js';
 export type * from './ProcessDetailView.js';
 export type { AreaRef, ProcessRef, UserRef } from './refs.js';
 export type { Area } from './Area.js';
