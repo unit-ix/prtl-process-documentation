@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { secretLines } from './lib/checks.mjs';
 
 const ROOT = process.cwd();
-const PUBLIC_BUT_SECRET = /^\s*VITE_[A-Z0-9_]*(SECRET|PASSWORD|TOKEN|CONNECTION_STRING)/i;
 
 function appDirs() {
     const appsDir = join(ROOT, 'apps');
@@ -34,11 +34,9 @@ if (misplaced.length > 0) {
 const findings = [];
 for (const dir of [ROOT, ...appDirs()]) {
     for (const abs of envFiles(dir)) {
-        readFileSync(abs, 'utf8')
-            .split(/\r?\n/)
-            .forEach((line, i) => {
-                if (PUBLIC_BUT_SECRET.test(line)) findings.push(`${label(abs)}:${i + 1}: ${line.trim().slice(0, 80)}`);
-            });
+        for (const { line, text } of secretLines(readFileSync(abs, 'utf8'))) {
+            findings.push(`${label(abs)}:${line}: ${text.slice(0, 80)}`);
+        }
     }
 }
 

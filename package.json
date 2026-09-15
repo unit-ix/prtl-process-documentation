@@ -15,9 +15,10 @@
         "build": "pnpm --recursive build",
         "lint": "eslint . --max-warnings 0",
         "knip": "knip --no-config-hints",
+        "test": "vitest run --silent",
         "check:env": "node scripts/check-env-secrets.mjs",
         "check:csp": "node scripts/check-csp.mjs",
-        "verify": "pnpm check:env && pnpm check:csp && pnpm lint && pnpm knip && pnpm build",
+        "verify": "node scripts/verify.mjs",
         "db:generate": "pnpm --filter @app/api db:generate",
         "db:migrate": "pnpm --filter @app/api db:migrate",
         "db:grant": "pnpm --filter @app/api db:grant",
@@ -35,7 +36,8 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "knip": "^5.41.0",
         "typescript": "^5.7.0",
-        "typescript-eslint": "^8.18.0"
+        "typescript-eslint": "^8.18.0",
+        "vitest": "^5.0.1"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

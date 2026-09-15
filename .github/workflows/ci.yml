@@ -49,10 +49,34 @@ jobs:
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm install --frozen-lockfile
 
-            # Exakt derselbe Lauf wie lokal: pnpm verify = check:env && lint && knip && build
-            # (build = tsc --noEmit && vite build). Keine separaten Steps, damit CI nie abweicht.
-            - if: steps.toolchain.outputs.ready == 'true'
-              run: pnpm verify
+            # Dieselben Stufen wie lokal in `pnpm verify`, hier aber als EINZELNE Steps: lokal zählt
+            # der eine Befehl, in der CI die Ablesbarkeit — die rote Stufe steht dann im Balken
+            # statt in einem Log. docs/pruefsystematik.md. Eine Abhängigkeits-Prüfung käme, falls
+            # wir eine ergänzen, ans ENDE: vorne blockiert sie bei jeder neuen Meldung alles
+            # dahinter, ohne dass jemand Code geändert hat.
+            - name: Secrets im Bundle
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm check:env
+
+            - name: CSP-Hosts
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm check:csp
+
+            - name: Tests
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm test
+
+            - name: Lint
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm lint
+
+            - name: Knip
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm knip
+
+            - name: Build
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm build
 
     # Cloudflare-Pages-Deploy des Mock-Prototyps. GEGATET + standardmäßig AUS: läuft erst mit
     # gesetzter Repo-Variable CLOUDFLARE_DEPLOY_ENABLED und vorhandenen Secrets. Bis dahin

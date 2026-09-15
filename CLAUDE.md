@@ -17,7 +17,18 @@
 
 - **localhost-first:** entwickelt und reviewt wird am laufenden `pnpm dev` im Browser gegen den Mock-Adapter, nicht über einen Deploy. Geteilt wird der Prototyp über Cloudflare Pages ([`docs/hosting.md`](docs/hosting.md)); die Power-Platform-Toolchain ist erst am `powerapps`-Fork relevant.
 - Neue Features spiegeln [`apps/web/src/features/_example`](apps/web/src/features/_example) — der Build muss nach jedem Schritt grün bleiben.
-- `pnpm verify` (`check:env && lint && knip && build`) muss vor jedem Commit grün sein — `build` fächert über beide Packages (`apps/web`: `tsc --noEmit && vite build`, `apps/api`: `tsc`), `lint` und `knip` laufen einmal an der Root über den gesamten Workspace. Das Gate sitzt pro Phase in `/execute`.
+- `pnpm verify` muss vor jedem Commit grün sein — **ein Befehl, sechs Stufen, Budget unter 60 Sekunden** (aktuell ~9 s). Alle Stufen laufen durch, auch nach einem Rot: sonst verdeckt der erste Fehler die anderen. Das Gate sitzt pro Phase in `/execute`.
+
+### Prüfsystematik ([`docs/pruefsystematik.md`](docs/pruefsystematik.md))
+
+**Die Maschine prüft, was der Mensch nicht sehen kann — alles andere prüft der Mensch am Bildschirm.** Vier Regeln, die daraus folgen:
+
+- **Getestet wird, was unsichtbar falsch sein kann:** die Permission-Prädikate (§2.3), `completeness()` (§5.4), die Identifier-Bildung und das Prägen der Dokumentnummer (§5.1), der abgeleitete Unterweisungsstatus (§7.2). Reine Funktionen, keine Datenbank, keine Fixtures — Tests liegen als `*.test.ts` neben dem Code und laufen in Millisekunden.
+- **Nicht getestet wird, was auffällt:** Layout, Beschriftung, Bedienweg, Gestaltung. Dafür ist der Browser da, nicht ein Skript mit zwanzig Zeilen für ein Urteil, das es trotzdem falsch abbildet.
+- **Jede selbstgebaute Prüfung bekommt einen Selbsttest mit beiden Seiten** — Fälle, die anschlagen *müssen*, und Fälle, die schweigen *müssen*. Eine Regel, die blind grün ist, sieht aus wie eine, die nichts findet ([`scripts/checks.test.mjs`](scripts/checks.test.mjs)). Das gilt auch für den Runner selbst: der rote Pfad wird beim Bauen einmal ausgelöst, nicht angenommen.
+- **Nie gegen die Uhr testen.** Was vom Datum abhängt (Frist = heute + 14 Tage, 60-Tage-Ablauf­erinnerung, „Überfällig"), bekommt das Datum als **Parameter** — `today` wird hereingereicht, nie innen aus `new Date()` gelesen. Ein Rot, das nur heute rot ist, entwertet jedes Rot.
+
+Browser- und Netz-Prüfungen gehören in die CI, nicht in die Schleife. In der CI stehen dieselben Stufen als **einzelne Steps** (Ablesbarkeit im Balken); eine Abhängigkeits-Prüfung käme ans Ende, nie an den Anfang.
 
 ## Projekt-Doku
 

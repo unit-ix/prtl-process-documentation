@@ -17,6 +17,7 @@ import {
     SidebarTrigger,
 } from '@/shared/components/ui/sidebar';
 import { useSessionUser } from '@/shared/lib/session/SessionContext';
+import prettlLogo from '@/assets/prettl-logo.png';
 
 interface NavItem {
     readonly to: string;
@@ -85,9 +86,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarProvider>
             <Sidebar collapsible="offcanvas" className="border-border/40 bg-sidebar/70 backdrop-blur-xl">
                 <SidebarHeader className="border-sidebar-border border-b p-4">
-                    <Link to="/processes" className="leading-tight">
-                        <span className="block text-sm font-semibold tracking-tight">PRETTL electronics</span>
-                        <span className="text-muted-foreground block text-xs">Prozessdokumentation</span>
+                    <Link to="/processes" className="flex items-center gap-3">
+                        <img src={prettlLogo} alt="PRETTL electronics" className="h-8 w-auto" />
+                        <span className="text-muted-foreground text-xs leading-tight">Prozess&shy;dokumentation</span>
                     </Link>
                 </SidebarHeader>
                 <SidebarContent className="px-2 py-4">
