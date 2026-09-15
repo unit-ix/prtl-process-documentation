@@ -1,33 +1,20 @@
 import { platform } from '@/shared/lib/projectConfig';
-import type { Company } from '@/domain/Company';
-import type { Contact } from '@/domain/Contact';
-import type { CompanyCreate, CompanyQuery, CompanyRepository } from './ports/CompanyRepository';
-import type { ContactCreate, ContactQuery, ContactRepository } from './ports/ContactRepository';
-import { MockCompanyRepository } from '@/data/adapters/mock/MockCompanyRepository';
-import { MockContactRepository } from '@/data/adapters/mock/MockContactRepository';
-import { AzureRepository } from '@/data/adapters/azure/AzureRepository';
+import { AzureProcessRepository } from '@/data/adapters/azure/AzureProcessRepository';
+import { AzureSessionRepository } from '@/data/adapters/azure/AzureSessionRepository';
 import { ensureSignedIn } from '@/data/adapters/azure/auth';
+import type { ProcessRepository } from './ports/ProcessRepository';
+import type { SessionRepository } from './ports/SessionRepository';
 
 function unsupported(): never {
-    throw new Error(
-        `Data-Adapter für Plattform "${platform}" nicht implementiert — wird beim Fork ergänzt.`,
-    );
+    throw new Error(`Data-Adapter für Plattform "${platform}" nicht implementiert.`);
 }
 
 export async function initDataAccess(): Promise<void> {
     if (platform === 'azure') await ensureSignedIn();
 }
 
-export const companyRepository: CompanyRepository =
-    platform === 'mock'
-        ? new MockCompanyRepository()
-        : platform === 'azure'
-          ? new AzureRepository<Company, CompanyCreate, CompanyQuery>('companies')
-          : unsupported();
+export const sessionRepository: SessionRepository =
+    platform === 'azure' ? new AzureSessionRepository() : unsupported();
 
-export const contactRepository: ContactRepository =
-    platform === 'mock'
-        ? new MockContactRepository()
-        : platform === 'azure'
-          ? new AzureRepository<Contact, ContactCreate, ContactQuery>('contacts')
-          : unsupported();
+export const processRepository: ProcessRepository =
+    platform === 'azure' ? new AzureProcessRepository() : unsupported();

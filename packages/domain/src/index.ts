@@ -4,6 +4,7 @@ export type { Area } from './Area.js';
 export type { User } from './User.js';
 export type { Process } from './Process.js';
 export type { ProcessVersion } from './ProcessVersion.js';
+export { PROCESS_SORT_FIELDS, type ProcessListItem, type ProcessSortField } from './ProcessListItem.js';
 export { CONTENT_FIELDS, type ProcessContent, type RichDocument } from './ProcessContent.js';
 export type { ProcessAdditionalField } from './ProcessAdditionalField.js';
 export type { ProcessLink } from './ProcessLink.js';

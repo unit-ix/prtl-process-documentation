@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { badRequest, notFound } from '../http/errors.js';
+import { badRequest, forbidden, notFound } from '../http/errors.js';
 import type { Claims } from '../auth/verify.js';
 import { listRows } from './list.js';
 import { me } from './me.js';
+import { listProcesses } from './processes.js';
 import { RESOURCES, type Resource } from './registry.js';
 
 export interface RouterRequest {
@@ -82,6 +83,12 @@ export async function handle(req: RouterRequest): Promise<RouterResponse> {
     if (req.path === '/me') {
         if (req.method !== 'GET') throw notFound(`${req.method} auf /me ist nicht vorgesehen.`);
         return { status: 200, body: await me(req.claims) };
+    }
+
+    if (req.path === '/processes' && req.method === 'GET') {
+        const session = await me(req.claims);
+        if (!session.user || !session.hasAccess) throw forbidden('Kein Zugriff auf die Prozessdokumentation.');
+        return { status: 200, body: await listProcesses(session.user, req.query) };
     }
 
     const { resource, id } = resolveTarget(req.path);

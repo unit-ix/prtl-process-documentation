@@ -11,6 +11,7 @@ export class ApiError extends Error {
 
 export const badRequest = (detail: string) => new ApiError(400, 'bad_request', detail);
 export const unauthorized = (detail: string) => new ApiError(401, 'unauthorized', detail);
+export const forbidden = (detail: string) => new ApiError(403, 'forbidden', detail);
 export const notFound = (detail: string) => new ApiError(404, 'not_found', detail);
 export const unsupportedMediaType = (detail: string) =>
     new ApiError(415, 'unsupported_media_type', detail);
@@ -25,6 +26,7 @@ export interface Problem {
 const TITLES: Readonly<Record<number, string>> = {
     400: 'bad_request',
     401: 'unauthorized',
+    403: 'forbidden',
     404: 'not_found',
     415: 'unsupported_media_type',
     429: 'rate_limited',
