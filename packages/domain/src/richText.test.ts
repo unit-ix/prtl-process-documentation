@@ -83,6 +83,16 @@ describe('richTextToHtml — muss entschärfen', () => {
 });
 
 describe('richTextToHtml — muss durchlassen', () => {
+    it('den internen Bildverweis file:<uuid> — die Adresse entsteht erst beim Anzeigen', () => {
+        const src = 'file:3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+        expect(richTextToHtml(doc({ type: 'image', attrs: { src } }))).toContain(`src="${src}"`);
+    });
+
+    it('aber kein file: mit fremdem Inhalt', () => {
+        expect(richTextToHtml(doc({ type: 'image', attrs: { src: 'file:///etc/passwd' } }))).toBe('');
+        expect(richTextToHtml(doc({ type: 'image', attrs: { src: 'file:../../secret' } }))).toBe('');
+    });
+
     it('https- und relative Links', () => {
         for (const href of ['https://prettl.com', '/intern/a', '#abschnitt']) {
             const node = {

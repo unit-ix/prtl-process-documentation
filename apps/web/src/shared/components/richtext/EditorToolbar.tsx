@@ -22,6 +22,7 @@ import {
   Quote,
   Minus,
   Table as TableIcon,
+  ImagePlus,
   Info,
   Link2,
   Undo2,
@@ -33,9 +34,10 @@ import {
 
 interface EditorToolbarProps {
   editor: Editor;
+  onPickImage?: () => void;
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, onPickImage }: EditorToolbarProps) {
   const toggle = (active: boolean) => (active ? "bg-accent/10 text-accent" : "");
 
   const setLink = () => {
@@ -103,6 +105,12 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         <Minus className="h-4 w-4" />
       </Button>
       <Separator orientation="vertical" className="mx-1 h-6" />
+
+      {onPickImage ? (
+        <Button size="sm" variant="ghost" className="h-9 gap-2" onClick={onPickImage}>
+          <ImagePlus className="h-4 w-4" /> Bild
+        </Button>
+      ) : null}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

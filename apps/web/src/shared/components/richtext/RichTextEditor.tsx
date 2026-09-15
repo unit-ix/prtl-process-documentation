@@ -1,7 +1,12 @@
 import type { RichDocument } from '@app/domain';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { Plus } from 'lucide-react';
+import { useRef } from 'react';
+import { toast } from 'sonner';
+import { fileStore } from '@/data';
+import type { FileOwner } from '@/data/ports/FileStore';
 import { Button } from '@/shared/components/ui/button';
+import { fileReference } from '@/shared/hooks/useFileUrl';
 import { EditorToolbar } from './EditorToolbar';
 import { buildExtensions } from './extensions';
 import { TableContextMenu } from './TableContextMenu';
@@ -9,6 +14,8 @@ import { TableContextMenu } from './TableContextMenu';
 interface RichTextEditorProps {
     value: RichDocument | null;
     onChange: (doc: RichDocument) => void;
+    /** Ziel der Bild-Uploads — ohne Besitzer gibt es keinen Bild-Knopf. */
+    owner?: { kind: FileOwner; id: string };
 }
 
 const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] };
@@ -46,7 +53,8 @@ function TableQuickActions({ editor }: { editor: NonNullable<ReturnType<typeof u
     );
 }
 
-export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) {
+    const fileInput = useRef<HTMLInputElement>(null);
     const editor = useEditor({
         extensions: buildExtensions({ editable: true }),
         shouldRerenderOnTransaction: true,
@@ -59,9 +67,32 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
     if (!editor) return null;
 
+    const insertImage = async (file: File) => {
+        if (!owner) return;
+        try {
+            const stored = await fileStore.upload(owner.kind, owner.id, file);
+            editor.chain().focus().setImage({ src: fileReference(stored.id), alt: file.name }).run();
+        } catch (error) {
+            toast.error('Bild konnte nicht eingefügt werden', {
+                description: error instanceof Error ? error.message : undefined,
+            });
+        }
+    };
+
     return (
         <div className="space-y-3">
-            <EditorToolbar editor={editor} />
+            <EditorToolbar editor={editor} onPickImage={owner ? () => fileInput.current?.click() : undefined} />
+            <input
+                ref={fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                className="hidden"
+                onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void insertImage(file);
+                    event.target.value = '';
+                }}
+            />
             <TableContextMenu editor={editor}>
                 <div
                     className="border-border/40 bg-card relative rounded-lg border p-6"

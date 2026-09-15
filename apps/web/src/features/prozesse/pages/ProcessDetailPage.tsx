@@ -2,7 +2,9 @@ import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { processRepository } from '@/data';
+import { FileList } from '@/shared/components/files/FileList';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
+import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { ApprovalTab } from '../components/detail/ApprovalTab';
@@ -29,10 +31,22 @@ function DetailTabs({
         <Tabs defaultValue="overview">
             <TabsList>
                 <TabsTrigger value="overview">Übersicht</TabsTrigger>
+                <TabsTrigger value="documents">Dokumente</TabsTrigger>
                 {showApproval ? <TabsTrigger value="approval">Genehmigung &amp; Versionen</TabsTrigger> : null}
             </TabsList>
             <TabsContent value="overview">
                 <OverviewTab process={process} />
+            </TabsContent>
+            <TabsContent value="documents">
+                <Card className="glass-card border-border/40 space-y-4 rounded-2xl p-6">
+                    <div>
+                        <h2 className="text-sm font-semibold">Dokumente</h2>
+                        <p className="text-muted-foreground text-xs">
+                            Bilder, PDF oder Excel-Tabellen, die den Ablauf beschreiben.
+                        </p>
+                    </div>
+                    <FileList owner="process" ownerId={process.id} canManage={process.permissions.canEditContent} />
+                </Card>
             </TabsContent>
             {showApproval ? (
                 <TabsContent value="approval">

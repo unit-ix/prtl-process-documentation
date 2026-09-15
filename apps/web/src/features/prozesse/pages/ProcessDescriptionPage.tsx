@@ -55,7 +55,11 @@ function Editor({ process }: { process: ProcessDetailView }) {
                 </div>
             ) : null}
 
-            <RichTextEditor value={process.version.descriptionDoc} onChange={autosave.onChange} />
+            <RichTextEditor
+                value={process.version.descriptionDoc}
+                onChange={autosave.onChange}
+                owner={{ kind: 'process', id: process.id }}
+            />
         </div>
     );
 }

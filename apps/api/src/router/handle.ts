@@ -10,6 +10,16 @@ import { matchPath, type PathParams } from './match.js';
 import { me } from './me.js';
 import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
+import {
+    commitFile,
+    commitSchema,
+    createUploadUrl,
+    deleteFile,
+    fileUrl,
+    isOwner,
+    listFiles,
+    uploadUrlSchema,
+} from './files.js';
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
@@ -62,6 +72,33 @@ const ROUTES: readonly Route[] = [
             status: 200,
             body: { html: await getSnapshot(user, params.id, params.versionId) },
         }),
+    },
+    {
+        method: 'POST',
+        path: '/files/upload-url',
+        handle: ({ user, body }) => ok(createUploadUrl(user, parseBody(uploadUrlSchema, body))),
+    },
+    {
+        method: 'POST',
+        path: '/files',
+        handle: async ({ user, body }) => ({ status: 201, body: await commitFile(user, parseBody(commitSchema, body)) }),
+    },
+    {
+        method: 'GET',
+        path: '/files/:owner/:ownerId',
+        handle: ({ user, params }) => {
+            if (!isOwner(params.owner)) throw notFound(`Unbekannte Ablage "${params.owner}".`);
+            return ok(listFiles(user, params.owner, params.ownerId));
+        },
+    },
+    { method: 'GET', path: '/files/:id/url', handle: ({ user, params }) => ok(fileUrl(user, params.id)) },
+    {
+        method: 'DELETE',
+        path: '/files/:id',
+        handle: async ({ user, params }) => {
+            await deleteFile(user, params.id);
+            return { status: 204, body: null };
+        },
     },
     {
         method: 'POST',

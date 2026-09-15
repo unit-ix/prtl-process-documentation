@@ -27,6 +27,9 @@ function safeUrl(value: unknown): string | null {
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
     if (/^(https?:\/\/|\/|\.\/|#)/i.test(trimmed)) return trimmed;
+    // `file:<uuid>` ist ein interner Verweis auf eine Blob-Zeile, keine Adresse — die kurzlebige
+    // SAS entsteht erst beim Anzeigen (§8.2).
+    if (/^file:[0-9a-f-]{36}$/i.test(trimmed)) return trimmed;
     return null;
 }
 

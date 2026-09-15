@@ -1,6 +1,7 @@
 import Image from '@tiptap/extension-image';
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from '@tiptap/react';
 import { Button } from '@/shared/components/ui/button';
+import { useFileUrl } from '@/shared/hooks/useFileUrl';
 
 export type ImageSize = 'sm' | 'md' | 'full';
 
@@ -18,14 +19,14 @@ const SIZE_CLASS: Record<ImageSize, string> = {
 
 function ImageView({ node, updateAttributes, selected, editor }: ReactNodeViewProps) {
     const size = (node.attrs.size as ImageSize | undefined) ?? 'md';
-    const src = String(node.attrs.src ?? '');
+    const src = useFileUrl(String(node.attrs.src ?? ''));
     const alt = node.attrs.alt ? String(node.attrs.alt) : 'Prozessbild';
 
     return (
         <NodeViewWrapper className="my-3" data-image-size={size}>
             <figure className="relative inline-block max-w-full">
                 <img
-                    src={src}
+                    src={src ?? ""}
                     alt={alt}
                     className={`border-border/40 h-auto rounded-lg border ${SIZE_CLASS[size]} ${selected ? 'ring-ring/40 ring-2' : ''}`}
                 />
