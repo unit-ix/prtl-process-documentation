@@ -11,7 +11,7 @@ export interface SessionUser extends User {
 
 type ProcessScoped = Pick<Process, 'status' | 'area' | 'author'>;
 type VersionScoped = Pick<ProcessVersion, 'status' | 'author'>;
-type Roles = Pick<SessionUser, 'id' | 'isAdministrator' | 'isProcessOwner' | 'isQm' | 'ledAreaIds'>;
+export type Roles = Pick<SessionUser, 'id' | 'isAdministrator' | 'isProcessOwner' | 'isQm' | 'ledAreaIds'>;
 
 export const leadsArea = (u: Roles, areaId: string): boolean => u.ledAreaIds.includes(areaId);
 

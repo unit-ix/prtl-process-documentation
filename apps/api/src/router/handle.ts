@@ -1,11 +1,16 @@
-import { eq } from 'drizzle-orm';
-import { db } from '../db/client.js';
-import { badRequest, forbidden, notFound } from '../http/errors.js';
+// Transport-agnostisch: kein fastify hier. Die Schale trägt Token, Rate Limit und CORS, dieser
+// Router die Wirkung. Anders als im Template gibt es KEINE generische Registry — jeder Schreibweg
+// ist ein eigener Endpoint mit eigener Prüfung (§0.5 Regel 4: niemals ein generisches PATCH, das
+// einen Status setzen kann).
+import type { SessionUser } from '@app/domain';
 import type { Claims } from '../auth/verify.js';
-import { listRows } from './list.js';
+import { forbidden, notFound } from '../http/errors.js';
+import { listAreas } from './areas.js';
+import { matchPath, type PathParams } from './match.js';
 import { me } from './me.js';
+import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
-import { RESOURCES, type Resource } from './registry.js';
+import { listUsers } from './users.js';
 
 export interface RouterRequest {
     readonly claims: Claims;
@@ -20,77 +25,52 @@ export interface RouterResponse {
     readonly body: unknown;
 }
 
-interface Target {
-    resource: Resource;
-    id: string | null;
+export interface RequestContext {
+    readonly user: SessionUser;
+    readonly params: PathParams;
+    readonly query: Record<string, string | undefined>;
+    readonly body: unknown;
 }
 
-function resolveTarget(path: string): Target {
-    const segments = path.split('/').filter(Boolean);
-    if (segments.length === 0 || segments.length > 2) throw notFound(`Unbekannter Pfad "${path}".`);
-    const resource = RESOURCES[segments[0]];
-    if (!resource) throw notFound(`Unbekannte Ressource "${segments[0]}".`);
-    return { resource, id: segments[1] ?? null };
+interface Route {
+    readonly method: string;
+    readonly path: string;
+    readonly handle: (context: RequestContext) => Promise<RouterResponse>;
 }
 
-function parseBody(schema: Resource['createSchema'], body: unknown): Record<string, unknown> {
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) {
-        const detail = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`).join('; ');
-        throw badRequest(detail);
-    }
-    return parsed.data as Record<string, unknown>;
-}
+const ok = async (body: unknown): Promise<RouterResponse> => ({ status: 200, body: await body });
 
-async function getOne(resource: Resource, id: string): Promise<unknown> {
-    const rows = await db.select().from(resource.table).where(eq(resource.idColumn, id)).limit(1);
-    if (rows.length === 0) throw notFound(`Datensatz ${id} nicht gefunden.`);
-    return resource.toDomain(rows[0] as never);
-}
-
-async function writeOne(resource: Resource, id: string | null, values: Record<string, unknown>): Promise<unknown> {
-    if (id && Object.keys(values).length === 0) throw badRequest('PATCH ohne Felder.');
-
-    const rows = id
-        ? await db.update(resource.table).set(values).where(eq(resource.idColumn, id)).returning()
-        : await db.insert(resource.table).values(values as never).returning();
-    if (rows.length === 0) throw notFound(`Datensatz ${id} nicht gefunden.`);
-    return resource.toDomain(rows[0] as never);
-}
-
-async function onCollection(method: string, resource: Resource, req: RouterRequest): Promise<RouterResponse> {
-    if (method === 'GET') return { status: 200, body: await listRows(resource, req.query) };
-    if (method === 'POST') {
-        return { status: 201, body: await writeOne(resource, null, parseBody(resource.createSchema, req.body)) };
-    }
-    throw notFound(`${method} auf einer Sammlung ist nicht vorgesehen.`);
-}
-
-async function onItem(method: string, resource: Resource, id: string, req: RouterRequest): Promise<RouterResponse> {
-    if (method === 'GET') return { status: 200, body: await getOne(resource, id) };
-    if (method === 'PATCH') {
-        return { status: 200, body: await writeOne(resource, id, parseBody(resource.updateSchema, req.body)) };
-    }
-    if (method === 'DELETE') {
-        const rows = await db.delete(resource.table).where(eq(resource.idColumn, id)).returning();
-        if (rows.length === 0) throw notFound(`Datensatz ${id} nicht gefunden.`);
-        return { status: 204, body: null };
-    }
-    throw notFound(`${method} auf einem Datensatz ist nicht vorgesehen.`);
-}
+const ROUTES: readonly Route[] = [
+    { method: 'GET', path: '/areas', handle: () => ok(listAreas()) },
+    { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
+    { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
+    { method: 'GET', path: '/processes/:id', handle: ({ user, params }) => ok(getProcessDetail(user, params.id)) },
+    {
+        method: 'GET',
+        path: '/processes/:id/versions/:versionId/snapshot',
+        handle: async ({ user, params }) => ({
+            status: 200,
+            body: { html: await getSnapshot(user, params.id, params.versionId) },
+        }),
+    },
+];
 
 export async function handle(req: RouterRequest): Promise<RouterResponse> {
-    if (req.path === '/me') {
-        if (req.method !== 'GET') throw notFound(`${req.method} auf /me ist nicht vorgesehen.`);
-        return { status: 200, body: await me(req.claims) };
+    // /me ist der einzige Pfad, den ein Nutzer OHNE Zeile in `users` erreichen darf — genau das ist
+    // seine Aufgabe: der SPA sagen, dass sie die Seite "Keine Berechtigungen" zeigen soll.
+    const session = await me(req.claims);
+    if (req.method === 'GET' && matchPath('/me', req.path)) return { status: 200, body: session };
+
+    if (!session.user || !session.hasAccess) {
+        throw forbidden('Für dieses Konto ist keine Rolle hinterlegt.');
     }
 
-    if (req.path === '/processes' && req.method === 'GET') {
-        const session = await me(req.claims);
-        if (!session.user || !session.hasAccess) throw forbidden('Kein Zugriff auf die Prozessdokumentation.');
-        return { status: 200, body: await listProcesses(session.user, req.query) };
+    for (const route of ROUTES) {
+        const params = matchPath(route.path, req.path);
+        if (params === null) continue;
+        if (route.method !== req.method) continue;
+        return route.handle({ user: session.user, params, query: req.query, body: req.body });
     }
 
-    const { resource, id } = resolveTarget(req.path);
-    return id === null ? onCollection(req.method, resource, req) : onItem(req.method, resource, id, req);
+    throw notFound(`Unbekannter Pfad "${req.method} ${req.path}".`);
 }
