@@ -1,7 +1,9 @@
 import { platform } from '@/shared/lib/projectConfig';
+import { AzureMasterDataRepository } from '@/data/adapters/azure/AzureMasterDataRepository';
 import { AzureProcessRepository } from '@/data/adapters/azure/AzureProcessRepository';
 import { AzureSessionRepository } from '@/data/adapters/azure/AzureSessionRepository';
 import { ensureSignedIn } from '@/data/adapters/azure/auth';
+import type { MasterDataRepository } from './ports/MasterDataRepository';
 import type { ProcessRepository } from './ports/ProcessRepository';
 import type { SessionRepository } from './ports/SessionRepository';
 
@@ -18,3 +20,6 @@ export const sessionRepository: SessionRepository =
 
 export const processRepository: ProcessRepository =
     platform === 'azure' ? new AzureProcessRepository() : unsupported();
+
+export const masterDataRepository: MasterDataRepository =
+    platform === 'azure' ? new AzureMasterDataRepository() : unsupported();

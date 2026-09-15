@@ -51,7 +51,10 @@ function Expander({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: (
     return (
         <button
             type="button"
-            onClick={onToggle}
+            onClick={(event) => {
+                event.stopPropagation();
+                onToggle();
+            }}
             aria-label={isCollapsed ? 'Aufklappen' : 'Zuklappen'}
             className="hover:bg-accent flex size-6 shrink-0 items-center justify-center rounded-md"
         >

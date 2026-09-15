@@ -44,3 +44,28 @@ export const authorInitials = (displayName: string): string =>
         .slice(0, 2)
         .map((part) => part.charAt(0).toUpperCase())
         .join('');
+
+export const formatDate = (iso: string | null): string =>
+    iso === null ? '—' : new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+export const formatDateTime = (iso: string | null): string =>
+    iso === null
+        ? '—'
+        : new Date(iso).toLocaleString('de-DE', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+          });
+
+export function versionPill(process: {
+    hasActiveDraft: boolean;
+    edition: number | null;
+    version: { status: string; edition: number | null };
+}): string {
+    if (process.hasActiveDraft && process.version.status !== 'approved') {
+        return `Version ${(process.edition ?? 0) + 1} · in Bearbeitung`;
+    }
+    return process.version.edition === null ? 'Entwurf' : `Version ${process.version.edition}`;
+}

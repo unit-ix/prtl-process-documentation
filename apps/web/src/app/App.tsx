@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { ProcessesPage } from '@/features/prozesse';
+import { ProcessDetailPage, ProcessesPage } from '@/features/prozesse';
 import { AppShell } from '@/shared/components/layout/AppShell';
 import { ErrorState } from '@/shared/components/state/ErrorState';
 import { LoadingScreen } from '@/shared/components/state/LoadingScreen';
@@ -43,6 +43,7 @@ export function App() {
                         <Routes>
                             <Route path="/" element={<Navigate to="/processes" replace />} />
                             <Route path="/processes" element={<ProcessesPage />} />
+                            <Route path="/processes/:id" element={<ProcessDetailPage />} />
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </AppShell>

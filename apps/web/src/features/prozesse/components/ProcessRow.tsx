@@ -1,6 +1,7 @@
 import type { ProcessListItem } from '@app/domain';
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TableCell, TableRow } from '@/shared/components/ui/table';
 import { cn } from '@/shared/lib/utils';
 import { NO_IDENTIFIER } from '../mappings/processMappings';
@@ -14,8 +15,13 @@ interface ProcessRowProps {
 }
 
 export function ProcessRow({ item, isChild = false, expander }: ProcessRowProps) {
+    const navigate = useNavigate();
+
     return (
-        <TableRow className="border-border/40">
+        <TableRow
+            className="border-border/40 hover:bg-accent/40 cursor-pointer"
+            onClick={() => navigate(`/processes/${item.id}`)}
+        >
             <TableCell className="text-muted-foreground max-w-[180px] truncate font-mono text-xs">
                 {item.identifier ?? NO_IDENTIFIER}
             </TableCell>
