@@ -7,6 +7,10 @@
         "apiAudience": "8f0ebfa7-4cd9-44b2-802f-9beebccc526d",
         "subdomain": ""
     },
+    "foundry": {
+        "endpoint": "https://ais-process-documentation.cognitiveservices.azure.com/",
+        "deployment": "gpt-5.4-mini"
+    },
     "environments": {
         "dev": {
             "url": "https://black-glacier-04941f903.6.azurestaticapps.net",

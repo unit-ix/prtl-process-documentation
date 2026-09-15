@@ -12,6 +12,7 @@ interface Turn {
     readonly question: string;
     readonly answer: string;
     readonly hits: AssistantHit[];
+    readonly generated: boolean;
 }
 
 const FAILURE = 'Es gab ein Problem bei der Suche. Bitte versuche es erneut.';
@@ -52,13 +53,48 @@ function Conversation({ turns }: { turns: readonly Turn[] }) {
             {turns.map((turn, index) => (
                 <Card key={index} className="glass-card border-border/40 space-y-3 rounded-2xl p-6">
                     <p className="text-muted-foreground text-sm">{turn.question}</p>
-                    <p className="text-sm font-medium">{turn.answer}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{turn.answer}</p>
+                    {turn.generated ? null : (
+                        <p className="text-muted-foreground text-xs">
+                            Die Antwort stammt aus der Suche — der KI-Dienst war gerade nicht erreichbar.
+                        </p>
+                    )}
                     {/* Jeder Treffer bekommt eine Karte — Canvas wertet alle aus und zeigt nur den ersten. */}
                     {turn.hits.map((hit) => (
                         <HitCard key={hit.processId} hit={hit} />
                     ))}
                 </Card>
             ))}
+        </div>
+    );
+}
+
+interface AskBarProps {
+    question: string;
+    isPending: boolean;
+    canClear: boolean;
+    onChange: (value: string) => void;
+    onSubmit: () => void;
+    onClear: () => void;
+}
+
+function AskBar({ question, isPending, canClear, onChange, onSubmit, onClear }: AskBarProps) {
+    return (
+        <div className="flex items-center gap-2">
+            <Input
+                value={question}
+                placeholder="Frage stellen …"
+                onChange={(event) => onChange(event.target.value)}
+                onKeyDown={(event) => (event.key === 'Enter' ? onSubmit() : undefined)}
+            />
+            <Button className="gap-2" disabled={isPending || question.trim() === ''} onClick={onSubmit}>
+                <Send className="size-4" /> Senden
+            </Button>
+            {canClear ? (
+                <Button variant="ghost" className="gap-2" onClick={onClear}>
+                    <Trash2 className="size-4" /> Chat löschen
+                </Button>
+            ) : null}
         </div>
     );
 }
@@ -70,9 +106,12 @@ export function AssistantPage() {
     const askQuestion = useMutation({
         mutationFn: (value: string) => assistantRepository.ask(value),
         onSuccess: (result, value) =>
-            setTurns((current) => [...current, { question: value, answer: result.answer, hits: result.hits }]),
+            setTurns((current) => [
+                ...current,
+                { question: value, answer: result.answer, hits: result.hits, generated: result.generated },
+            ]),
         onError: (_error, value) =>
-            setTurns((current) => [...current, { question: value, answer: FAILURE, hits: [] }]),
+            setTurns((current) => [...current, { question: value, answer: FAILURE, hits: [], generated: false }]),
     });
 
     const submit = () => {
@@ -98,22 +137,14 @@ export function AssistantPage() {
 
             <Conversation turns={turns} />
 
-            <div className="flex items-center gap-2">
-                <Input
-                    value={question}
-                    placeholder="Frage stellen …"
-                    onChange={(event) => setQuestion(event.target.value)}
-                    onKeyDown={(event) => (event.key === 'Enter' ? submit() : undefined)}
-                />
-                <Button className="gap-2" disabled={askQuestion.isPending || question.trim() === ''} onClick={submit}>
-                    <Send className="size-4" /> Senden
-                </Button>
-                {turns.length > 0 ? (
-                    <Button variant="ghost" className="gap-2" onClick={() => setTurns([])}>
-                        <Trash2 className="size-4" /> Chat löschen
-                    </Button>
-                ) : null}
-            </div>
+            <AskBar
+                question={question}
+                isPending={askQuestion.isPending}
+                canClear={turns.length > 0}
+                onChange={setQuestion}
+                onSubmit={submit}
+                onClear={() => setTurns([])}
+            />
         </div>
     );
 }

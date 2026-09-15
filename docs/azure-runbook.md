@@ -52,6 +52,8 @@ Trage jeden Wert ein, sobald er entsteht. `project.json` meint
 | Container-Name `files` / `files-dev`       | [Blob Storage](#optional-blob-storage)                                  | `project.json` + App setting          | `storage.container` / `STORAGE_CONTAINER`                        |
 | Subdomain des externen Mandanten           | [External ID](#optional-entra-external-id)                              | `project.json` + App setting          | `entra.subdomain` / `ENTRA_SUBDOMAIN`                            |
 | Absenderadresse des Sammelpostfachs        | [E-Mail-Versand](#optional-e-mail-versand-microsoft-graph-sendmail)                                                    | `project.json` + App setting          | `mail.senderUpn` / `MAIL_SENDER_UPN`                             |
+| Endpunkt der AI-Foundry-Ressource          | [KI-Assistent](#optional-ki-assistent-azure-ai-foundry)                                 | `project.json` + App setting          | `foundry.endpoint` / `FOUNDRY_ENDPOINT`                          |
+| Name des Modell-Deployments                | [KI-Assistent](#optional-ki-assistent-azure-ai-foundry)                                 | `project.json` + App setting          | `foundry.deployment` / `FOUNDRY_DEPLOYMENT`                      |
 
 ---
 
@@ -696,6 +698,78 @@ die Web App in Azure jeden Wert zusätzlich als App setting:
 Es gibt **keinen** Connection String und keinen Schlüssel — das ist der Punkt der Übung. `APP_URL`
 baut die `?pid=`-Absprunglinks in den Mails; ohne ihn zeigen sie ins Leere.
 
+---
+
+## Optional: KI-Assistent (Azure AI Foundry)
+
+Dieser Block gilt nur, wenn die App ein Sprachmodell nutzt. Er greift in die Schritte 1–7 nicht ein.
+
+Ziel: ein Modell-Deployment im **EU-Datenraum**, erreichbar **ohne Schlüssel** über die Managed
+Identity der Web App, dazu zwei App settings.
+
+> **Kein Schlüssel, nirgends.** Der Canvas-Vorgänger trug seinen Azure-AI-Schlüssel im Klartext in
+> einer Power-Automate-Aktion — und die Flow-Definition liegt in jedem exportierten Solution-ZIP.
+> Hier holt `DefaultAzureCredential` ein Token, dieselbe Mechanik wie bei PostgreSQL und Blob
+> Storage. Es gibt keinen Wert, den man versehentlich exportieren kann.
+
+### a) AI-Foundry-Ressource
+
+Portal → **Azure AI Foundry → Create**. Region wie App Service und Datenbank, SKU **S0**. Der Name
+wird Teil des Endpunkts (`https://<name>.cognitiveservices.azure.com/`).
+
+### b) Modell bereitstellen
+
+Foundry-Portal → **Deployments → Deploy model**. Zwei Felder weichen vom Default ab:
+
+| Feld | Wert | Warum |
+| --- | --- | --- |
+| Deployment type | **DataZoneStandard** | hält die Verarbeitung im **EU**-Datenraum. `GlobalStandard` leitet weltweit weiter und macht das Argument der europäischen Datenhaltung zunichte |
+| Tokens per minute | so klein wie nötig (50k) | reine Drosselung, kein Fixpreis — abgerechnet wird pro Token |
+
+Der **Deployment-Name** ist der Wert, den die API aufruft. Nimm den Modellnamen unverändert, dann
+steht in der Konfiguration, was wirklich läuft.
+
+Per CLI:
+
+```bash
+az cognitiveservices account deployment create \
+  -n <foundry-name> -g <rg> \
+  --deployment-name <modell> --model-name <modell> --model-version <version> \
+  --model-format OpenAI --sku-name DataZoneStandard --sku-capacity 50
+```
+
+Welche Modelle und SKUs die Region kann: `az cognitiveservices model list -l <region>`.
+
+### c) Rolle **Cognitive Services User**
+
+Auf der Foundry-Ressource → **Access Control (IAM)** → je Umgebung die System-assigned Managed
+Identity der Web App, dazu dein eigenes Konto für `pnpm dev:full`.
+
+```bash
+SCOPE=$(az cognitiveservices account show -n <foundry-name> -g <rg> --query id -o tsv)
+az role assignment create --assignee-object-id <principal-id> \
+  --assignee-principal-type ServicePrincipal --role "Cognitive Services User" --scope "$SCOPE"
+```
+
+Ohne diese Rolle antwortet der Dienst mit `401` — der Schlüssel fehlt nicht, er ist gar nicht
+vorgesehen.
+
+### d) App settings und `project.json`
+
+Die Ressource ist **geteilt**, wie die Entra-Registrierung: ein `foundry`-Block auf oberster Ebene,
+nicht je Umgebung.
+
+| in `project.json`    | App setting          | Wert                                                 |
+| -------------------- | -------------------- | ---------------------------------------------------- |
+| `foundry.endpoint`   | `FOUNDRY_ENDPOINT`   | `https://<foundry-name>.cognitiveservices.azure.com/` |
+| `foundry.deployment` | `FOUNDRY_DEPLOYMENT` | der Deployment-Name aus b)                           |
+
+An der CSP ist nichts zu tun: der Aufruf läuft serverseitig, der Browser sieht den Dienst nie.
+
+Fertig, wenn `/api/assistant/ask` eine deutsche Antwort mit Prozess-Treffern liefert und im
+Foundry-Portal unter **Metrics** Aufrufe erscheinen.
+
+
 ## Lokal entwickeln
 
 Beide Modi laufen ohne lokale Datenbank.
@@ -748,6 +822,7 @@ Fertig, wenn die Ziel-Zeile beim Start deine Adresse zeigt. Steht dort der Name 
 | Federation weiterer Mandanten   | 0 €                      |
 | E-Mail-Versand, Ressourcen      | 0 €                      |
 | E-Mail-Versand, je Mail         | 0,00025 $ + 0,00012 $/MB |
+| KI-Assistent, Ressource + Deployment | 0 €, es zählt nur der Verbrauch |
 
 ### Regionen
 
@@ -794,4 +869,7 @@ Spain Central, West Europe, North Europe oder Sweden Central, unter DSGVO sind a
 | Login bricht ab, alle Werte stimmen, External ID                          | SPA-Registrierung hängt nicht am User Flow                                                    | [External ID c\)](#c-user-flow-anlegen)                                                                   |
 | Konten heißen in der Kontoauswahl und der Nutzerliste `unknown`           | Display Name wird im User Flow nicht abgefragt                                                | [External ID c\)](#c-user-flow-anlegen)                                                                   |
 | Registrierungen sind da, funktionieren aber nicht                         | im Arbeitsmandanten statt im externen angelegt                                                | Mandanten oben rechts im Portal prüfen                                                                    |
+| `401` von Azure AI                                                        | Rolle **Cognitive Services User** fehlt auf der Foundry-Ressource                             | [KI-Assistent c\)](#c-rolle-cognitive-services-user)                                                      |
+| `400` von Azure AI, `content management policy`                           | der Inhaltsfilter hat Frage oder Antwort abgelehnt — kein Ausfall                             | kein Fehler, die API meldet das dem Nutzer gesondert                                                      |
+| Assistent antwortet ohne Satz, nur mit Trefferliste                       | Modell nicht erreichbar, der Finder springt ein — Ursache steht im Log der API                | Deployment und Rolle prüfen, [KI-Assistent b\)](#b-modell-bereitstellen)                                  |
 | External ID nach 30 Tagen abgeschaltet                                    | externer Mandant hat keine Subscription                                                       | [External ID a\)](#a-externen-mandanten-anlegen)                                                          |

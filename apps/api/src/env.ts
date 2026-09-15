@@ -24,6 +24,11 @@ const serverSchema = z.object({
     BODY_LIMIT_BYTES: z.coerce.number().int().positive().default(65536),
 });
 
+const foundrySchema = z.object({
+    FOUNDRY_ENDPOINT: z.string().url(),
+    FOUNDRY_DEPLOYMENT: z.string().min(1),
+});
+
 const storageSchema = z.object({
     STORAGE_ACCOUNT: z.string().min(1),
     STORAGE_CONTAINER: z.string().min(1),
@@ -35,6 +40,7 @@ const LOCAL_ENVIRONMENT = 'dev';
 
 interface ProjectJson {
     entra?: Record<string, string>;
+    foundry?: Record<string, string>;
     environments?: Record<string, { pg?: Record<string, string>; storage?: Record<string, string> }>;
 }
 
@@ -55,7 +61,7 @@ function projectConfigDefaults(): Record<string, string> {
         );
     }
 
-    const { entra = {}, environments = {} } = config;
+    const { entra = {}, foundry = {}, environments = {} } = config;
     const environment = environments[LOCAL_ENVIRONMENT];
     if (!environment) {
         const known = Object.keys(environments);
@@ -77,6 +83,8 @@ function projectConfigDefaults(): Record<string, string> {
             ENTRA_TENANT_ID: entra.tenantId,
             ENTRA_API_AUDIENCE: entra.apiAudience,
             ENTRA_SUBDOMAIN: entra.subdomain,
+            FOUNDRY_ENDPOINT: foundry.endpoint,
+            FOUNDRY_DEPLOYMENT: foundry.deployment,
         }).filter(([, value]) => typeof value === 'string' && value !== ''),
     ) as Record<string, string>;
 }
@@ -117,6 +125,15 @@ let cachedStorageEnv: StorageEnv | null = null;
 export function storageEnv(): StorageEnv {
     if (!cachedStorageEnv) cachedStorageEnv = parse(storageSchema, 'Speicher');
     return cachedStorageEnv;
+}
+
+export type FoundryEnv = z.infer<typeof foundrySchema>;
+
+let cachedFoundryEnv: FoundryEnv | null = null;
+
+export function foundryEnv(): FoundryEnv {
+    if (!cachedFoundryEnv) cachedFoundryEnv = parse(foundrySchema, 'KI-Assistent');
+    return cachedFoundryEnv;
 }
 
 export const allowedOrigins = (): string[] =>
