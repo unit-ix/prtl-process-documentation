@@ -104,7 +104,7 @@ function TitleFields({ draft, set }: Pick<ProcessCreateFormProps, 'draft' | 'set
 
 export function ProcessCreateForm({ draft, areas, parents, set }: ProcessCreateFormProps) {
     return (
-        <div className="space-y-4 px-4">
+        <div className="space-y-5 px-6">
             <TitleFields draft={draft} set={set} />
 
             <SelectField

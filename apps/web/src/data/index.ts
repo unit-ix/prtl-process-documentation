@@ -1,4 +1,5 @@
 import { platform } from '@/shared/lib/projectConfig';
+import { AzureAssistantRepository } from '@/data/adapters/azure/AzureAssistantRepository';
 import { AzureFileStore } from '@/data/adapters/azure/AzureFileStore';
 import { AzureInstructionRepository } from '@/data/adapters/azure/AzureInstructionRepository';
 import { AzureMasterDataRepository } from '@/data/adapters/azure/AzureMasterDataRepository';
@@ -6,6 +7,7 @@ import { AzurePeopleRepository } from '@/data/adapters/azure/AzurePeopleReposito
 import { AzureProcessRepository } from '@/data/adapters/azure/AzureProcessRepository';
 import { AzureSessionRepository } from '@/data/adapters/azure/AzureSessionRepository';
 import { ensureSignedIn } from '@/data/adapters/azure/auth';
+import type { AssistantRepository } from './ports/AssistantRepository';
 import type { FileStore } from './ports/FileStore';
 import type { InstructionRepository } from './ports/InstructionRepository';
 import type { MasterDataRepository } from './ports/MasterDataRepository';
@@ -37,3 +39,6 @@ export const instructionRepository: InstructionRepository =
 
 export const peopleRepository: PeopleRepository =
     platform === 'azure' ? new AzurePeopleRepository() : unsupported();
+
+export const assistantRepository: AssistantRepository =
+    platform === 'azure' ? new AzureAssistantRepository() : unsupported();

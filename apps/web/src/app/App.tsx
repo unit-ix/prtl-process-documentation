@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AssistantPage } from '@/features/assistent';
 import { SettingsPage } from '@/features/einstellungen';
 import { QualificationsPage } from '@/features/qualifikationen';
 import { InstructionDetailPage, InstructionsPage } from '@/features/unterweisungen';
@@ -58,6 +59,7 @@ export function App() {
                             <Route path="/instructions/:id" element={<InstructionDetailPage />} />
                             <Route path="/qualifications" element={<QualificationsPage />} />
                             <Route path="/settings" element={<SettingsPage />} />
+                            <Route path="/assistant" element={<AssistantPage />} />
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </AppShell>

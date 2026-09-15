@@ -107,7 +107,7 @@ interface FormProps {
 
 function InstructionForm({ draft, processes, users, set }: FormProps) {
     return (
-                <div className="space-y-4 px-4">
+                <div className="space-y-5 px-6">
                     <div className="space-y-1.5">
                         <Label>Prozess</Label>
                         <Select value={draft.processId} onValueChange={(value) => set('processId', value)}>

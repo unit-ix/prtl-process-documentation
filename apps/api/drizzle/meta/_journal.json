@@ -8,6 +8,20 @@
       "when": 1789469651489,
       "tag": "0000_whole_mysterio",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789486761460,
+      "tag": "0001_seed_areas",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789486762460,
+      "tag": "0002_drop_demo_tables",
+      "breakpoints": true
     }
   ]
 }

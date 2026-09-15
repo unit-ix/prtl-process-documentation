@@ -20,6 +20,7 @@ import {
     listFiles,
     uploadUrlSchema,
 } from './files.js';
+import { ask, askSchema } from './assistant.js';
 import { getEmployee, listEmployees } from './employees.js';
 import { getInstruction, listInstructions } from './instructions.js';
 import {
@@ -96,6 +97,11 @@ const ROUTES: readonly Route[] = [
             status: 200,
             body: { html: await getSnapshot(user, params.id, params.versionId) },
         }),
+    },
+    {
+        method: 'POST',
+        path: '/assistant/ask',
+        handle: ({ user, body }) => ok(ask(user, parseBody(askSchema, body))),
     },
     { method: 'GET', path: '/employees', handle: () => ok(listEmployees()) },
     { method: 'GET', path: '/employees/:id', handle: ({ user, params }) => ok(getEmployee(user, params.id)) },

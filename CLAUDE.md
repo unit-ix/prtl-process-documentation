@@ -11,6 +11,12 @@
 
 **Repo-Layout:** pnpm-Workspace mit zwei Packages — `apps/web/` (SPA) und `apps/api/` (Node-API: im Mock-Prototyp ungenutzt, am `azure`-Fork Fastify + Drizzle gegen PostgreSQL). Die Root ist reiner Orchestrator und **kein** Package: `pnpm dev` / `pnpm verify` / `pnpm deploy:cloudflare` laufen dort, `vite.config.ts` / `tsconfig.json` / `components.json` liegen in `apps/web/`. Das Layout gilt plattform-unabhängig, damit der Fork ein Adapter-Swap bleibt und kein Repo-Umbau wird.
 
+**Abstände — vom Kunden angemerkt, gilt für jede neue Oberfläche:**
+
+- **Tabellen atmen.** Zellen `px-5 py-4`, Kopfzeilen `h-12 px-5`. Inhalt klebt nie am Kartenrand. Die Werte stehen einmal in [`table.tsx`](apps/web/src/shared/components/ui/table.tsx) — dort ändern, nicht pro Tabelle.
+- **Formularfelder füllen ihre Spalte.** `SelectTrigger` ist per Default `w-full`; eine feste Breite gibt es nur dort, wo sie gewollt ist (Filterleiste, Einstellungen), und zwar per `className`. Ein halb so breites Auswahlfeld neben einem vollbreiten Eingabefeld sieht nach Versehen aus — weil es eines ist.
+- **Sheets und Dialoge:** Kopf, Körper und Fuß auf derselben Kante (`p-6`), Feldabstand `space-y-5`.
+
 **Design-Regel:** UI ausschließlich über die Design-Tokens und die shadcn-Komponenten in `apps/web/src/shared/components/ui/` — **kein eigenes CSS-File, keine Inline-Farben.** Tokens (oklch) leben in `apps/web/src/index.css`, Varianten laufen über Komponenten-Props. Welche Komponente wann: [`COMPONENTS.md`](COMPONENTS.md).
 
 ## Projektspezifische Regeln

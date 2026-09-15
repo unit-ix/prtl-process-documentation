@@ -5,6 +5,7 @@ export * from './completeness.js';
 export * from './identifier.js';
 export * from './richText.js';
 export * from './instructionStatus.js';
+export * from './assistantSearch.js';
 export type * from './ProcessDetailView.js';
 export type * from './InstructionView.js';
 export * from './QualificationView.js';
