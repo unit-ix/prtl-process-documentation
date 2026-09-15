@@ -65,8 +65,8 @@ export function ProcessDetailHeader({ process, actions }: { process: ProcessDeta
                 <div className="flex flex-col items-end gap-2">
                     {process.permissions.canEditContent ? (
                         <Button asChild variant="outline" className="gap-2">
-                            <Link to={`/processes/${process.id}/description`}>
-                                <Pencil className="size-4" /> Beschreibung bearbeiten
+                            <Link to={`/processes/${process.id}/edit`}>
+                                <Pencil className="size-4" /> Bearbeiten
                             </Link>
                         </Button>
                     ) : null}

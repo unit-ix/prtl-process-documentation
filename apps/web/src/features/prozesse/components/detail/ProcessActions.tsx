@@ -2,6 +2,7 @@ import type { ProcessDetailView } from '@app/domain';
 import { CheckCircle2, RotateCcw, Send, ShieldCheck, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { processRepository } from '@/data';
+import { AssignAuthorDialog } from './AssignAuthorDialog';
 import type { RejectKind } from './RejectDialog';
 
 interface ProcessActionsProps {
@@ -30,6 +31,8 @@ export function ProcessActions({ process, isPending, run, onReject }: ProcessAct
 
     return (
         <div className="flex flex-wrap items-center gap-2">
+            {permissions.canAssignAuthor ? <AssignAuthorDialog isPending={isPending} run={run} /> : null}
+
             {permissions.canSubmit ? (
                 <Button
                     className="gap-2"

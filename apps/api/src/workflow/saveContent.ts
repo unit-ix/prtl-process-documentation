@@ -5,7 +5,7 @@ import { canEditContent, richTextToPlainText, type RichDocument, type SessionUse
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
-import { processAdditionalFields, processes, processVersions } from '../db/schema/index.js';
+import { processAdditionalFields, processes, processLinks, processVersions } from '../db/schema/index.js';
 import { ApiError, badRequest, notFound } from '../http/errors.js';
 import { assertAllowed, lockTarget, type Tx } from './context.js';
 
@@ -35,6 +35,18 @@ export const saveContentSchema = z
         deviationHandling: z.string().nullish(),
         maintenanceRef: z.string().nullish(),
         additionalFields: z.array(z.object({ id: z.string().uuid(), value: z.string().nullish() })).optional(),
+        links: z
+            .array(
+                z
+                    .object({
+                        linkType: z.enum(['InternerProzess', 'ExternesDokument']),
+                        linkedProcessId: z.string().uuid().nullish(),
+                        title: z.string().trim().max(400).nullish(),
+                        url: z.string().trim().url().max(2000).nullish(),
+                    })
+                    .strict(),
+            )
+            .optional(),
     })
     .strict();
 
@@ -122,6 +134,34 @@ async function saveAdditionalFields(
     }
 }
 
+// Mitgeltende Unterlagen sind versionsgebundener Inhalt ohne eigene Historie: beim Speichern wird
+// die Liste ersetzt, nicht abgeglichen. Das hält die Regel einfach und verhindert Waisen.
+async function replaceLinks(tx: Tx, versionId: string, links: SaveContentInput['links']): Promise<void> {
+    if (links === undefined) return;
+
+    await tx.delete(processLinks).where(eq(processLinks.processVersionId, versionId));
+    if (links.length === 0) return;
+
+    for (const link of links) {
+        if (link.linkType === 'InternerProzess' && !link.linkedProcessId) {
+            throw badRequest('Eine interne Verknüpfung braucht einen Prozess.');
+        }
+        if (link.linkType === 'ExternesDokument' && !link.url) {
+            throw badRequest('Ein externes Dokument braucht eine Adresse.');
+        }
+    }
+
+    await tx.insert(processLinks).values(
+        links.map((link) => ({
+            processVersionId: versionId,
+            linkType: link.linkType,
+            linkedProcessId: link.linkedProcessId ?? null,
+            title: link.title ?? null,
+            url: link.url ?? null,
+        })),
+    );
+}
+
 export async function saveContent(user: SessionUser, processId: string, input: SaveContentInput) {
     return db.transaction(async (tx) => {
         const target = await lockTarget(tx, processId);
@@ -153,6 +193,7 @@ export async function saveContent(user: SessionUser, processId: string, input: S
         }
 
         await saveAdditionalFields(tx, target.version.id, input.additionalFields);
+        await replaceLinks(tx, target.version.id, input.links);
 
         return { rowVersion: version.rowVersion };
     });
