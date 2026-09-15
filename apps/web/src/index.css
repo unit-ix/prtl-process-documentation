@@ -198,3 +198,66 @@
     background-clip: text;
     color: transparent;
 }
+
+/* Prozessbeschreibung: dieselben Regeln für den Editor, die Lese-Ansicht und den Druck (§8.4). */
+@layer components {
+    .rich-text {
+        @apply text-foreground text-sm leading-relaxed;
+    }
+    .rich-text > * + * {
+        @apply mt-3;
+    }
+    .rich-text h1 {
+        @apply mt-6 mb-2 text-xl font-bold;
+    }
+    .rich-text h2 {
+        @apply mt-5 mb-2 text-lg font-semibold;
+    }
+    .rich-text h3 {
+        @apply mt-4 mb-1.5 text-base font-semibold;
+    }
+    .rich-text ul {
+        @apply list-disc space-y-1 pl-5;
+    }
+    .rich-text ol {
+        @apply list-decimal space-y-1 pl-5;
+    }
+    .rich-text blockquote {
+        @apply border-accent/40 text-muted-foreground border-l-2 pl-3 italic;
+    }
+    .rich-text a {
+        @apply text-primary underline underline-offset-2;
+    }
+    .rich-text code {
+        @apply bg-muted rounded px-1 py-0.5 font-mono text-xs;
+    }
+    .rich-text pre {
+        @apply bg-muted overflow-x-auto rounded-lg p-3;
+    }
+    .rich-text pre code {
+        @apply bg-transparent p-0 text-xs;
+    }
+    .rich-text hr {
+        @apply border-border/60 my-4;
+    }
+    .rich-text table {
+        @apply my-3 w-full table-fixed border-collapse;
+    }
+    .rich-text th,
+    .rich-text td {
+        @apply border-border/60 border px-3 py-2 align-top text-sm;
+    }
+    .rich-text th {
+        @apply bg-muted/50 text-muted-foreground text-left text-xs font-semibold tracking-wider uppercase;
+    }
+    .rich-text .selectedCell {
+        @apply bg-accent/10;
+    }
+    .rich-text .column-resize-handle {
+        @apply bg-accent/50 absolute top-0 -right-0.5 bottom-0 w-1;
+    }
+    .rich-text p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        @apply text-muted-foreground pointer-events-none float-left h-0;
+    }
+}

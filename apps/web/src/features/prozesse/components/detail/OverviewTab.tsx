@@ -1,5 +1,8 @@
 import type { ProcessDetailView } from '@app/domain';
+import { Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/shared/components/ui/button';
 import { Card } from '@/shared/components/ui/card';
 import { RichTextView } from '@/shared/components/richtext/RichTextView';
 
@@ -61,9 +64,18 @@ function ContentCard({ process }: { process: ProcessDetailView }) {
                 <Field key={section.label} {...section} />
             ))}
             <div className="space-y-1">
-                <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Prozessbeschreibung
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Prozessbeschreibung
+                    </h3>
+                    {process.permissions.canEditContent ? (
+                        <Button asChild variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
+                            <Link to={`/processes/${process.id}/description`}>
+                                <Pencil className="size-3.5" /> Bearbeiten
+                            </Link>
+                        </Button>
+                    ) : null}
+                </div>
                 <RichTextView doc={process.version.descriptionDoc} />
             </div>
         </Card>
