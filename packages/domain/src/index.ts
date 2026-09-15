@@ -7,6 +7,7 @@ export * from './richText.js';
 export * from './instructionStatus.js';
 export type * from './ProcessDetailView.js';
 export type * from './InstructionView.js';
+export * from './QualificationView.js';
 export type { AreaRef, ProcessRef, UserRef } from './refs.js';
 export type { Area } from './Area.js';
 export type { User } from './User.js';

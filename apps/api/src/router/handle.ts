@@ -20,6 +20,7 @@ import {
     listFiles,
     uploadUrlSchema,
 } from './files.js';
+import { getEmployee, listEmployees } from './employees.js';
 import { getInstruction, listInstructions } from './instructions.js';
 import {
     acknowledge,
@@ -31,6 +32,18 @@ import {
     notifyParticipants,
     updateInstruction,
 } from './instructionWrites.js';
+import {
+    areaUpdateSchema,
+    deleteQualification,
+    deleteTask,
+    qualificationSchema,
+    saveQualification,
+    saveTask,
+    taskSchema,
+    updateArea,
+    updateUser,
+    userUpdateSchema,
+} from './masterDataWrites.js';
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
@@ -83,6 +96,63 @@ const ROUTES: readonly Route[] = [
             status: 200,
             body: { html: await getSnapshot(user, params.id, params.versionId) },
         }),
+    },
+    { method: 'GET', path: '/employees', handle: () => ok(listEmployees()) },
+    { method: 'GET', path: '/employees/:id', handle: ({ user, params }) => ok(getEmployee(user, params.id)) },
+    {
+        method: 'PATCH',
+        path: '/areas/:id',
+        handle: async ({ user, params, body }) => {
+            await updateArea(user, params.id, parseBody(areaUpdateSchema, body));
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'PATCH',
+        path: '/users/:id',
+        handle: async ({ user, params, body }) => {
+            await updateUser(user, params.id, parseBody(userUpdateSchema, body));
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'POST',
+        path: '/qualifications',
+        handle: async ({ user, body }) => ({
+            status: 201,
+            body: await saveQualification(user, parseBody(qualificationSchema, body)),
+        }),
+    },
+    {
+        method: 'PATCH',
+        path: '/qualifications/:id',
+        handle: ({ user, params, body }) => ok(saveQualification(user, parseBody(qualificationSchema, body), params.id)),
+    },
+    {
+        method: 'DELETE',
+        path: '/qualifications/:id',
+        handle: async ({ user, params }) => {
+            await deleteQualification(user, params.id);
+            return { status: 204, body: null };
+        },
+    },
+    {
+        method: 'POST',
+        path: '/tasks',
+        handle: async ({ user, body }) => ({ status: 201, body: await saveTask(user, parseBody(taskSchema, body)) }),
+    },
+    {
+        method: 'PATCH',
+        path: '/tasks/:id',
+        handle: ({ user, params, body }) => ok(saveTask(user, parseBody(taskSchema, body), params.id)),
+    },
+    {
+        method: 'DELETE',
+        path: '/tasks/:id',
+        handle: async ({ user, params }) => {
+            await deleteTask(user, params.id);
+            return { status: 204, body: null };
+        },
     },
     { method: 'GET', path: '/instructions', handle: () => ok(listInstructions()) },
     { method: 'GET', path: '/instructions/:id', handle: ({ user, params }) => ok(getInstruction(user, params.id)) },
