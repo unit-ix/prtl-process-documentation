@@ -7,6 +7,7 @@ import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
 import { allowedOrigins, dbTarget, serverEnv } from './env.js';
 import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './http/errors.js';
 import { renderConfirmPage, renderConfirmResult } from './router/confirmPageHtml.js';
+import { startMailSweep } from './mail/sweep.js';
 import { handle } from './router/handle.js';
 import { confirmPage, submitConfirmation } from './router/publicConfirm.js';
 
@@ -114,5 +115,7 @@ app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
 });
 
 app.log.info(`Datenbank-Ziel: ${dbTarget()}`);
+
+startMailSweep();
 
 await app.listen({ port: env.PORT, host: '0.0.0.0' });

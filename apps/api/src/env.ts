@@ -29,6 +29,21 @@ const foundrySchema = z.object({
     FOUNDRY_DEPLOYMENT: z.string().min(1),
 });
 
+// `transport` schaltet den Versandweg um: 'graph' sobald Mail.Send vergeben ist,
+// 'powerAutomate' als Übergang, 'none' solange keiner von beiden bereitsteht — dann bleiben die
+// Zeilen in der Warteschlange stehen, statt als gesendet markiert zu werden.
+const mailSchema = z.object({
+    MAIL_SENDER_UPN: z.string().min(1),
+    APP_URL: z.string().url(),
+});
+
+// Getrennt vom Rest: den Versandweg darf man erfragen, ohne dass Absender und App-URL schon
+// gesetzt sein müssen. Sonst stürbe die ganze API beim Start, nur weil der Mailversand noch nicht
+// eingerichtet ist — ein optionales Teilsystem darf das Ganze nicht mitnehmen.
+const mailTransportSchema = z.object({
+    MAIL_TRANSPORT: z.enum(['none', 'graph', 'powerAutomate']).default('none'),
+});
+
 const storageSchema = z.object({
     STORAGE_ACCOUNT: z.string().min(1),
     STORAGE_CONTAINER: z.string().min(1),
@@ -41,7 +56,8 @@ const LOCAL_ENVIRONMENT = 'dev';
 interface ProjectJson {
     entra?: Record<string, string>;
     foundry?: Record<string, string>;
-    environments?: Record<string, { pg?: Record<string, string>; storage?: Record<string, string> }>;
+    mail?: Record<string, string>;
+    environments?: Record<string, { url?: string; pg?: Record<string, string>; storage?: Record<string, string> }>;
 }
 
 function projectConfigDefaults(): Record<string, string> {
@@ -61,7 +77,7 @@ function projectConfigDefaults(): Record<string, string> {
         );
     }
 
-    const { entra = {}, foundry = {}, environments = {} } = config;
+    const { entra = {}, foundry = {}, mail = {}, environments = {} } = config;
     const environment = environments[LOCAL_ENVIRONMENT];
     if (!environment) {
         const known = Object.keys(environments);
@@ -85,6 +101,9 @@ function projectConfigDefaults(): Record<string, string> {
             ENTRA_SUBDOMAIN: entra.subdomain,
             FOUNDRY_ENDPOINT: foundry.endpoint,
             FOUNDRY_DEPLOYMENT: foundry.deployment,
+            MAIL_SENDER_UPN: mail.senderUpn,
+            MAIL_TRANSPORT: mail.transport,
+            APP_URL: environment.url,
         }).filter(([, value]) => typeof value === 'string' && value !== ''),
     ) as Record<string, string>;
 }
@@ -135,6 +154,20 @@ export function foundryEnv(): FoundryEnv {
     if (!cachedFoundryEnv) cachedFoundryEnv = parse(foundrySchema, 'KI-Assistent');
     return cachedFoundryEnv;
 }
+
+export type MailEnv = z.infer<typeof mailSchema>;
+
+let cachedMailEnv: MailEnv | null = null;
+
+/** Vollständige Mail-Konfiguration — wird erst gelesen, wenn wirklich verschickt werden soll. */
+export function mailEnv(): MailEnv {
+    if (!cachedMailEnv) cachedMailEnv = parse(mailSchema, 'E-Mail');
+    return cachedMailEnv;
+}
+
+export type MailTransportName = z.infer<typeof mailTransportSchema>['MAIL_TRANSPORT'];
+
+export const mailTransportName = (): MailTransportName => parse(mailTransportSchema, 'E-Mail-Versandweg').MAIL_TRANSPORT;
 
 export const allowedOrigins = (): string[] =>
     serverEnv()

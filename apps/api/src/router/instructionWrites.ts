@@ -2,7 +2,7 @@
 // Datensatz wird dort also stillschweigend zu einem zweiten (§12, Defekt 5) — hier sind Anlegen und
 // Ändern getrennte Wege.
 import { canManageInstructions, defaultDueDate, type SessionUser } from '@app/domain';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
@@ -124,41 +124,28 @@ export async function deleteInstruction(user: SessionUser, id: string): Promise<
 
 export const hashToken = (token: string): string => createHash('sha256').update(token).digest('hex');
 
-const TOKEN_DAYS = 30;
-
-/** §7.3: der Klartext existiert nur in der Mail, in der Datenbank steht der Hash. */
+/**
+ * Stellt die offenen Teilnehmer in die Warteschlange — mehr nicht. Verschickt wird im Sweep, und
+ * das Bestätigungs-Token entsteht dort: sein Klartext soll ausschliesslich in der Mail existieren,
+ * die ihn trägt (§7.3). Hier im Request zu senden, verbietet sich ohnehin — Exchange drosselt und
+ * der SWA-Proxy bricht nach 45 s ab.
+ */
 export async function notifyParticipants(user: SessionUser, id: string): Promise<{ queued: number }> {
     assertManager(user);
 
-    const open = await db
-        .select()
-        .from(instructionParticipants)
+    const queued = await db
+        .update(instructionParticipants)
+        .set({ notifyStatus: 'In Bearbeitung' })
         .where(
             and(
                 eq(instructionParticipants.instructionId, id),
                 eq(instructionParticipants.isActive, true),
                 eq(instructionParticipants.status, 'Offen'),
             ),
-        );
+        )
+        .returning({ id: instructionParticipants.id });
 
-    const expires = new Date(Date.now() + TOKEN_DAYS * 24 * 60 * 60_000);
-    let queued = 0;
-
-    for (const participant of open) {
-        const token = randomUUID();
-        await db
-            .update(instructionParticipants)
-            .set({
-                confirmTokenHash: hashToken(token),
-                confirmTokenExpiresAt: expires,
-                notifyStatus: 'In Bearbeitung',
-                notifiedAt: new Date(),
-            })
-            .where(eq(instructionParticipants.id, participant.id));
-        queued += 1;
-    }
-
-    return { queued };
+    return { queued: queued.length };
 }
 
 export const confirmSchema = z.object({ participantId: z.string().uuid() }).strict();
