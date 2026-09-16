@@ -9,15 +9,23 @@ import { db } from '../db/client.js';
 import { mailTransportName } from '../env.js';
 import { graphTransport } from './graph.js';
 import { drainOutbox } from './outbox.js';
+import { powerAutomateTransport } from './powerAutomate.js';
 import type { MailTransport } from './transport.js';
 
 const INTERVAL_MS = 60_000;
 const LOCK_KEY = 'prtl.mail.sweep';
 
 export function selectTransport(): MailTransport | null {
-    if (mailTransportName() === 'graph') return graphTransport();
-    // 'powerAutomate' folgt mit dem Flow; 'none' heisst: Zeilen bleiben stehen, bis ein Weg da ist.
-    return null;
+    switch (mailTransportName()) {
+        case 'graph':
+            return graphTransport();
+        case 'powerAutomate':
+            return powerAutomateTransport();
+        // 'none': die Zeilen bleiben stehen, bis ein Weg da ist — sie werden NICHT als gesendet
+        // markiert, sonst wäre die Warteschlange still leer statt sichtbar unbearbeitet.
+        default:
+            return null;
+    }
 }
 
 /** Skaliert der Plan einmal auf mehrere Instanzen, verschickt trotzdem nur eine. */

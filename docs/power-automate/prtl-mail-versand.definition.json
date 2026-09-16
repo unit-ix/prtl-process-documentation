@@ -1,0 +1,76 @@
+{
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+        "manual": {
+            "type": "Request",
+            "kind": "Http",
+            "inputs": {
+                "method": "POST",
+                "schema": {
+                    "type": "object",
+                    "required": ["to", "subject", "html"],
+                    "properties": {
+                        "to": { "type": "string" },
+                        "subject": { "type": "string" },
+                        "html": { "type": "string" }
+                    }
+                }
+            }
+        }
+    },
+    "actions": {
+        "Geheimnis_pruefen": {
+            "type": "If",
+            "runAfter": {},
+            "expression": {
+                "equals": [
+                    "@triggerOutputs()?['headers']?['x-prtl-secret']",
+                    "@parameters('secret')"
+                ]
+            },
+            "actions": {
+                "Mail_senden": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                        "host": {
+                            "connectionName": "shared_office365",
+                            "operationId": "SendEmailV2",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                            "emailMessage/To": "@triggerBody()?['to']",
+                            "emailMessage/Subject": "@triggerBody()?['subject']",
+                            "emailMessage/Body": "@triggerBody()?['html']",
+                            "emailMessage/Importance": "Normal"
+                        }
+                    }
+                },
+                "Antwort_202": {
+                    "type": "Response",
+                    "kind": "Http",
+                    "runAfter": { "Mail_senden": ["Succeeded"] },
+                    "inputs": { "statusCode": 202 }
+                },
+                "Antwort_502": {
+                    "type": "Response",
+                    "kind": "Http",
+                    "runAfter": { "Mail_senden": ["Failed", "TimedOut"] },
+                    "inputs": {
+                        "statusCode": 502,
+                        "body": "Versand fehlgeschlagen — die API stellt die Zeile beim naechsten Sweep erneut zu."
+                    }
+                }
+            },
+            "else": {
+                "actions": {
+                    "Antwort_401": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": { "statusCode": 401, "body": "Ungueltiges Geheimnis." }
+                    }
+                }
+            }
+        }
+    }
+}

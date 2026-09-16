@@ -45,6 +45,7 @@ Browser- und Netz-Prüfungen gehören in die CI, nicht in die Schleife. In der C
 | Datenmodell | [`docs/datamodel.md`](docs/datamodel.md) + [`docs/datamodel.mmd`](docs/datamodel.mmd) |
 | Hosting Mock-Prototyp (Cloudflare) | [`docs/hosting.md`](docs/hosting.md) |
 | Azure-Setup, Klick-für-Klick (Fork `mock → azure`) | [`docs/azure-runbook.md`](docs/azure-runbook.md) |
+| Mailversand über Power Automate (Übergang bis Graph) | [`docs/mail-flow.md`](docs/mail-flow.md) |
 | Prototyp-Artefakte | [`docs/prototype-manifest.md`](docs/prototype-manifest.md) |
 
 `docs/prd.md`, `docs/datamodel.md` und `docs/datamodel.mmd` sind vom `/prototype`-Ingest gespiegelte **Snapshots** des SharePoint-Masters (Kopf-Header `Stand:`/`Quelle:`), nicht die Live-Wahrheit — bei Änderung via erneutem Ingest (`[O]verwrite`) auffrischen.

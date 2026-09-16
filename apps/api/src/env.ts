@@ -40,6 +40,16 @@ const mailSchema = z.object({
 // Getrennt vom Rest: den Versandweg darf man erfragen, ohne dass Absender und App-URL schon
 // gesetzt sein müssen. Sonst stürbe die ganze API beim Start, nur weil der Mailversand noch nicht
 // eingerichtet ist — ein optionales Teilsystem darf das Ganze nicht mitnehmen.
+// Die EINZIGEN beiden Geheimnisse im ganzen Stack — und beide gehören zum Übergangsweg über
+// Power Automate, nicht zum Zielzustand. Sie stehen deshalb NICHT in project.json (das ist
+// committet), sondern ausschliesslich in den App Settings bzw. lokal in der Root-.env. Die
+// Trigger-URL trägt ihre Signatur im Query-String, ist also selbst ein Geheimnis; der Header
+// kommt dazu, damit eine geleakte URL allein nicht reicht, um PRETTL-Mails zu verschicken.
+const mailFlowSchema = z.object({
+    MAIL_FLOW_URL: z.string().url(),
+    MAIL_FLOW_SECRET: z.string().min(16),
+});
+
 const mailTransportSchema = z.object({
     MAIL_TRANSPORT: z.enum(['none', 'graph', 'powerAutomate']).default('none'),
 });
@@ -166,6 +176,15 @@ export function mailEnv(): MailEnv {
 }
 
 export type MailTransportName = z.infer<typeof mailTransportSchema>['MAIL_TRANSPORT'];
+
+export type MailFlowEnv = z.infer<typeof mailFlowSchema>;
+
+let cachedMailFlowEnv: MailFlowEnv | null = null;
+
+export function mailFlowEnv(): MailFlowEnv {
+    if (!cachedMailFlowEnv) cachedMailFlowEnv = parse(mailFlowSchema, 'Power-Automate-Flow');
+    return cachedMailFlowEnv;
+}
 
 export const mailTransportName = (): MailTransportName => parse(mailTransportSchema, 'E-Mail-Versandweg').MAIL_TRANSPORT;
 
