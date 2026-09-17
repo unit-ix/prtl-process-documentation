@@ -4,6 +4,7 @@ import { masterDataRepository, peopleRepository } from '@/data';
 import type { UserListItem } from '@/data/ports/MasterDataRepository';
 import type { UserRoleInput } from '@/data/ports/PeopleRepository';
 import { Card } from '@/shared/components/ui/card';
+import { AddUserDialog } from './AddUserDialog';
 import {
     Select,
     SelectContent,
@@ -92,10 +93,13 @@ export function UserSettings() {
 
     return (
         <Card className="glass-card border-border/40 space-y-4 rounded-2xl p-6">
-            <p className="text-muted-foreground text-sm">
-                Verwalten Sie die Rollen der Mitarbeiter. Rollen steuern, welche Aufgaben im Freigabe- und
+            <div className="flex items-start justify-between gap-4">
+                <p className="text-muted-foreground max-w-2xl text-sm">
+                    Verwalten Sie die Rollen der Mitarbeiter. Rollen steuern, welche Aufgaben im Freigabe- und
                 Unterweisungsprozess jemand übernehmen darf. Name, E-Mail und Konto kommen aus der Provisionierung.
-            </p>
+                </p>
+                <AddUserDialog />
+            </div>
             <ul className="divide-border/40 divide-y">
                 {(users ?? []).map((user) => (
                     <UserRow

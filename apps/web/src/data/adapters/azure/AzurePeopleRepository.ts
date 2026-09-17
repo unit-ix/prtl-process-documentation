@@ -1,5 +1,7 @@
 import type { EmployeeDetailView, EmployeeListItem } from '@app/domain';
 import type {
+    DirectoryUser,
+    NewUserInput,
     PeopleRepository,
     QualificationInput,
     TaskInput,
@@ -8,6 +10,15 @@ import type {
 import { apiDelete, apiGet, apiSend } from './client';
 
 export class AzurePeopleRepository implements PeopleRepository {
+    async directoryUsers(): Promise<DirectoryUser[]> {
+        const { items } = await apiGet<{ items: DirectoryUser[] }>('/directory/users');
+        return items;
+    }
+
+    createUser(input: NewUserInput): Promise<{ id: string }> {
+        return apiSend<{ id: string }>('POST', '/users', input);
+    }
+
     async employees(): Promise<EmployeeListItem[]> {
         const { items } = await apiGet<{ items: EmployeeListItem[] }>('/employees');
         return items;
