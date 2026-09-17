@@ -27,7 +27,7 @@ function AreaRow({
     isPending: boolean;
 }) {
     return (
-        <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+        <li className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
                 <p className="text-sm font-medium">{area.title}</p>
                 <p className="text-muted-foreground font-mono text-xs">{area.shortCode}</p>

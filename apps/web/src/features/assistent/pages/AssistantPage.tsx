@@ -1,3 +1,4 @@
+import { PageHeader } from '@/shared/components/layout/PageHeader';
 import type { AssistantHit } from '@app/domain';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowRight, Send, Sparkles, Trash2 } from 'lucide-react';
@@ -123,17 +124,7 @@ export function AssistantPage() {
 
     return (
         <div className="mx-auto max-w-3xl space-y-6">
-            <header className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
-                    PRETTL electronics
-                </p>
-                <h1 className="text-gradient-primary text-2xl font-semibold tracking-tight md:text-3xl">
-                    Chatbot-Assistent
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                    Findet freigegebene Prozesse — durchsucht wird nur, was Sie ohnehin sehen dürfen.
-                </p>
-            </header>
+            <PageHeader title="Chatbot-Assistent" description="Findet freigegebene Prozesse — durchsucht wird nur, was Sie ohnehin sehen dürfen." />
 
             <Conversation turns={turns} />
 

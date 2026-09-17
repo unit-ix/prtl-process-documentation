@@ -2,6 +2,7 @@ import type { ProcessListItem } from '@app/domain';
 import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { clickableRow } from '@/shared/components/ui/dataTable';
 import { TableCell, TableRow } from '@/shared/components/ui/table';
 import { cn } from '@/shared/lib/utils';
 import { NO_IDENTIFIER } from '../mappings/processMappings';
@@ -19,8 +20,9 @@ export function ProcessRow({ item, isChild = false, expander }: ProcessRowProps)
 
     return (
         <TableRow
-            className="border-border/40 hover:bg-accent/40 cursor-pointer"
-            onClick={() => navigate(`/processes/${item.id}`)}
+            className="border-border/40 hover:bg-accent/40 focus-visible:bg-accent/40 cursor-pointer outline-none"
+            aria-label={`${item.title} öffnen`}
+            {...clickableRow(() => navigate(`/processes/${item.id}`))}
         >
             <TableCell className="text-muted-foreground max-w-[180px] truncate font-mono text-xs">
                 {item.identifier ?? NO_IDENTIFIER}

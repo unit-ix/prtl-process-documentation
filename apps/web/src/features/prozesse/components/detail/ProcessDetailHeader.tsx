@@ -62,7 +62,7 @@ export function ProcessDetailHeader({ process, actions }: { process: ProcessDeta
                     <HiddenDraftNote process={process} />
                 </div>
 
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                     {process.permissions.canEditContent ? (
                         <Button asChild variant="outline" className="gap-2">
                             <Link to={`/processes/${process.id}/edit`}>

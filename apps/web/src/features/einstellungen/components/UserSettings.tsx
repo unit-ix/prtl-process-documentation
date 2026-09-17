@@ -34,7 +34,7 @@ function UserRow({
     onChange: (id: string, input: UserRoleInput) => void;
 }) {
     return (
-        <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+        <li className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
                 <p className="text-sm font-medium">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{user.mail ?? 'Keine E-Mail'}</p>

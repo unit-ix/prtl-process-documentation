@@ -8,8 +8,15 @@ export function CompletenessCard({ completeness }: { completeness: Completeness 
         <Card className="glass-card border-border/40 rounded-2xl p-5">
             <div className="flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold">Vollständigkeit</h2>
-                <span className="text-muted-foreground text-xs">
-                    {completeness.done} von {completeness.total} · {completeness.percent} %
+                <span className="text-sm">
+                    <span
+                        className={
+                            completeness.percent === 100 ? 'text-success font-semibold' : 'text-foreground font-semibold'
+                        }
+                    >
+                        {completeness.percent} %
+                    </span>
+                    <span className="text-muted-foreground"> · {completeness.done} von {completeness.total}</span>
                 </span>
             </div>
             <Progress value={completeness.percent} className="mt-3" />

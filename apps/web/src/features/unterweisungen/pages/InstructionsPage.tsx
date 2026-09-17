@@ -1,6 +1,7 @@
 import type { InstructionListItem } from '@app/domain';
-import { GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PageHeader } from '@/shared/components/layout/PageHeader';
+import { EmptyRow } from '@/shared/components/state/EmptyRow';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card } from '@/shared/components/ui/card';
@@ -42,20 +43,11 @@ export function InstructionsPage() {
 
     return (
         <div className="space-y-8">
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                    <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
-                        PRETTL electronics
-                    </p>
-                    <h1 className="text-gradient-primary text-2xl font-semibold tracking-tight md:text-3xl">
-                        Unterweisungen
-                    </h1>
-                    <p className="text-muted-foreground max-w-xl text-sm">
-                        Mitarbeiter auf einen freigegebenen Prozess unterweisen und die Kenntnisnahme nachweisen.
-                    </p>
-                </div>
-                <InstructionCreateSheet />
-            </header>
+            <PageHeader
+                title="Unterweisungen"
+                description="Mitarbeiter auf einen freigegebenen Prozess unterweisen und die Kenntnisnahme nachweisen."
+                actions={<InstructionCreateSheet />}
+            />
 
             <AsyncBoundary isLoading={isPending} error={error} onRetry={() => void refetch()}>
                 <Card className="glass-elevated border-border/40 overflow-hidden rounded-3xl p-0">
@@ -71,12 +63,11 @@ export function InstructionsPage() {
                         </TableHeader>
                         <TableBody>
                             {items.length === 0 ? (
-                                <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={5} className="text-muted-foreground py-16 text-center">
-                                        <GraduationCap className="mx-auto mb-2 size-6" />
-                                        Keine Daten vorhanden.
-                                    </TableCell>
-                                </TableRow>
+                                <EmptyRow
+                                    colSpan={5}
+                                    text="Noch keine Unterweisung angelegt."
+                                    hint="Eine Unterweisung verweist immer auf einen freigegebenen Prozess."
+                                />
                             ) : (
                                 items.map((item) => <InstructionRow key={item.id} item={item} />)
                             )}

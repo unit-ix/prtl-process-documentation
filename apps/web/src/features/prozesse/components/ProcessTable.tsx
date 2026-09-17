@@ -1,7 +1,8 @@
 import type { ProcessSortField } from '@app/domain';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { Fragment, useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
+import { EmptyRow } from '@/shared/components/state/EmptyRow';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { cn } from '@/shared/lib/utils';
 import type { ProcessNode } from '../hooks/useProcessList';
 import { ProcessRow } from './ProcessRow';
@@ -38,10 +39,21 @@ function SortableHead({
             <button
                 type="button"
                 onClick={() => onSort(column.field as ProcessSortField)}
-                className={cn('hover:text-foreground transition-colors', active && 'text-foreground font-medium')}
+                className={cn(
+                    'group inline-flex items-center gap-1.5 transition-colors',
+                    active ? 'text-foreground font-medium' : 'hover:text-foreground',
+                )}
             >
                 {column.label}
-                {active ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}
+                {active ? (
+                    sort.dir === 'asc' ? (
+                        <ArrowUp className="size-3.5" />
+                    ) : (
+                        <ArrowDown className="size-3.5" />
+                    )
+                ) : (
+                    <ArrowUpDown className="size-3.5 opacity-0 transition-opacity group-hover:opacity-60" />
+                )}
             </button>
         </TableHead>
     );
@@ -63,16 +75,6 @@ function Expander({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: (
     );
 }
 
-function EmptyRow() {
-    return (
-        <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={COLUMNS.length} className="text-muted-foreground py-16 text-center">
-                Keine Daten vorhanden.
-            </TableCell>
-        </TableRow>
-    );
-}
-
 export function ProcessTable({ nodes, sort, onSort }: ProcessTableProps) {
     const [collapsed, setCollapsed] = useState<readonly string[]>([]);
     const toggle = (id: string) =>
@@ -88,7 +90,13 @@ export function ProcessTable({ nodes, sort, onSort }: ProcessTableProps) {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {nodes.length === 0 ? <EmptyRow /> : null}
+                {nodes.length === 0 ? (
+                    <EmptyRow
+                        colSpan={COLUMNS.length}
+                        text="Keine Daten vorhanden."
+                        hint="Mit den Filtern oben eingrenzen — oder einen neuen Prozess anlegen."
+                    />
+                ) : null}
                 {nodes.map(({ item, children }) => (
                     <Fragment key={item.id}>
                         <ProcessRow

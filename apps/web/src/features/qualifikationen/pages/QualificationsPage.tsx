@@ -1,6 +1,7 @@
 import type { EmployeeListItem } from '@app/domain';
 import { ChevronRight, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { PageHeader } from '@/shared/components/layout/PageHeader';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
@@ -11,6 +12,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/shared/components/ui/select';
+import { EmptyRow } from '@/shared/components/state/EmptyRow';
+import { clickableRow } from '@/shared/components/ui/dataTable';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
 import { EmployeePanel } from '../components/EmployeePanel';
 import { useEmployees } from '../hooks/usePeople';
@@ -62,7 +65,11 @@ function Filters({
 
 function EmployeeRow({ employee, onOpen }: { employee: EmployeeListItem; onOpen: () => void }) {
     return (
-        <TableRow className="border-border/40 hover:bg-accent/40 cursor-pointer" onClick={onOpen}>
+        <TableRow
+            className="border-border/40 hover:bg-accent/40 focus-visible:bg-accent/40 cursor-pointer outline-none"
+            aria-label={`${employee.displayName} öffnen`}
+            {...clickableRow(onOpen)}
+        >
             <TableCell className="font-medium">{employee.displayName}</TableCell>
             <TableCell className="text-muted-foreground">{employee.areaTitle ?? '—'}</TableCell>
             <TableCell className="text-center tabular-nums">{employee.instructionCount}</TableCell>
@@ -97,11 +104,11 @@ function EmployeeTable({
                         </TableHeader>
                         <TableBody>
                             {employees.length === 0 ? (
-                                <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={6} className="text-muted-foreground py-16 text-center">
-                                        Keine Daten vorhanden.
-                                    </TableCell>
-                                </TableRow>
+                                <EmptyRow
+                                    colSpan={6}
+                                    text="Keine Mitarbeiter gefunden."
+                                    hint="Suchbegriff oder Abteilungsfilter anpassen."
+                                />
                             ) : (
                                 employees.map((employee) => (
                                     <EmployeeRow
@@ -141,18 +148,10 @@ export function QualificationsPage() {
 
     return (
         <div className="space-y-6">
-            <header className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
-                    PRETTL electronics
-                </p>
-                <h1 className="text-gradient-primary text-2xl font-semibold tracking-tight md:text-3xl">
-                    Qualifikationsmatrix
-                </h1>
-                <p className="text-muted-foreground max-w-2xl text-sm">
-                    Mitarbeiterübersicht mit absolvierten Unterweisungen, Qualifikationen und Aufgaben – filterbar und
-                    durchsuchbar.
-                </p>
-            </header>
+            <PageHeader
+                title="Qualifikationsmatrix"
+                description="Mitarbeiterübersicht mit absolvierten Unterweisungen, Qualifikationen und Aufgaben – filterbar und durchsuchbar."
+            />
 
             <Filters search={search} area={area} areas={areas} onSearch={setSearch} onArea={setArea} />
 

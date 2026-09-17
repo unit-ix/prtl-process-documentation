@@ -1,4 +1,5 @@
 import { canCreateProcess } from '@app/domain';
+import { PageHeader } from '@/shared/components/layout/PageHeader';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { useSessionUser } from '@/shared/lib/session/SessionContext';
 import { Card } from '@/shared/components/ui/card';
@@ -14,19 +15,11 @@ export function ProcessesPage() {
 
     return (
         <div className="space-y-8">
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
-                    PRETTL electronics
-                </p>
-                <h1 className="text-gradient-primary text-2xl font-semibold tracking-tight md:text-3xl">Prozesse</h1>
-                <p className="text-muted-foreground max-w-xl text-sm">
-                    Übersicht aller Prozesse – von der Erfassung über die inhaltliche und formelle Prüfung bis zur
-                    Freigabe.
-                </p>
-                </div>
-                {canCreate ? <ProcessCreateSheet /> : null}
-            </header>
+            <PageHeader
+                title="Prozesse"
+                description="Übersicht aller Prozesse – von der Erfassung über die inhaltliche und formelle Prüfung bis zur Freigabe."
+                actions={canCreate ? <ProcessCreateSheet /> : null}
+            />
 
             <div className="space-y-3">
                 <ProcessFilters filter={filter} onChange={setFilter} />
