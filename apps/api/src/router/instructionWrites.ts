@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
-import { instructionDocuments, instructionParticipants, instructions, processes } from '../db/schema/index.js';
+import { instructionDocuments, instructionParticipants, instructions, processes, users } from '../db/schema/index.js';
 
 import { badRequest, forbidden, notFound } from '../http/errors.js';
 import { today } from './instructions.js';
@@ -149,6 +149,37 @@ export async function notifyParticipants(user: SessionUser, id: string): Promise
 }
 
 export const confirmSchema = z.object({ participantId: z.string().uuid() }).strict();
+
+/** Einen einzelnen Teilnehmer benachrichtigen — ohne Mailadresse gibt es nichts zu tun (§7.3). */
+export async function notifyParticipant(
+    user: SessionUser,
+    instructionId: string,
+    participantId: string,
+): Promise<void> {
+    assertManager(user);
+
+    const [participant] = await db
+        .select({ id: instructionParticipants.id, mail: users.mail, status: instructionParticipants.status })
+        .from(instructionParticipants)
+        .innerJoin(users, eq(users.id, instructionParticipants.userId))
+        .where(
+            and(
+                eq(instructionParticipants.id, participantId),
+                eq(instructionParticipants.instructionId, instructionId),
+                eq(instructionParticipants.isActive, true),
+            ),
+        )
+        .limit(1);
+
+    if (!participant) throw notFound('Teilnehmer nicht gefunden.');
+    if (participant.mail === null) throw badRequest('Für diese Person ist keine E-Mail-Adresse hinterlegt.');
+    if (participant.status !== 'Offen') throw badRequest('Diese Person hat bereits geantwortet.');
+
+    await db
+        .update(instructionParticipants)
+        .set({ notifyStatus: 'In Bearbeitung' })
+        .where(eq(instructionParticipants.id, participantId));
+}
 
 async function assertConfirmable(instructionId: string, manager: SessionUser): Promise<void> {
     if (!canManageInstructions(manager)) throw forbidden('Bestätigen darf Administration und Bereichsleitung.');

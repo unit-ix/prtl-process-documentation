@@ -1,6 +1,12 @@
 import type { EmployeeDetailView, QualificationView } from '@app/domain';
 import { useState } from 'react';
-import { Card } from '@/shared/components/ui/card';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/shared/components/ui/sheet';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { useEmployee } from '../hooks/usePeople';
@@ -35,39 +41,32 @@ function InstructionHistory({ instructions }: { instructions: EmployeeDetailView
     );
 }
 
-function EmployeeHeading({ employee }: { employee: EmployeeDetailView['employee'] }) {
-    return (
-        <div>
-            <h2 className="text-lg font-semibold">{employee.displayName}</h2>
-            <p className="text-muted-foreground text-xs">
-                {employee.areaTitle ?? 'Ohne Bereich'}
-                {employee.mail ? ` · ${employee.mail}` : ''}
-            </p>
-        </div>
-    );
-}
-
-export function EmployeePanel({ employeeId }: { employeeId: string }) {
+export function EmployeePanel({ employeeId, onClose }: { employeeId: string; onClose: () => void }) {
     const { data, isPending } = useEmployee(employeeId);
     const [editing, setEditing] = useState<{ open: boolean; existing: QualificationView | null }>({
         open: false,
         existing: null,
     });
 
-    if (employeeId === '') {
-        return (
-            <Card className="glass-card border-border/40 text-muted-foreground rounded-2xl p-6 text-sm">
-                Mitarbeiter auswählen, um Unterweisungen, Qualifikationen und Aufgaben zu sehen.
-            </Card>
-        );
-    }
-
-    if (isPending || !data) return <Skeleton className="h-64 w-full rounded-2xl" />;
-
     return (
-        <Card className="glass-card border-border/40 space-y-4 rounded-2xl p-6">
-            <EmployeeHeading employee={data.employee} />
+        <Sheet open={employeeId !== ''} onOpenChange={(open) => (open ? undefined : onClose())}>
+            <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-xl">
+                {isPending || !data ? (
+                    <div className="p-6">
+                        <Skeleton className="h-64 w-full rounded-2xl" />
+                    </div>
+                ) : (
+                    <EmployeeBody data={data} editing={editing} setEditing={setEditing} />
+                )}
+            </SheetContent>
+        </Sheet>
+    );
+}
 
+type Editing = { open: boolean; existing: QualificationView | null };
+
+function EmployeeTabs({ data, onEdit }: { data: EmployeeDetailView; onEdit: (value: Editing) => void }) {
+    return (
             <Tabs defaultValue="instructions">
                 <TabsList>
                     <TabsTrigger value="instructions">Unterweisungen</TabsTrigger>
@@ -83,7 +82,7 @@ export function EmployeePanel({ employeeId }: { employeeId: string }) {
                     <QualificationTab
                         employee={data}
                         onEdit={(id) =>
-                            setEditing({
+                            onEdit({
                                 open: true,
                                 existing: (data.qualifications ?? []).find((item) => item.id === id) ?? null,
                             })
@@ -95,13 +94,39 @@ export function EmployeePanel({ employeeId }: { employeeId: string }) {
                     <TaskTab employee={data} />
                 </TabsContent>
             </Tabs>
+    );
+}
 
-            <QualificationDialog
-                userId={data.employee.id}
-                open={editing.open}
-                existing={editing.existing}
-                onClose={() => setEditing({ open: false, existing: null })}
-            />
-        </Card>
+function EmployeeBody({
+    data,
+    editing,
+    setEditing,
+}: {
+    data: EmployeeDetailView;
+    editing: Editing;
+    setEditing: (value: Editing) => void;
+}) {
+    return (
+        <div className="space-y-4">
+            <SheetHeader className="pb-2">
+                <SheetTitle>{data.employee.displayName}</SheetTitle>
+                <SheetDescription>
+                    {data.employee.areaTitle ?? 'Ohne Abteilung'}
+                    {data.employee.mail ? ` · ${data.employee.mail}` : ''}
+                </SheetDescription>
+            </SheetHeader>
+
+            <div className="space-y-4 px-6 pb-6">
+
+            <EmployeeTabs data={data} onEdit={setEditing} />
+
+                <QualificationDialog
+                    userId={data.employee.id}
+                    open={editing.open}
+                    existing={editing.existing}
+                    onClose={() => setEditing({ open: false, existing: null })}
+                />
+            </div>
+        </div>
     );
 }

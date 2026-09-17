@@ -16,6 +16,7 @@ export interface InstructionRepository {
     update(id: string, input: InstructionInput): Promise<void>;
     remove(id: string): Promise<void>;
     notify(id: string): Promise<{ queued: number }>;
+    notifyParticipant(id: string, participantId: string): Promise<void>;
     confirmAll(id: string): Promise<{ confirmed: number }>;
     confirmParticipant(id: string, participantId: string): Promise<void>;
     acknowledge(id: string): Promise<void>;

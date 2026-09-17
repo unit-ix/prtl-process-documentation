@@ -28,6 +28,10 @@ export class AzureInstructionRepository implements InstructionRepository {
         return apiSend<{ queued: number }>('POST', `/instructions/${id}/notify`, {});
     }
 
+    async notifyParticipant(id: string, participantId: string): Promise<void> {
+        await apiSend<void>('POST', `/instructions/${id}/participants/${participantId}/notify`, {});
+    }
+
     confirmAll(id: string): Promise<{ confirmed: number }> {
         return apiSend<{ confirmed: number }>('POST', `/instructions/${id}/confirm-all`, {});
     }
