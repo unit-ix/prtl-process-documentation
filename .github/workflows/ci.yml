@@ -4,7 +4,7 @@ name: CI
 on:
     pull_request:
     push:
-        branches: [main, dev, prototype]
+        branches: [main]
     workflow_dispatch: {}
 
 jobs:
@@ -49,21 +49,49 @@ jobs:
             - if: steps.toolchain.outputs.ready == 'true'
               run: pnpm install --frozen-lockfile
 
-            # Exakt derselbe Lauf wie lokal: pnpm verify = check:env && lint && knip && build
-            # (build = tsc --noEmit && vite build). Keine separaten Steps, damit CI nie abweicht.
-            - if: steps.toolchain.outputs.ready == 'true'
-              run: pnpm verify
+            # Dieselben Stufen wie lokal in `pnpm verify`, hier aber als EINZELNE Steps: lokal zählt
+            # der eine Befehl, in der CI die Ablesbarkeit — die rote Stufe steht dann im Balken
+            # statt in einem Log. docs/pruefsystematik.md. Eine Abhängigkeits-Prüfung käme, falls
+            # wir eine ergänzen, ans ENDE: vorne blockiert sie bei jeder neuen Meldung alles
+            # dahinter, ohne dass jemand Code geändert hat.
+            - name: Secrets im Bundle
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm check:env
 
-    # Cloudflare-Pages-Deploy. GEGATET + standardmäßig AUS: läuft erst mit gesetzter Repo-Variable
-    # CLOUDFLARE_DEPLOY_ENABLED und vorhandenen Secrets. Bis dahin dokumentiert, aber inert.
+            - name: CSP-Hosts
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm check:csp
+
+            - name: Tests
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm test
+
+            - name: Lint
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm lint
+
+            - name: Knip
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm knip
+
+            - name: Build
+              if: steps.toolchain.outputs.ready == 'true'
+              run: pnpm build
+
+    # Cloudflare-Pages-Deploy des Mock-Prototyps. GEGATET + standardmäßig AUS: läuft erst mit
+    # gesetzter Repo-Variable CLOUDFLARE_DEPLOY_ENABLED und vorhandenen Secrets. Bis dahin
+    # dokumentiert, aber inert.
     #
-    # Nur die drei Umgebungs-Branches deployen (prototype/dev/main), NIE feature/* — Build-Minuten
-    # sind ein reales Budget. Das Script ist backend-aware: bei dataverse überspringt es dev/main
-    # sauber (Power Platform), prototype deployt immer. Siehe docs/hosting.md.
+    # Nur `main` deployt, NIE ein PR oder feature/* — Build-Minuten sind ein reales Budget. Das
+    # Script ist host-aware: bei `platform: azure` oder `powerapps` steigt es sauber aus (exit 0),
+    # dort deployt `pnpm deploy:dev` / `pnpm deploy:prod` von Hand. Siehe .claude/docs/patterns-azure.md.
+    #
+    # Der Azure-Deploy läuft bewusst NICHT in CI: er bräuchte Entra-OIDC-Federated-Credentials und
+    # eine temporäre DB-Firewall-Regel für die wechselnde Runner-IP. Siehe .claude/docs/patterns-azure.md.
     deploy:
         runs-on: ubuntu-latest
         needs: verify
-        if: contains(fromJSON('["refs/heads/prototype", "refs/heads/dev", "refs/heads/main"]'), github.ref) && vars.CLOUDFLARE_DEPLOY_ENABLED == 'true'
+        if: github.ref == 'refs/heads/main' && vars.CLOUDFLARE_DEPLOY_ENABLED == 'true'
         # Zwei schnelle Pushes auf denselben Branch sollen nicht doppelt Build-Minuten verbrennen.
         concurrency:
             group: deploy-${{ github.ref }}
@@ -91,8 +119,8 @@ jobs:
             # Ruft bewusst DAS Script statt die Deploy-Logik zu duplizieren: sonst nimmt CI den
             # Repo-Namen und das Script .unitix/project.json als Slug-Quelle → zwei Pages-Projekte
             # mit zwei URLs. Das Script sanitized den Slug und legt das Projekt bei Bedarf an
-            # (wrangler täte das nur interaktiv). --branch bestimmt Umgebung + Ziel-Projekt.
-            - run: node scripts/deploy.mjs --branch=${{ github.ref_name }}
+            # (wrangler täte das nur interaktiv).
+            - run: node scripts/deploy-cloudflare.mjs
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

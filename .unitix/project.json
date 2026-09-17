@@ -1,5 +1,52 @@
 {
-  "name": "code-apps-template",
-  "backend": "mock",
-  "frontend": "cloudflare"
+    "name": "prtl-process-documentation",
+    "platform": "azure",
+    "entra": {
+        "tenantId": "3e8afe1d-ae53-4657-ac1e-20180346d82c",
+        "clientId": "723ee7d4-1f9c-4e20-9afe-88ad8a9ce215",
+        "apiAudience": "8f0ebfa7-4cd9-44b2-802f-9beebccc526d",
+        "subdomain": ""
+    },
+    "foundry": {
+        "endpoint": "https://ais-process-documentation.cognitiveservices.azure.com/",
+        "deployment": "gpt-5.4-mini"
+    },
+    "mail": {
+        "senderUpn": "<Sammelpostfach, z. B. prozessdokumentation@prettl.com>",
+        "transport": "none"
+    },
+    "environments": {
+        "dev": {
+            "url": "https://black-glacier-04941f903.6.azurestaticapps.net",
+            "azure": {
+                "resourceGroup": "rg-process-documentation-tool",
+                "apiAppName": "app-prettl-process-documentation-dev"
+            },
+            "pg": {
+                "host": "psql-process-documentation.postgres.database.azure.com",
+                "database": "app_dev",
+                "user": "app-prettl-process-documentation-dev"
+            },
+            "storage": {
+                "account": "stprocessdocumentation",
+                "container": "files-dev"
+            }
+        },
+        "prod": {
+            "url": "https://agreeable-cliff-0fc09af03.5.azurestaticapps.net",
+            "azure": {
+                "resourceGroup": "rg-process-documentation-tool",
+                "apiAppName": "app-prettl-process-documentation"
+            },
+            "pg": {
+                "host": "psql-process-documentation.postgres.database.azure.com",
+                "database": "app",
+                "user": "app-prettl-process-documentation"
+            },
+            "storage": {
+                "account": "stprocessdocumentation",
+                "container": "files"
+            }
+        }
+    }
 }
