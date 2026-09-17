@@ -112,10 +112,19 @@ export function EditorToolbar({ editor, onPickImage }: EditorToolbarProps) {
         </Button>
       ) : null}
 
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-9 gap-2"
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+      >
+        <TableIcon className="h-4 w-4" /> Tabelle
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost" className="h-9 gap-2">
-            <TableIcon className="h-4 w-4" /> Tabelle
+          <Button size="sm" variant="ghost" className="h-9 gap-2" aria-label="Tabellen-Aktionen">
+            <TableIcon className="h-4 w-4" /> Zeile/Spalte
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -123,22 +132,52 @@ export function EditorToolbar({ editor, onPickImage }: EditorToolbarProps) {
           <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
             <TableIcon className="mr-2 h-4 w-4" /> Einfügen (3 × 3)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().addColumnAfter().run();
+            }}
+          >
             <Columns3 className="mr-2 h-4 w-4" /> Spalte einfügen
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().addRowAfter().run();
+            }}
+          >
             <Rows3 className="mr-2 h-4 w-4" /> Zeile einfügen
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().deleteColumn().run();
+            }}
+          >
             <Trash2 className="mr-2 h-4 w-4" /> Spalte löschen
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().deleteRow().run();
+            }}
+          >
             <Trash2 className="mr-2 h-4 w-4" /> Zeile löschen
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().mergeOrSplit().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().mergeOrSplit().run();
+            }}
+          >
             <TableIcon className="mr-2 h-4 w-4" /> Zellen verbinden / teilen
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()}>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().deleteTable().run();
+            }}
+          >
             <Trash2 className="mr-2 h-4 w-4" /> Tabelle löschen
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -152,10 +191,30 @@ export function EditorToolbar({ editor, onPickImage }: EditorToolbarProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuLabel>Hinweisblock</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => editor.chain().focus().togglePanel("info").run()}>Info</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().togglePanel("success").run()}>Erfolg</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().togglePanel("warning").run()}>Warnung</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().togglePanel("danger").run()}>Achtung</DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().togglePanel("info").run();
+            }}
+          >Info</DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().togglePanel("success").run();
+            }}
+          >Erfolg</DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().togglePanel("warning").run();
+            }}
+          >Warnung</DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault();
+              editor.chain().focus().togglePanel("danger").run();
+            }}
+          >Achtung</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

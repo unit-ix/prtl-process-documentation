@@ -2,6 +2,7 @@ import { canCreateProcess } from '@app/domain';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { useSessionUser } from '@/shared/lib/session/SessionContext';
 import { Card } from '@/shared/components/ui/card';
+import { AreaPills } from '../components/AreaPills';
 import { ProcessCreateSheet } from '../components/ProcessCreateSheet';
 import { ProcessFilters } from '../components/ProcessFilters';
 import { ProcessTable } from '../components/ProcessTable';
@@ -9,7 +10,7 @@ import { useProcessList } from '../hooks/useProcessList';
 
 export function ProcessesPage() {
     const canCreate = canCreateProcess(useSessionUser());
-    const { nodes, filter, setFilter, sort, toggleSort, isPending, error, refetch, total } = useProcessList();
+    const { nodes, areas, filter, setFilter, sort, toggleSort, isPending, error, refetch, total } = useProcessList();
 
     return (
         <div className="space-y-8">
@@ -27,7 +28,14 @@ export function ProcessesPage() {
                 {canCreate ? <ProcessCreateSheet /> : null}
             </header>
 
-            <ProcessFilters filter={filter} onChange={setFilter} />
+            <div className="space-y-3">
+                <ProcessFilters filter={filter} onChange={setFilter} />
+                <AreaPills
+                    areas={areas}
+                    selected={filter.area}
+                    onSelect={(area) => setFilter({ ...filter, area })}
+                />
+            </div>
 
             <AsyncBoundary isLoading={isPending} error={error} onRetry={() => void refetch()}>
                 <Card className="glass-elevated border-border/40 overflow-hidden rounded-3xl p-0">

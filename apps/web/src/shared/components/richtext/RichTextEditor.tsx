@@ -53,14 +53,29 @@ function TableQuickActions({ editor }: { editor: NonNullable<ReturnType<typeof u
     );
 }
 
+const imageFrom = (transfer: DataTransfer | null): File | null => {
+    const file = [...(transfer?.files ?? [])].find((candidate) => candidate.type.startsWith('image/'));
+    return file ?? null;
+};
+
 export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) {
     const fileInput = useRef<HTMLInputElement>(null);
+    const insertRef = useRef<(file: File) => void>(() => undefined);
+
+    const interceptImage = (transfer: DataTransfer | null): boolean => {
+        const file = imageFrom(transfer);
+        if (file === null) return false;
+        insertRef.current(file);
+        return true;
+    };
     const editor = useEditor({
         extensions: buildExtensions({ editable: true }),
         shouldRerenderOnTransaction: true,
         content: value ?? EMPTY_DOC,
         editorProps: {
             attributes: { class: 'rich-text min-h-[60vh] focus:outline-none' },
+            handlePaste: (_view, event) => interceptImage(event.clipboardData),
+            handleDrop: (_view, event) => interceptImage((event as DragEvent).dataTransfer),
         },
         onUpdate: ({ editor: instance }) => onChange(instance.getJSON() as RichDocument),
     });
@@ -68,7 +83,10 @@ export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) 
     if (!editor) return null;
 
     const insertImage = async (file: File) => {
-        if (!owner) return;
+        if (!owner) {
+            toast.error('Bilder lassen sich erst einfügen, wenn der Prozess gespeichert ist.');
+            return;
+        }
         try {
             const stored = await fileStore.upload(owner.kind, owner.id, file);
             editor.chain().focus().setImage({ src: fileReference(stored.id), alt: file.name }).run();
@@ -78,6 +96,8 @@ export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) 
             });
         }
     };
+
+    insertRef.current = (file: File) => void insertImage(file);
 
     return (
         <div className="space-y-3">

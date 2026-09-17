@@ -1,6 +1,7 @@
 import type { ProcessDetailView } from '@app/domain';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { processRepository } from '@/data';
 import { processDetailKey } from './useProcessDetail';
@@ -44,6 +45,7 @@ export function useProcessForm(process: ProcessDetailView) {
     const [form, setForm] = useState<ProcessFormState>(() => toFormState(process));
     const [isDirty, setDirty] = useState(false);
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const set = <TKey extends keyof ProcessFormState>(key: TKey, value: ProcessFormState[TKey]) => {
         setForm((current) => ({ ...current, [key]: value }));
@@ -81,6 +83,7 @@ export function useProcessForm(process: ProcessDetailView) {
             toast.success('Gespeichert.');
             await queryClient.invalidateQueries({ queryKey: processDetailKey(process.id) });
             await queryClient.invalidateQueries({ queryKey: ['processes'] });
+            navigate(`/processes/${process.id}`);
         },
         onError: (error: Error) => toast.error(error.message),
     });

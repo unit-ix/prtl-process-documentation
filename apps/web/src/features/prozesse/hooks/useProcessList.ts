@@ -43,10 +43,17 @@ export function useProcessList() {
 
     const nodes = useMemo(() => toTree(query.data?.items ?? []), [query.data]);
 
+    // Die Bereichsleiste zeigt, was in den geladenen Prozessen vorkommt — nicht alle 18 Bereiche.
+    const areas = useMemo(() => {
+        const seen = new Map<string, { id: string; title: string }>();
+        for (const item of query.data?.items ?? []) seen.set(item.area.id, { id: item.area.id, title: item.area.title });
+        return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title, 'de'));
+    }, [query.data]);
+
     const toggleSort = (field: ProcessSortField) =>
         setSort((current) =>
             current.field === field ? { field, dir: current.dir === 'asc' ? 'desc' : 'asc' } : { field, dir: 'asc' },
         );
 
-    return { ...query, nodes, total: query.data?.total ?? null, filter, setFilter, sort, toggleSort };
+    return { ...query, nodes, areas, total: query.data?.total ?? null, filter, setFilter, sort, toggleSort };
 }

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { DeepLink } from '@/app/DeepLink';
 import { AssistantPage } from '@/features/assistent';
 import { SettingsPage } from '@/features/einstellungen';
 import { QualificationsPage } from '@/features/qualifikationen';
@@ -16,6 +17,7 @@ import { LoadingScreen } from '@/shared/components/state/LoadingScreen';
 import { NoAccess } from '@/shared/components/state/NoAccess';
 import { NotFound } from '@/shared/components/state/NotFound';
 import { Toaster } from '@/shared/components/ui/sonner';
+import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { SessionProvider } from '@/shared/lib/session/SessionContext';
 import type { Session } from '@/data/ports/SessionRepository';
 
@@ -46,8 +48,10 @@ function SessionGate({
 export function App() {
     return (
         <QueryClientProvider client={queryClient}>
-            <HashRouter>
+            <TooltipProvider delayDuration={200}>
+                <HashRouter>
                 <SessionProvider fallback={SessionGate}>
+                    <DeepLink />
                     <AppShell>
                         <Routes>
                             <Route path="/" element={<Navigate to="/processes" replace />} />
@@ -65,7 +69,8 @@ export function App() {
                     </AppShell>
                 </SessionProvider>
                 <Toaster richColors position="bottom-right" />
-            </HashRouter>
+                </HashRouter>
+            </TooltipProvider>
         </QueryClientProvider>
     );
 }
