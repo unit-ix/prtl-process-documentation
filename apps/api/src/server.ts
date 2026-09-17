@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController, type FastifyReply, type FastifyRequest } from 'fastify';
 import { bearerToken, verifyAccessToken, type Claims } from './auth/verify.js';
 import { allowedOrigins, dbTarget, serverEnv } from './env.js';
+import { clientIp } from './http/clientIp.js';
 import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './http/errors.js';
 import { renderConfirmPage, renderConfirmResult } from './router/confirmPageHtml.js';
 import { startMailSweep } from './mail/sweep.js';
@@ -59,7 +60,7 @@ app.addHook(
     'preHandler',
     app.rateLimit({
         max: env.RATE_LIMIT_MAX,
-        keyGenerator: (request: FastifyRequest) => request.claims?.objectId ?? request.ip,
+        keyGenerator: (request: FastifyRequest) => request.claims?.objectId ?? clientIp(request),
         allowList: (request: FastifyRequest) => request.url === '/health' || request.url.startsWith('/health?'),
     }),
 );
@@ -89,7 +90,7 @@ app.post('/api/confirm/:token', async (request: FastifyRequest, reply: FastifyRe
     const { token } = request.params as { token: string };
     const answer = (request.body as { answer?: string } | undefined)?.answer === 'no' ? 'no' : 'yes';
     const result = await submitConfirmation(token, answer, {
-        ip: request.ip,
+        ip: clientIp(request),
         userAgent: request.headers['user-agent'] ?? null,
     });
 
