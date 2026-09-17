@@ -69,7 +69,7 @@ const boundaryElements = [
 ]
 
 export default tseslint.config(
-    { ignores: ['**/dist/**', 'apps/web/src/generated/**', '**/node_modules/**', '.claude/**', 'scripts/**'] },
+    { ignores: ['**/dist/**', '.artifacts/**', 'apps/web/src/generated/**', '**/node_modules/**', '.claude/**', 'scripts/**'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
