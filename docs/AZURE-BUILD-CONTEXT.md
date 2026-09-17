@@ -1257,7 +1257,7 @@ See **§9.1**.
 | **Q2** | **Prozessart in the title** — the mail says no, the Asana ticket guesses yes (C2). | Built per the mail. One-line change either way; confirm with Lysandra. |
 | **Q3** | **Instruction recurrence** (§7.8) — build the scheduler, or drop the field? | LATER. The PRD keeps turnus training in Quentic, so dropping it may be right. |
 | **Q4** | **Soll/Ist qualification requirements** — nothing links a process to the qualifications it requires, so the matrix cannot show gaps. | LATER. Keep the schema open for a `ProcessRequiredQualification` join. |
-| **Q5** | **Bereich shortcodes** — **"F / T"** contains a space and a slash and cannot go in an identifier; **POD**'s category is inconsistent (2 vs 3) in the 2026 proposal. | 🔴 **Resolve before seeding Areas.** Blocks §3.4. |
+| **Q5** | **Bereich shortcodes** — **"F / T"** contains a space and a slash and cannot go in an identifier; **POD**'s category is inconsistent (2 vs 3) in the 2026 proposal. | ✅ **Geklärt (2026-09-17).** Quelle ist die zweite Tabelle in *VA PE 1 IMS 002a01 Anlage Prozessabkürzungen*: 18 Bereiche, POD = 3-Unterstützung. Der Kurzcode für Operation + Technology ist auf Kundenwunsch **`FT`** ohne Schrägstrich (Migration 0003). |
 | **Q6** | When does the **18-Bereiche 2026 structure** become binding? Existing identifiers must not retro-change. | Affects migration ordering. |
 | **Q7** | **Initialbefüllung** — Excel import of staff + processes with AI pre-fill from old descriptions is in the PRD and exists nowhere. | LATER, its own work package. |
 | **Q8** | `confidentiality` is a pure label today. Will it ever gate access? | Keep as a label. If it must gate, that is a security feature needing its own design. |
