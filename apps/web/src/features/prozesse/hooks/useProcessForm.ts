@@ -6,6 +6,19 @@ import { toast } from 'sonner';
 import { processRepository } from '@/data';
 import { processDetailKey } from './useProcessDetail';
 
+export interface FormField {
+    id?: string;
+    title: string;
+    value: string;
+}
+
+export interface FormLink {
+    linkType: 'InternerProzess' | 'ExternesDokument';
+    linkedProcessId: string | null;
+    title: string;
+    url: string;
+}
+
 export interface ProcessFormState {
     title: string;
     shortDescription: string;
@@ -19,7 +32,8 @@ export interface ProcessFormState {
     documentationRef: string;
     deviationHandling: string;
     maintenanceRef: string;
-    additionalFields: Record<string, string>;
+    additionalFields: FormField[];
+    links: FormLink[];
 }
 
 const text = (value: string | null): string => value ?? '';
@@ -38,7 +52,44 @@ export const toFormState = (process: ProcessDetailView): ProcessFormState => ({
     documentationRef: text(process.version.documentationRef),
     deviationHandling: text(process.version.deviationHandling),
     maintenanceRef: text(process.version.maintenanceRef),
-    additionalFields: Object.fromEntries(process.additionalFields.map((field) => [field.id, text(field.value)])),
+    additionalFields: process.additionalFields.map((field) => ({
+        id: field.id,
+        title: field.title,
+        value: text(field.value),
+    })),
+    links: process.links.map((link) => ({
+        linkType: link.linkType,
+        linkedProcessId: link.linkedProcess?.id ?? null,
+        title: text(link.title),
+        url: text(link.url),
+    })),
+});
+
+const toPayload = (form: ProcessFormState, rowVersion: number) => ({
+    rowVersion,
+    title: form.title.trim(),
+    shortDescription: orNull(form.shortDescription),
+    purpose: orNull(form.purpose),
+    scopeDetail: orNull(form.scopeDetail),
+    terms: orNull(form.terms),
+    responsibilities: orNull(form.responsibilities),
+    workSequence: orNull(form.workSequence),
+    method: orNull(form.method),
+    processParameters: orNull(form.processParameters),
+    documentationRef: orNull(form.documentationRef),
+    deviationHandling: orNull(form.deviationHandling),
+    maintenanceRef: orNull(form.maintenanceRef),
+    additionalFields: form.additionalFields
+        .filter((field) => field.title.trim() !== '')
+        .map((field) => ({ id: field.id, title: field.title.trim(), value: orNull(field.value) })),
+    links: form.links
+        .filter((link) => (link.linkType === 'InternerProzess' ? link.linkedProcessId !== null : link.url.trim() !== ''))
+        .map((link) => ({
+            linkType: link.linkType,
+            linkedProcessId: link.linkType === 'InternerProzess' ? link.linkedProcessId : null,
+            title: orNull(link.title),
+            url: link.linkType === 'ExternesDokument' ? link.url.trim() : null,
+        })),
 });
 
 export function useProcessForm(process: ProcessDetailView) {
@@ -52,32 +103,18 @@ export function useProcessForm(process: ProcessDetailView) {
         setDirty(true);
     };
 
-    const setAdditionalField = (id: string, value: string) => {
-        setForm((current) => ({ ...current, additionalFields: { ...current.additionalFields, [id]: value } }));
+    const setFields = (additionalFields: FormField[]) => {
+        setForm((current) => ({ ...current, additionalFields }));
+        setDirty(true);
+    };
+
+    const setLinks = (links: FormLink[]) => {
+        setForm((current) => ({ ...current, links }));
         setDirty(true);
     };
 
     const save = useMutation({
-        mutationFn: () =>
-            processRepository.save(process.id, {
-                rowVersion: process.version.rowVersion,
-                title: form.title.trim(),
-                shortDescription: orNull(form.shortDescription),
-                purpose: orNull(form.purpose),
-                scopeDetail: orNull(form.scopeDetail),
-                terms: orNull(form.terms),
-                responsibilities: orNull(form.responsibilities),
-                workSequence: orNull(form.workSequence),
-                method: orNull(form.method),
-                processParameters: orNull(form.processParameters),
-                documentationRef: orNull(form.documentationRef),
-                deviationHandling: orNull(form.deviationHandling),
-                maintenanceRef: orNull(form.maintenanceRef),
-                additionalFields: Object.entries(form.additionalFields).map(([id, value]) => ({
-                    id,
-                    value: orNull(value),
-                })),
-            }),
+        mutationFn: () => processRepository.save(process.id, toPayload(form, process.version.rowVersion)),
         onSuccess: async () => {
             setDirty(false);
             toast.success('Gespeichert.');
@@ -88,5 +125,5 @@ export function useProcessForm(process: ProcessDetailView) {
         onError: (error: Error) => toast.error(error.message),
     });
 
-    return { form, set, setAdditionalField, save, isDirty };
+    return { form, set, setFields, setLinks, save, isDirty };
 }

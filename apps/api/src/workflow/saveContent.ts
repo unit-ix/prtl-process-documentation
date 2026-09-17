@@ -2,7 +2,7 @@
 // Version, nie in die Hülle (die schreibt allein die Freigabe), und ein zweiter Bearbeiter bekommt
 // eine klare Meldung statt eines stillen Überschreibens.
 import { canEditContent, richTextToPlainText, type RichDocument, type SessionUser } from '@app/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
 import { processAdditionalFields, processes, processLinks, processVersions } from '../db/schema/index.js';
@@ -34,7 +34,17 @@ export const saveContentSchema = z
         documentationRef: z.string().nullish(),
         deviationHandling: z.string().nullish(),
         maintenanceRef: z.string().nullish(),
-        additionalFields: z.array(z.object({ id: z.string().uuid(), value: z.string().nullish() })).optional(),
+        additionalFields: z
+            .array(
+                z
+                    .object({
+                        id: z.string().uuid().optional(),
+                        title: z.string().trim().min(1).max(200),
+                        value: z.string().nullish(),
+                    })
+                    .strict(),
+            )
+            .optional(),
         links: z
             .array(
                 z
@@ -114,15 +124,48 @@ function assertEditable(user: SessionUser, { process, version }: EditableTarget,
     if (version.rowVersion !== rowVersion) throw conflict(CONFLICT_MESSAGE);
 }
 
+// Erstellte Felder gehören dem Verfasser: er legt sie an, benennt sie und entfernt sie wieder.
+// Abgeglichen wird die ganze Liste in einem Zug — was fehlt, wird inaktiv, was keine Id hat, ist neu.
 async function saveAdditionalFields(
     tx: Tx,
     versionId: string,
     fields: SaveContentInput['additionalFields'],
 ): Promise<void> {
-    for (const field of fields ?? []) {
+    if (fields === undefined) return;
+
+    const existing = await tx
+        .select({ id: processAdditionalFields.id })
+        .from(processAdditionalFields)
+        .where(
+            and(
+                eq(processAdditionalFields.processVersionId, versionId),
+                eq(processAdditionalFields.isActive, true),
+            ),
+        );
+
+    const kept = new Set(fields.map((field) => field.id).filter((id): id is string => id !== undefined));
+    const removed = existing.filter((row) => !kept.has(row.id)).map((row) => row.id);
+    if (removed.length > 0) {
+        await tx
+            .update(processAdditionalFields)
+            .set({ isActive: false })
+            .where(inArray(processAdditionalFields.id, removed));
+    }
+
+    for (const [index, field] of fields.entries()) {
+        if (field.id === undefined) {
+            await tx.insert(processAdditionalFields).values({
+                processVersionId: versionId,
+                title: field.title,
+                value: field.value ?? null,
+                sortOrder: index,
+            });
+            continue;
+        }
+
         const updated = await tx
             .update(processAdditionalFields)
-            .set({ value: field.value ?? null })
+            .set({ title: field.title, value: field.value ?? null, sortOrder: index })
             .where(
                 and(
                     eq(processAdditionalFields.id, field.id),

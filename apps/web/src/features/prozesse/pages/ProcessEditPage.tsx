@@ -5,8 +5,11 @@ import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { Button } from '@/shared/components/ui/button';
 import { Card } from '@/shared/components/ui/card';
 import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
+import type { ProcessListItem } from '@app/domain';
+import { AdditionalFieldsEditor } from '../components/AdditionalFieldsEditor';
+import { LinksEditor } from '../components/LinksEditor';
 import { FormField, GENERAL_FIELDS, OVERVIEW_FIELDS, templateFields } from '../components/ProcessFormFields';
+import { useReleasedProcesses } from '../hooks/useReleasedProcesses';
 import { useProcessDetail } from '../hooks/useProcessDetail';
 import { useProcessForm } from '../hooks/useProcessForm';
 import { NO_IDENTIFIER } from '../mappings/processMappings';
@@ -21,7 +24,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function EditForm({ process }: { process: ProcessDetailView }) {
-    const { form, set, setAdditionalField, save, isDirty } = useProcessForm(process);
+    const { form, set, setFields, setLinks, save, isDirty } = useProcessForm(process);
+    const { data: released } = useReleasedProcesses();
 
     return (
         <div className="space-y-4">
@@ -56,7 +60,7 @@ function EditForm({ process }: { process: ProcessDetailView }) {
                 />
             </Section>
 
-            <AdditionalFieldsSection process={process} form={form} onChange={setAdditionalField} />
+            <ExtraSections form={form} setFields={setFields} setLinks={setLinks} processes={released ?? []} />
         </div>
     );
 }
@@ -87,31 +91,27 @@ function OverviewSection({ process, form, set }: { process: ProcessDetailView; f
     );
 }
 
-function AdditionalFieldsSection({
-    process,
+function ExtraSections({
     form,
-    onChange,
+    setFields,
+    setLinks,
+    processes,
 }: {
-    process: ProcessDetailView;
     form: FormApi['form'];
-    onChange: FormApi['setAdditionalField'];
+    setFields: FormApi['setFields'];
+    setLinks: FormApi['setLinks'];
+    processes: readonly ProcessListItem[];
 }) {
-    if (process.additionalFields.length === 0) return null;
-
     return (
-                <Section title="Erstellte Felder">
-                    {process.additionalFields.map((field) => (
-                        <div key={field.id} className="space-y-1.5">
-                            <Label htmlFor={field.id}>{field.title}</Label>
-                            <Textarea
-                                id={field.id}
-                                rows={3}
-                                value={form.additionalFields[field.id] ?? ''}
-                                onChange={(event) => onChange(field.id, event.target.value)}
-                            />
-                        </div>
-                    ))}
-                </Section>
+        <>
+            <Section title="Mitgeltende Unterlagen">
+                <LinksEditor links={form.links} processes={processes} onChange={setLinks} />
+            </Section>
+
+            <Section title="Erstellte Felder">
+                <AdditionalFieldsEditor fields={form.additionalFields} onChange={setFields} />
+            </Section>
+        </>
     );
 }
 

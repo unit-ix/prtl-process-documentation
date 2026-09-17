@@ -17,7 +17,6 @@ import {
     uploadUrlSchema,
 } from './files.js';
 import { ask, askSchema } from './assistant.js';
-import { createUser, createUserSchema, listDirectoryUsers } from './directory.js';
 import { getEmployee, listEmployees } from './employees.js';
 import { getInstruction, listInstructions } from './instructions.js';
 import {
@@ -82,12 +81,6 @@ export const ROUTES: readonly Route[] = [
         method: 'POST',
         path: '/assistant/ask',
         handle: ({ user, body }) => ok(ask(user, parseBody(askSchema, body))),
-    },
-    { method: 'GET', path: '/directory/users', handle: ({ user }) => ok(listDirectoryUsers(user)) },
-    {
-        method: 'POST',
-        path: '/users',
-        handle: async ({ user, body }) => ({ status: 201, body: await createUser(user, parseBody(createUserSchema, body)) }),
     },
     { method: 'GET', path: '/employees', handle: () => ok(listEmployees()) },
     { method: 'GET', path: '/employees/:id', handle: ({ user, params }) => ok(getEmployee(user, params.id)) },

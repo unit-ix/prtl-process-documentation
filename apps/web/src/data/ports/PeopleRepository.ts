@@ -23,23 +23,7 @@ export interface UserRoleInput {
     areaId?: string | null;
 }
 
-export interface DirectoryUser {
-    entraObjectId: string;
-    displayName: string;
-    mail: string | null;
-    exists: boolean;
-}
-
-export interface NewUserInput {
-    entraObjectId: string;
-    displayName: string;
-    mail?: string | null;
-    areaId?: string | null;
-}
-
 export interface PeopleRepository {
-    directoryUsers(): Promise<DirectoryUser[]>;
-    createUser(input: NewUserInput): Promise<{ id: string }>;
     employees(): Promise<EmployeeListItem[]>;
     employee(id: string): Promise<EmployeeDetailView>;
     saveQualification(input: QualificationInput, id?: string): Promise<{ id: string }>;

@@ -18,9 +18,6 @@ const serverSchema = z.object({
 
     ENTRA_SUBDOMAIN: z.string().optional(),
 
-    // Objekt-Id der Sicherheitsgruppe, aus der Benutzer übernommen werden dürfen (§9.7).
-    ENTRA_USER_GROUP_ID: z.string().min(1).optional(),
-
     ALLOWED_ORIGIN: z.string().default(''),
 
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(200),
@@ -112,7 +109,6 @@ function projectConfigDefaults(): Record<string, string> {
             ENTRA_TENANT_ID: entra.tenantId,
             ENTRA_API_AUDIENCE: entra.apiAudience,
             ENTRA_SUBDOMAIN: entra.subdomain,
-            ENTRA_USER_GROUP_ID: entra.userGroupId,
             FOUNDRY_ENDPOINT: foundry.endpoint,
             FOUNDRY_DEPLOYMENT: foundry.deployment,
             MAIL_SENDER_UPN: mail.senderUpn,

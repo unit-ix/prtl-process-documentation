@@ -5,8 +5,7 @@
         "tenantId": "3e8afe1d-ae53-4657-ac1e-20180346d82c",
         "clientId": "723ee7d4-1f9c-4e20-9afe-88ad8a9ce215",
         "apiAudience": "8f0ebfa7-4cd9-44b2-802f-9beebccc526d",
-        "subdomain": "",
-        "userGroupId": "ccd03c4e-cf75-4f98-8c50-c3f542cff54c"
+        "subdomain": ""
     },
     "foundry": {
         "endpoint": "https://ais-process-documentation.cognitiveservices.azure.com/",
