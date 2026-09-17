@@ -50,7 +50,16 @@ export async function apiGetOrNull<T>(path: string): Promise<T | null> {
 export async function apiSend<T>(method: 'POST' | 'PATCH', path: string, body: unknown): Promise<T> {
     const response = await request(path, { method, body: JSON.stringify(body) });
     if (!response.ok) throw await toError(response);
-    return (await response.json()) as T;
+    return (await parseBody(response)) as T;
+}
+
+// Ein erfolgreicher Schreibvorgang antwortet oft mit 204 und LEEREM Body. `response.json()` wirft
+// darauf „Unexpected end of JSON input" — die Oberfläche zeigte dann einen Fehler für einen
+// Aufruf, der gerade funktioniert hat.
+async function parseBody(response: Response): Promise<unknown> {
+    if (response.status === 204) return null;
+    const text = await response.text();
+    return text === '' ? null : JSON.parse(text);
 }
 
 export async function apiDelete(path: string): Promise<void> {
