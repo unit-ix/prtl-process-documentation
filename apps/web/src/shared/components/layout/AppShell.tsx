@@ -86,9 +86,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarProvider>
             <Sidebar collapsible="offcanvas" className="border-border/40 bg-sidebar/70 backdrop-blur-xl">
                 <SidebarHeader className="border-sidebar-border border-b p-4">
-                    <Link to="/processes" className="flex items-center gap-3">
-                        <img src={prettlLogo} alt="PRETTL electronics" className="h-8 w-auto" />
-                        <span className="text-muted-foreground text-xs leading-tight">Prozess&shy;dokumentation</span>
+                    <Link to="/processes" className="flex items-center">
+                        <img src={prettlLogo} alt="PRETTL electronics — Prozessdokumentation" className="h-9 w-auto" />
                     </Link>
                 </SidebarHeader>
                 <SidebarContent className="px-2 py-4">
