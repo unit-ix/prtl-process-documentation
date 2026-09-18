@@ -1,5 +1,5 @@
 import type { InstructionDetailView } from '@app/domain';
-import { BadgeCheck, CalendarDays, FileText, Layers, Repeat, Users } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, CalendarDays, FileText, Layers, Repeat, RotateCw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
@@ -54,6 +54,35 @@ function TitleBlock({ instruction }: { instruction: InstructionDetailView }) {
     );
 }
 
+/**
+ * Der Turnus sichtbar machen: woher diese Runde kommt und wann die nächste öffnet. Ohne diese
+ * Zeile wäre die Wiederholung eine Behauptung im Formular statt etwas Nachvollziehbares.
+ */
+function RoundLineage({ instruction }: { instruction: InstructionDetailView }) {
+    const { previousRound, nextRoundDueDate } = instruction;
+    if (previousRound === null && nextRoundDueDate === null) return null;
+
+    return (
+        <div className="text-muted-foreground mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+            {previousRound ? (
+                <Link
+                    to={`/instructions/${previousRound.id}`}
+                    className="hover:text-foreground inline-flex items-center gap-1.5 hover:underline"
+                >
+                    <ArrowLeft className="size-3.5" />
+                    Folgerunde aus der Unterweisung mit Frist {formatDate(previousRound.dueDate)}
+                </Link>
+            ) : null}
+            {nextRoundDueDate !== null ? (
+                <span className="inline-flex items-center gap-1.5">
+                    <RotateCw className="size-3.5" />
+                    Nächste Runde wird automatisch geöffnet, Frist {formatDate(nextRoundDueDate)}
+                </span>
+            ) : null}
+        </div>
+    );
+}
+
 export function InstructionHeader({ instruction, actions }: { instruction: InstructionDetailView; actions: React.ReactNode }) {
     const isOverdue = instruction.status === 'Überfällig';
 
@@ -81,6 +110,8 @@ export function InstructionHeader({ instruction, actions }: { instruction: Instr
                     value={`${instruction.counts.confirmed} von ${instruction.counts.total}`}
                 />
             </div>
+
+            <RoundLineage instruction={instruction} />
         </Card>
     );
 }

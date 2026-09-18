@@ -12,6 +12,8 @@ import {
     SelectValue,
 } from '@/shared/components/ui/select';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import { ShieldCheck } from 'lucide-react';
+import { SettingsHint } from './SettingsHint';
 
 const NONE = 'none';
 
@@ -22,23 +24,38 @@ const ROLES: { key: keyof UserRoleInput & keyof UserListItem; label: string }[] 
     { key: 'isAuthor', label: 'Verfasser' },
 ];
 
+function UserIdentity({ user, leads }: { user: UserListItem; leads: readonly string[] }) {
+    return (
+        <div className="min-w-0">
+            <p className="text-sm font-medium">{user.displayName}</p>
+            <p className="text-muted-foreground text-xs">{user.mail ?? 'Keine E-Mail'}</p>
+            {/* Hier treffen sich beide Begriffe: wo jemand arbeitet, steht rechts — was er leitet, hier. */}
+            {leads.length > 0 ? (
+                <p className="text-primary mt-1 inline-flex items-center gap-1 text-xs">
+                    <ShieldCheck className="size-3.5" />
+                    Leitung: {leads.join(', ')}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
 function UserRow({
     user,
     areas,
+    leads,
     isPending,
     onChange,
 }: {
     user: UserListItem;
     areas: readonly { id: string; title: string }[];
+    leads: readonly string[];
     isPending: boolean;
     onChange: (id: string, input: UserRoleInput) => void;
 }) {
     return (
         <li className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-                <p className="text-sm font-medium">{user.displayName}</p>
-                <p className="text-muted-foreground text-xs">{user.mail ?? 'Keine E-Mail'}</p>
-            </div>
+            <UserIdentity user={user} leads={leads} />
             <div className="flex flex-wrap items-center gap-3">
                 {ROLES.map((role) => (
                     <label key={role.key} className="flex items-center gap-1.5 text-xs">
@@ -57,7 +74,7 @@ function UserRow({
                     onValueChange={(value) => onChange(user.id, { areaId: value === NONE ? null : value })}
                 >
                     <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Abteilung" />
+                        <SelectValue placeholder="Arbeitet in …" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value={NONE}>Ohne Abteilung</SelectItem>
@@ -73,7 +90,7 @@ function UserRow({
     );
 }
 
-export function UserSettings() {
+export function UserSettings({ onSwitch }: { onSwitch: () => void }) {
     const queryClient = useQueryClient();
     const { data: users, isPending } = useQuery({ queryKey: ['users'], queryFn: () => masterDataRepository.users() });
     const { data: areas } = useQuery({ queryKey: ['areas'], queryFn: () => masterDataRepository.areas() });
@@ -90,11 +107,21 @@ export function UserSettings() {
 
     if (isPending) return <Skeleton className="h-48 w-full rounded-2xl" />;
 
+    const leadsOf = (userId: string): string[] =>
+        (areas ?? []).filter((area) => area.processOwner?.id === userId).map((area) => area.title);
+
     return (
         <Card className="glass-card border-border/40 space-y-4 rounded-2xl p-6">
+            <SettingsHint
+                subject="Person"
+                object="ein Bereich, in dem sie arbeitet"
+                otherQuestion="Wer einen Bereich leitet, legen Sie fest unter"
+                otherTab="Bereiche"
+                onSwitch={onSwitch}
+            />
             <p className="text-muted-foreground text-sm">
-                    Verwalten Sie die Rollen der Mitarbeiter. Rollen steuern, welche Aufgaben im Freigabe- und
-                Unterweisungsprozess jemand übernehmen darf. Name, E-Mail und Konto kommen aus der Provisionierung.
+                Rollen steuern, welche Aufgaben im Freigabe- und Unterweisungsprozess jemand übernehmen darf. Name,
+                E-Mail und Konto kommen aus der Provisionierung.
             </p>
             <ul className="divide-border/40 divide-y">
                 {(users ?? []).map((user) => (
@@ -102,6 +129,7 @@ export function UserSettings() {
                         key={user.id}
                         user={user}
                         areas={areas ?? []}
+                        leads={leadsOf(user.id)}
                         isPending={update.isPending}
                         onChange={(id, input) => update.mutate({ id, input })}
                     />
