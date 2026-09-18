@@ -58,15 +58,36 @@ const imageFrom = (transfer: DataTransfer | null): File | null => {
     return file ?? null;
 };
 
+/**
+ * Zieht jemand das Bildschirmfoto-Vorschaubild von macOS direkt in den Editor, liefert der Browser
+ * keine Datei, sondern nur einen Pfad wie file:///var/folders/…/Bildschirmfoto.png. Lesen kann ihn
+ * niemand ausser dem Rechner, auf dem er entstanden ist — und beim nächsten Neustart ist er weg.
+ * Ohne diese Sperre landet genau dieser Pfad als Bildquelle im Dokument und ist dort für immer tot.
+ */
+const isLocalPath = (transfer: DataTransfer | null): boolean => {
+    const payload = transfer?.getData('text/uri-list') || transfer?.getData('text/plain') || '';
+    return payload.trimStart().toLowerCase().startsWith('file:');
+};
+
 export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) {
     const fileInput = useRef<HTMLInputElement>(null);
     const insertRef = useRef<(file: File) => void>(() => undefined);
 
     const interceptImage = (transfer: DataTransfer | null): boolean => {
         const file = imageFrom(transfer);
-        if (file === null) return false;
-        insertRef.current(file);
-        return true;
+        if (file !== null) {
+            insertRef.current(file);
+            return true;
+        }
+        if (isLocalPath(transfer)) {
+            // Ereignis bewusst schlucken: lieber gar kein Bild als eines, das nie wieder lädt.
+            toast.error('Dieses Bild liegt nur auf Ihrem Rechner', {
+                description:
+                    'Speichern Sie das Bildschirmfoto erst als Datei ab und fügen Sie es dann über die Schaltfläche „Bild" ein.',
+            });
+            return true;
+        }
+        return false;
     };
     const editor = useEditor({
         extensions: buildExtensions({ editable: true }),

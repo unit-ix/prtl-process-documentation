@@ -88,8 +88,11 @@ describe('richTextToHtml — muss durchlassen', () => {
         expect(richTextToHtml(doc({ type: 'image', attrs: { src } }))).toContain(`src="${src}"`);
     });
 
-    it('aber kein file: mit fremdem Inhalt', () => {
-        expect(richTextToHtml(doc({ type: 'image', attrs: { src: 'file:///etc/passwd' } }))).toBe('');
+    it('aber kein file: mit fremdem Inhalt — der Pfad darf nie im HTML landen', () => {
+        const passwd = richTextToHtml(doc({ type: 'image', attrs: { src: 'file:///etc/passwd' } }));
+        expect(passwd).not.toContain('/etc/passwd');
+        expect(passwd).not.toContain('<img');
+
         expect(richTextToHtml(doc({ type: 'image', attrs: { src: 'file:../../secret' } }))).toBe('');
     });
 
@@ -125,5 +128,28 @@ describe('richTextToPlainText', () => {
 
     it('entfernt HTML nicht, sondern gibt den Rohtext zurück', () => {
         expect(richTextToPlainText(doc(paragraph('<b>x</b>')))).toBe('<b>x</b>');
+    });
+});
+
+describe('Bilder ohne Upload', () => {
+    const doc = (src: string) => ({ type: 'doc', content: [{ type: 'image', attrs: { src } }] }) as never;
+
+    it('benennt einen Pfad vom Rechner des Verfassers statt ihn zu verschweigen', () => {
+        const html = richTextToHtml(doc('file:///var/folders/x/Bildschirmfoto.png'));
+        expect(html).toContain('nie hochgeladen');
+        expect(html).not.toContain('file:///');
+    });
+
+    it('zeigt einen echten Verweis weiter als Bild', () => {
+        const html = richTextToHtml(doc('file:11111111-2222-3333-4444-555555555555'));
+        expect(html).toContain('<img');
+    });
+
+    it('verschluckt eine unbrauchbare Quelle ohne Hinweis', () => {
+        expect(richTextToHtml(doc('javascript:alert(1)'))).toBe('');
+    });
+
+    it('nennt den Pfad im Hinweis nicht — er gehört niemandem ausser dem Verfasser', () => {
+        expect(richTextToHtml(doc('file:///var/folders/x/Bildschirmfoto.png'))).not.toContain('var/folders');
     });
 });

@@ -1,7 +1,8 @@
 import Image from '@tiptap/extension-image';
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from '@tiptap/react';
 import { Button } from '@/shared/components/ui/button';
-import { useFileUrl } from '@/shared/hooks/useFileUrl';
+import { isLocalFilePath, useFileUrl } from '@/shared/hooks/useFileUrl';
+import { ImageOff } from 'lucide-react';
 
 export type ImageSize = 'sm' | 'md' | 'full';
 
@@ -17,10 +18,29 @@ const SIZE_CLASS: Record<ImageSize, string> = {
     full: 'w-full',
 };
 
+/**
+ * Ein Bild, das nur auf dem Rechner des Verfassers lag. Es sagt das offen, statt als leerer Rahmen
+ * dazustehen — sonst sucht der nächste Leser den Fehler bei sich oder hält die Seite für kaputt.
+ */
+function MissingImage({ size }: { size: ImageSize }) {
+    return (
+        <NodeViewWrapper className="my-3" data-image-size={size}>
+            <div className="border-border/60 text-muted-foreground flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm">
+                <ImageOff className="size-4 shrink-0" />
+                Dieses Bild wurde nie hochgeladen — es lag nur auf dem Rechner des Verfassers. Bitte erneut
+                einfügen.
+            </div>
+        </NodeViewWrapper>
+    );
+}
+
 function ImageView({ node, updateAttributes, selected, editor }: ReactNodeViewProps) {
     const size = (node.attrs.size as ImageSize | undefined) ?? 'md';
-    const src = useFileUrl(String(node.attrs.src ?? ''));
+    const raw = String(node.attrs.src ?? '');
+    const src = useFileUrl(raw);
     const alt = node.attrs.alt ? String(node.attrs.alt) : 'Prozessbild';
+
+    if (isLocalFilePath(raw)) return <MissingImage size={size} />;
 
     return (
         <NodeViewWrapper className="my-3" data-image-size={size}>

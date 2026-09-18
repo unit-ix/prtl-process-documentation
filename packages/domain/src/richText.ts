@@ -81,9 +81,21 @@ function panel(node: Node): string {
     return `<div style="border-left:3px solid ${color};padding:8px 12px;margin:12px 0">${children(node)}</div>`;
 }
 
+/**
+ * Ein Bild, das nur auf dem Rechner des Verfassers lag (`file:///…`). Es verschweigen heisst, den
+ * Leser über eine Lücke im freigegebenen Dokument im Dunkeln zu lassen — also wird die Lücke
+ * benannt.
+ */
+const MISSING_IMAGE =
+    '<div style="border:1px dashed #cbd5e1;border-radius:8px;padding:10px 14px;margin:12px 0;color:#64748b;font-size:14px">' +
+    'Dieses Bild wurde nie hochgeladen — es lag nur auf dem Rechner des Verfassers.</div>';
+
 function image(node: Node): string {
     const src = safeUrl(node.attrs?.src);
-    if (src === null) return '';
+    if (src === null) {
+        const raw = typeof node.attrs?.src === 'string' ? node.attrs.src.trim().toLowerCase() : '';
+        return raw.startsWith('file:/') ? MISSING_IMAGE : '';
+    }
     const style = IMAGE_WIDTHS[String(node.attrs?.size ?? 'md')] ?? IMAGE_WIDTHS.md;
     const alt = escapeHtml(String(node.attrs?.alt ?? ''));
     return `<img src="${escapeHtml(src)}" alt="${alt}" style="${style};height:auto" />`;

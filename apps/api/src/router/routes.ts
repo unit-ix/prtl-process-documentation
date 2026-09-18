@@ -209,6 +209,10 @@ export const ROUTES: readonly Route[] = [
         path: '/files',
         handle: async ({ user, body }) => ({ status: 201, body: await commitFile(user, parseBody(commitSchema, body)) }),
     },
+    // Reihenfolge ist hier Bedeutung: `/files/:owner/:ownerId` und `/files/:id/url` haben beide drei
+    // Abschnitte und würden beide passen. Die Route mit dem festen Abschnitt „url" muss zuerst
+    // stehen, sonst verschluckt die Liste jeden Bildabruf. Der Test in routes.test.ts hält das fest.
+    { method: 'GET', path: '/files/:id/url', handle: ({ user, params }) => ok(fileUrl(user, params.id)) },
     {
         method: 'GET',
         path: '/files/:owner/:ownerId',
@@ -217,7 +221,6 @@ export const ROUTES: readonly Route[] = [
             return ok(listFiles(user, params.owner, params.ownerId));
         },
     },
-    { method: 'GET', path: '/files/:id/url', handle: ({ user, params }) => ok(fileUrl(user, params.id)) },
     {
         method: 'DELETE',
         path: '/files/:id',
