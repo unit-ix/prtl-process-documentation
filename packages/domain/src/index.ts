@@ -5,6 +5,7 @@ export * from './completeness.js';
 export * from './identifier.js';
 export * from './richText.js';
 export * from './instructionStatus.js';
+export * from './recurrence.js';
 export * from './assistantSearch.js';
 export * from './assistantPrompt.js';
 export * from './mailTemplates.js';

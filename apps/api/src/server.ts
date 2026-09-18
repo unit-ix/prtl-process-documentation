@@ -9,6 +9,7 @@ import { clientIp } from './http/clientIp.js';
 import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './http/errors.js';
 import { renderConfirmPage, renderConfirmResult } from './router/confirmPageHtml.js';
 import { startMailSweep } from './mail/sweep.js';
+import { startRecurrenceSweep } from './recurrence/sweep.js';
 import { handle } from './router/handle.js';
 import { confirmPage, submitConfirmation } from './router/publicConfirm.js';
 
@@ -118,5 +119,6 @@ app.all('/api/*', async (request: FastifyRequest, reply: FastifyReply) => {
 app.log.info(`Datenbank-Ziel: ${dbTarget()}`);
 
 startMailSweep();
+startRecurrenceSweep();
 
 await app.listen({ port: env.PORT, host: '0.0.0.0' });

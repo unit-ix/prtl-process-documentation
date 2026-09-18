@@ -31,6 +31,10 @@ export interface InstructionDetailView extends InstructionListItem {
     documentCount: number;
     /** Der eigene Teilnehmer-Datensatz, falls der Aufrufer selbst unterwiesen wird (§7.3). */
     ownParticipant: InstructionParticipantView | null;
+    /** Vorrunde, falls diese Unterweisung vom Turnus geöffnet wurde (§7.8). */
+    previousRound: { id: string; dueDate: string | null } | null;
+    /** Termin der nächsten Runde. Steht erst fest, wenn alle bestätigt haben. */
+    nextRoundDueDate: string | null;
     permissions: {
         canManage: boolean;
         /** Sammelunterweisung: ohne hochgeladene Liste darf niemand bestätigt werden. */

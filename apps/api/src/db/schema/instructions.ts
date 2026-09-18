@@ -1,5 +1,5 @@
 import { INSTRUCTION_TYPES, NOTIFY_STATUSES, PARTICIPANT_STATUSES, RECURRENCES } from '@app/domain';
-import { check, date, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { check, date, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createdAt, documentColumns, id, isActive, legacyId, oneOf } from './columns.js';
 import { users } from './masterData.js';
 import { processes } from './processes.js';
@@ -18,6 +18,10 @@ export const instructions = pgTable(
         createdById: uuid('created_by_id')
             .notNull()
             .references(() => users.id),
+        // Folgerunde einer wiederkehrenden Unterweisung (§7.8). Die Vorgängerin bleibt unangetastet
+        // — sie IST der Nachweis. Der eindeutige Index ist der Schutz gegen zwei Folgerunden: das
+        // gehört in die Datenbank und nicht in die Sorgfalt des Sweeps.
+        previousInstructionId: uuid('previous_instruction_id').references((): AnyPgColumn => instructions.id),
         createdAt: createdAt(),
         isActive: isActive(),
         legacyId: legacyId(),
@@ -25,6 +29,7 @@ export const instructions = pgTable(
     (t) => [
         check('instructions_instruction_type_check', oneOf(t.instructionType, INSTRUCTION_TYPES)),
         check('instructions_recurrence_check', oneOf(t.recurrence, RECURRENCES)),
+        unique('instructions_previous_unique').on(t.previousInstructionId),
     ],
 );
 

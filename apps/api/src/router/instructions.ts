@@ -2,6 +2,7 @@ import {
     canManageInstructions,
     countParticipants,
     instructionStatus,
+    nextRound,
     type InstructionDetailView,
     type InstructionListItem,
     type InstructionParticipantView,
@@ -122,6 +123,35 @@ export async function listInstructions(): Promise<{ items: InstructionListItem[]
     };
 }
 
+/**
+ * Der Tag, an dem die Runde durch war — die letzte Bestätigung. Fehlt auch nur eine Antwort, gibt
+ * es keinen Abschlusstag und damit auch keinen Termin für die nächste Runde.
+ */
+function completionDay(participants: readonly ParticipantRow[]): string | null {
+    if (participants.length === 0) return null;
+    if (participants.some((participant) => participant.status !== 'Bestätigt')) return null;
+
+    const last = participants.reduce<Date | null>(
+        (latest, participant) =>
+            participant.confirmedAt !== null && (latest === null || participant.confirmedAt > latest)
+                ? participant.confirmedAt
+                : latest,
+        null,
+    );
+    return last?.toISOString().slice(0, 10) ?? null;
+}
+
+async function previousRoundOf(row: InstructionRow) {
+    if (row.previousInstructionId === null) return null;
+
+    const [previous] = await db
+        .select({ id: instructions.id, dueDate: instructions.dueDate })
+        .from(instructions)
+        .where(eq(instructions.id, row.previousInstructionId))
+        .limit(1);
+    return previous ?? null;
+}
+
 export async function getInstruction(user: SessionUser, id: string): Promise<InstructionDetailView> {
     const [row] = await db
         .select({ instruction: instructions, process: processes })
@@ -143,6 +173,8 @@ export async function getInstruction(user: SessionUser, id: string): Promise<Ins
         toParticipantView(participant, people.get(participant.userId)),
     );
     const documentCount = documents === undefined ? 0 : 1;
+    const completedOn = completionDay(participantRows);
+    const upcoming = completedOn === null ? null : nextRound(row.instruction.recurrence as never, completedOn);
 
     return {
         ...toListItem(
@@ -154,6 +186,8 @@ export async function getInstruction(user: SessionUser, id: string): Promise<Ins
         participants,
         documentCount,
         ownParticipant: participants.find((participant) => participant.user.id === user.id) ?? null,
+        previousRound: await previousRoundOf(row.instruction),
+        nextRoundDueDate: upcoming?.dueDate ?? null,
         permissions: {
             canManage: canManageInstructions(user),
             // §7.3: mindestens ein hochgeladenes Dokument ist harte Vorbedingung für jedes Bestätigen

@@ -4,8 +4,7 @@
 // Zustandsgetrieben, nicht uhrgetrieben: gesucht wird „was ist offen", nie „was war um 8 Uhr
 // fällig". Ein Tick, der durch einen Neustart ausfällt — und auf B1 ist jedes Deployment ein
 // Neustart — wird vom nächsten einfach mit erledigt.
-import { sql } from 'drizzle-orm';
-import { db } from '../db/client.js';
+import { withAdvisoryLock } from '../db/advisoryLock.js';
 import { mailTransportName } from '../env.js';
 import { graphTransport } from './graph.js';
 import { drainOutbox } from './outbox.js';
@@ -28,25 +27,11 @@ export function selectTransport(): MailTransport | null {
     }
 }
 
-/** Skaliert der Plan einmal auf mehrere Instanzen, verschickt trotzdem nur eine. */
-async function withLock<T>(run: () => Promise<T>): Promise<T | null> {
-    const result = await db.execute<{ locked: boolean }>(
-        sql`select pg_try_advisory_lock(hashtext(${LOCK_KEY})) as locked`,
-    );
-    if (result.rows[0]?.locked !== true) return null;
-
-    try {
-        return await run();
-    } finally {
-        await db.execute(sql`select pg_advisory_unlock(hashtext(${LOCK_KEY}))`);
-    }
-}
-
 export async function runMailSweep(): Promise<void> {
     const transport = selectTransport();
     if (transport === null) return;
 
-    const result = await withLock(() => drainOutbox(transport));
+    const result = await withAdvisoryLock(LOCK_KEY, () => drainOutbox(transport));
     if (result === null) return;
     if (result.sent > 0 || result.failed > 0) {
         console.log(`[mail] ${transport.name}: ${result.sent} gesendet, ${result.failed} offen/fehlerhaft`);

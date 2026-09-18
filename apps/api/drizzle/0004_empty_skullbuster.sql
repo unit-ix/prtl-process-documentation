@@ -1,0 +1,3 @@
+ALTER TABLE "instructions" ADD COLUMN "previous_instruction_id" uuid;--> statement-breakpoint
+ALTER TABLE "instructions" ADD CONSTRAINT "instructions_previous_instruction_id_instructions_id_fk" FOREIGN KEY ("previous_instruction_id") REFERENCES "public"."instructions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "instructions" ADD CONSTRAINT "instructions_previous_unique" UNIQUE("previous_instruction_id");
