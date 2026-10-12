@@ -32,6 +32,8 @@ export interface SaveProcessInput extends Record<string, unknown> {
     rowVersion: number;
 }
 
+export type ChangeNumberInput = { documentNumber: number } | { subNumber: number };
+
 export interface TransitionResult {
     status: ProcessStatus;
     toast: string;
@@ -52,4 +54,6 @@ export interface ProcessRepository {
     rejectFormal(id: string, comment: string): Promise<TransitionResult>;
     reopen(id: string, changeReason: string | null): Promise<TransitionResult>;
     snapshot(id: string, versionId: string): Promise<string>;
+    /** Nur Administration: Nummer setzen oder korrigieren — eine VA nimmt ihre Unterdokumente mit. */
+    changeNumber(id: string, input: ChangeNumberInput): Promise<{ identifier: string | null }>;
 }

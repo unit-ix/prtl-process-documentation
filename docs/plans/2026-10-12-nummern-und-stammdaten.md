@@ -61,12 +61,12 @@ Verify:
 
 ### Phase 3: Administrator vergibt und korrigiert Nummern
 
-- [ ] `PATCH /processes/:id/number` mit `{ documentNumber }` (VA oder AA ohne VA) oder `{ subNumber }` (Unterdokument), nur `canChangeNumbers` — `apps/api/src/router/routes.ts`, neu `apps/api/src/workflow/renumber.ts`
-- [ ] Vor der ersten Freigabe wird die Nummer nur reserviert, `mint()` behält sie schon heute (`keepOrMintDocumentNumber`)
-- [ ] Nach der Freigabe wird das Kennzeichen neu gebildet. Bei einer VA werden die Kennzeichen aller Unterdokumente mitgezogen
-- [ ] Doppelte Nummer im Bereich bzw. unter der VA → 409 „Die Nummer 004 ist in diesem Bereich schon vergeben (Titel)."
-- [ ] Ereignis `number_changed` mit Kommentar „OM.003 → OM.004", ohne Mailempfänger — `apps/api/src/workflow/events.ts`
-- [ ] Port und Adapter: `processRepository.changeNumber(id, input)` — `apps/web/src/data/ports/ProcessRepository.ts`, `apps/web/src/data/adapters/azure/AzureProcessRepository.ts`
+- [x] (2026-10-12 14:26Z) `PATCH /processes/:id/number` mit `{ documentNumber }` (VA oder AA ohne VA) oder `{ subNumber }` (Unterdokument), nur `canChangeNumbers` — `apps/api/src/router/routes.ts`, neu `apps/api/src/workflow/renumber.ts`
+- [x] (2026-10-12 14:26Z) Vor der ersten Freigabe wird die Nummer nur reserviert, `mint()` behält sie schon heute (`keepOrMintDocumentNumber`)
+- [x] (2026-10-12 14:26Z) Nach der Freigabe wird das Kennzeichen neu gebildet. Bei einer VA werden die Kennzeichen aller Unterdokumente mitgezogen
+- [x] (2026-10-12 14:26Z) Doppelte Nummer im Bereich bzw. unter der VA → 409 „Die Nummer 004 ist in diesem Bereich schon vergeben (Titel)."
+- [x] (2026-10-12 14:26Z) Ereignis `number_changed` mit Kommentar „OM.003 → OM.004", ohne Mailempfänger — `apps/api/src/workflow/events.ts`
+- [x] (2026-10-12 14:26Z) Port und Adapter: `processRepository.changeNumber(id, input)` — `apps/web/src/data/ports/ProcessRepository.ts`, `apps/web/src/data/adapters/azure/AzureProcessRepository.ts`
 
 Files touched: `apps/api/src/workflow/renumber.ts`, `apps/api/src/router/routes.ts`, `apps/api/src/workflow/events.ts`, `apps/web/src/data/ports/ProcessRepository.ts`, `apps/web/src/data/adapters/azure/AzureProcessRepository.ts`
 
@@ -107,8 +107,11 @@ Verify:
 ## Execution Log
 - 2026-10-12 14:22Z — Phase 1 — Regeln in der Domain, verify grün
 - 2026-10-12 14:24Z — Phase 2 — Unternummer bei Freigabe, Migration 0006, verify grün
+- 2026-10-12 14:26Z — Phase 3 — PATCH /processes/:id/number, verify grün
 
 ## Decisions Made During Execution
 
 - 2026-10-12 — Phase 2: `subNumber` geht nicht in Detail- und Listenansicht. Das Kennzeichen zeigt die Unternummer schon, und die Nummernübersicht (Phase 4) bekommt einen eigenen Endpunkt. `Process.ts` und `processMappers.ts` bleiben unverändert.
 - 2026-10-12 — Phase 2: Ein Wechsel der übergeordneten VA wird nach der ersten Freigabe abgelehnt (409), sonst stimmte das Kennzeichen nicht mehr. Vorher prüft `saveContent` dieselben Regeln wie das Anlegen (VA, gleicher Bereich).
+- 2026-10-12 — Phase 3: `events.ts` blieb unverändert, `writeEvent` kann Ereignisse ohne Empfänger schon. Dafür zeigt der Prüfverlauf (`ApprovalTab.tsx`) Kommentare nur bei Ablehnungen rot, sonst neutral.
+- 2026-10-12 — Phase 3: Eine vor der Freigabe reservierte VA-Nummer reicht, damit ein Unterdokument schon freigegeben werden kann. Das ist der Importfall, VA und AA kommen nicht in Reihenfolge. Ändert sich die VA-Nummer, ziehen alle geprägten Unterdokumente mit, jedes mit eigenem Verlaufseintrag.

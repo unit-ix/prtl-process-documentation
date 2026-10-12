@@ -3,6 +3,7 @@
 // ist ein eigener Endpoint mit eigener Prüfung (§0.5 Regel 4: niemals ein generisches PATCH, das
 // einen Status setzen kann).
 import { notFound } from '../http/errors.js';
+import { renumberProcess, renumberSchema } from '../workflow/renumber.js';
 import { listAreas } from './areas.js';
 import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
@@ -255,6 +256,11 @@ export const ROUTES: readonly Route[] = [
         path: '/processes/:id/assign-author',
         handle: ({ user, params, body }) =>
             ok(assignAuthor(user, params.id, parseBody(assignAuthorSchema, body).authorId)),
+    },
+    {
+        method: 'PATCH',
+        path: '/processes/:id/number',
+        handle: ({ user, params, body }) => ok(renumberProcess(user, params.id, parseBody(renumberSchema, body))),
     },
     { method: 'POST', path: '/processes/:id/submit', handle: ({ user, params }) => ok(submitForReview(user, params.id)) },
     {

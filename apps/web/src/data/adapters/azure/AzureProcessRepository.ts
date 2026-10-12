@@ -1,5 +1,6 @@
 import type { ProcessDetailView, ProcessListItem } from '@app/domain';
 import type {
+    ChangeNumberInput,
     CreateProcessInput,
     ProcessListQuery,
     ProcessRepository,
@@ -63,6 +64,10 @@ export class AzureProcessRepository implements ProcessRepository {
     async snapshot(id: string, versionId: string): Promise<string> {
         const { html } = await apiGet<{ html: string }>(`/processes/${id}/versions/${versionId}/snapshot`);
         return html;
+    }
+
+    changeNumber(id: string, input: ChangeNumberInput): Promise<{ identifier: string | null }> {
+        return apiSend<{ identifier: string | null }>('PATCH', `/processes/${id}/number`, input);
     }
 
     private transition<TResult extends TransitionResult>(
