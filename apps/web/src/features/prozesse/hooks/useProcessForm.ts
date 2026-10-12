@@ -1,4 +1,4 @@
-import type { ProcessDetailView } from '@app/domain';
+import { richOrPlain, type ProcessDetailView, type RichDocument } from '@app/domain';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,8 +24,8 @@ export interface ProcessFormState {
     shortDescription: string;
     purpose: string;
     scopeDetail: string;
-    terms: string;
-    responsibilities: string;
+    termsDoc: RichDocument | null;
+    responsibilitiesDoc: RichDocument | null;
     workSequence: string;
     method: string;
     processParameters: string;
@@ -44,8 +44,8 @@ export const toFormState = (process: ProcessDetailView): ProcessFormState => ({
     shortDescription: text(process.shortDescription),
     purpose: text(process.version.purpose),
     scopeDetail: text(process.version.scopeDetail),
-    terms: text(process.version.terms),
-    responsibilities: text(process.version.responsibilities),
+    termsDoc: richOrPlain(process.version.termsDoc, process.version.terms),
+    responsibilitiesDoc: richOrPlain(process.version.responsibilitiesDoc, process.version.responsibilities),
     workSequence: text(process.version.workSequence),
     method: text(process.version.method),
     processParameters: text(process.version.processParameters),
@@ -71,8 +71,8 @@ const toPayload = (form: ProcessFormState, rowVersion: number) => ({
     shortDescription: orNull(form.shortDescription),
     purpose: orNull(form.purpose),
     scopeDetail: orNull(form.scopeDetail),
-    terms: orNull(form.terms),
-    responsibilities: orNull(form.responsibilities),
+    termsDoc: form.termsDoc,
+    responsibilitiesDoc: form.responsibilitiesDoc,
     workSequence: orNull(form.workSequence),
     method: orNull(form.method),
     processParameters: orNull(form.processParameters),

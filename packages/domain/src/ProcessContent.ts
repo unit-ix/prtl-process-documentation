@@ -3,10 +3,14 @@ export type RichDocument = Record<string, unknown>;
 export interface ProcessContent {
     purpose: string | null;
     scopeDetail: string | null;
-    terms: string | null;
+    termsDoc: RichDocument | null;
+    /** Klartext-Projektion von termsDoc — Vollständigkeit und Assistent lesen nur diese Spalte. */
+    readonly terms: string | null;
     descriptionDoc: RichDocument | null;
     readonly descriptionText: string | null;
-    responsibilities: string | null;
+    responsibilitiesDoc: RichDocument | null;
+    /** Klartext-Projektion von responsibilitiesDoc. */
+    readonly responsibilities: string | null;
     workSequence: string | null;
     method: string | null;
     processParameters: string | null;
@@ -18,9 +22,11 @@ export interface ProcessContent {
 export const CONTENT_FIELDS = [
     'purpose',
     'scopeDetail',
+    'termsDoc',
     'terms',
     'descriptionDoc',
     'descriptionText',
+    'responsibilitiesDoc',
     'responsibilities',
     'workSequence',
     'method',

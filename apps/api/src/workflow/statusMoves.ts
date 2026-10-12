@@ -122,7 +122,7 @@ export async function submitForReview(user: SessionUser, processId: string): Pro
                 author: version.authorId === null ? null : { id: version.authorId },
             }),
         );
-        if (!isComplete({ ...version, descriptionDoc: null }, process.templateType as never)) {
+        if (!isComplete({ ...version, descriptionDoc: null, termsDoc: null, responsibilitiesDoc: null }, process.templateType as never)) {
             throw badRequest('Bitte zuerst alle Pflichtangaben ausfüllen.');
         }
 

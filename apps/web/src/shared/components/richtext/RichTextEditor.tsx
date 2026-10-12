@@ -16,6 +16,9 @@ interface RichTextEditorProps {
     onChange: (doc: RichDocument) => void;
     /** Ziel der Bild-Uploads — ohne Besitzer gibt es keinen Bild-Knopf. */
     owner?: { kind: FileOwner; id: string };
+    /** Für Felder im Formular (Begriffe, Zuständigkeiten): niedriger Start, kein Tipp darunter. */
+    compact?: boolean;
+    placeholder?: string;
 }
 
 const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] };
@@ -69,7 +72,7 @@ const isLocalPath = (transfer: DataTransfer | null): boolean => {
     return payload.trimStart().toLowerCase().startsWith('file:');
 };
 
-export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, owner, compact = false, placeholder }: RichTextEditorProps) {
     const fileInput = useRef<HTMLInputElement>(null);
     const insertRef = useRef<(file: File) => void>(() => undefined);
 
@@ -90,11 +93,11 @@ export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) 
         return false;
     };
     const editor = useEditor({
-        extensions: buildExtensions({ editable: true }),
+        extensions: buildExtensions({ editable: true, placeholder }),
         shouldRerenderOnTransaction: true,
         content: value ?? EMPTY_DOC,
         editorProps: {
-            attributes: { class: 'rich-text min-h-[60vh] focus:outline-none' },
+            attributes: { class: `rich-text focus:outline-none ${compact ? 'min-h-32' : 'min-h-[60vh]'}` },
             handlePaste: (_view, event) => interceptImage(event.clipboardData),
             handleDrop: (_view, event) => interceptImage((event as DragEvent).dataTransfer),
         },
@@ -136,16 +139,18 @@ export function RichTextEditor({ value, onChange, owner }: RichTextEditorProps) 
             />
             <TableContextMenu editor={editor}>
                 <div
-                    className="border-border/40 bg-card relative rounded-lg border p-6"
+                    className={`border-border/40 bg-card relative rounded-lg border ${compact ? 'p-4' : 'p-6'}`}
                     onClick={() => editor.chain().focus().run()}
                 >
                     <EditorContent editor={editor} />
                     <TableQuickActions editor={editor} />
                 </div>
             </TableContextMenu>
-            <p className="text-muted-foreground text-xs">
-                Tipp: „/" öffnet die Befehlsliste. Rechtsklick in einer Tabelle öffnet Zeilen- und Spaltenaktionen.
-            </p>
+            {compact ? null : (
+                <p className="text-muted-foreground text-xs">
+                    Tipp: „/" öffnet die Befehlsliste. Rechtsklick in einer Tabelle öffnet Zeilen- und Spaltenaktionen.
+                </p>
+            )}
         </div>
     );
 }

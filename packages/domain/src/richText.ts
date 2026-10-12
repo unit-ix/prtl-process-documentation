@@ -146,3 +146,20 @@ export function richTextToPlainText(doc: RichDocument | null | undefined): strin
         .replace(/\n{3,}/g, '\n\n')
         .trim();
 }
+
+/**
+ * Begriffe und Zuständigkeiten waren bis Oktober 2026 reine Textfelder (Testauswertung vom 09.10.).
+ * Was damals erfasst wurde, hat noch kein Dokument — es wird zeilenweise zu Absätzen, damit Lese-
+ * Ansicht, Snapshot und Editor einen einzigen Weg haben statt eines Sonderfalls für Altbestand.
+ */
+export function plainTextToRichDocument(text: string | null | undefined): RichDocument | null {
+    if ((text ?? '').trim() === '') return null;
+    const paragraphs = (text as string).split(/\r?\n/).map((line) =>
+        line === '' ? { type: 'paragraph' } : { type: 'paragraph', content: [{ type: 'text', text: line }] },
+    );
+    return { type: 'doc', content: paragraphs };
+}
+
+/** Das Dokument, falls vorhanden, sonst der Altbestand als Absätze. */
+export const richOrPlain = (doc: RichDocument | null | undefined, text: string | null | undefined): RichDocument | null =>
+    doc ?? plainTextToRichDocument(text);

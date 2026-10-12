@@ -16,6 +16,32 @@ export interface Autosave {
     readonly isDirty: boolean;
 }
 
+// Wer den Editor über einen Link verlässt („Zurück", „Kopfdaten bearbeiten"), bevor die zwei
+// Sekunden um sind, nimmt seinen letzten Satz mit — die Seite speichert beim Verlassen. Nur das
+// Schließen des Tabs lässt sich nicht mehr abwarten, dort warnt der Browser.
+function useLeaveGuards(
+    timer: React.RefObject<ReturnType<typeof setTimeout> | null>,
+    pending: React.RefObject<RichDocument | null>,
+    flush: () => Promise<void>,
+): void {
+    useEffect(
+        () => () => {
+            if (timer.current) clearTimeout(timer.current);
+            if (pending.current !== null) void flush();
+        },
+        [timer, pending, flush],
+    );
+
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => {
+            if (pending.current === null) return;
+            event.preventDefault();
+        };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, [pending]);
+}
+
 // §8.3: speichern nach zwei Sekunden Ruhe, sichtbarer Zustand, und bei einem Konflikt eine klare
 // Meldung statt eines stillen Überschreibens. Der nicht gespeicherte Stand bleibt im Speicher —
 // ein fehlgeschlagener Schreibversuch darf den Text nie verlieren.
@@ -61,16 +87,7 @@ export function useDescriptionAutosave(processId: string, initialRowVersion: num
         void flush();
     }, [flush]);
 
-    useEffect(() => () => (timer.current ? clearTimeout(timer.current) : undefined), []);
-
-    useEffect(() => {
-        const warn = (event: BeforeUnloadEvent) => {
-            if (pending.current === null) return;
-            event.preventDefault();
-        };
-        window.addEventListener('beforeunload', warn);
-        return () => window.removeEventListener('beforeunload', warn);
-    }, []);
+    useLeaveGuards(timer, pending, flush);
 
     return { state, message, onChange, saveNow, isDirty: pending.current !== null };
 }

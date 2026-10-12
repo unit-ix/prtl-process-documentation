@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { processRepository } from '@/data';
 import { FileList } from '@/shared/components/files/FileList';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { ApprovalTab } from '../components/detail/ApprovalTab';
 import { CompletenessCard } from '../components/detail/CompletenessCard';
-import { OverviewTab } from '../components/detail/OverviewTab';
+import { DescriptionTab, OverviewTab } from '../components/detail/OverviewTab';
 import { ProcessActions } from '../components/detail/ProcessActions';
 import { RejectionBanner, ReleaseBanner } from '../components/detail/ProcessBanners';
 import { ProcessDetailHeader } from '../components/detail/ProcessDetailHeader';
@@ -26,16 +26,25 @@ function DetailTabs({
     onShowSnapshot: (versionId: string, edition: number) => void;
 }) {
     const showApproval = process.permissions.canSeeApprovalTab;
+    // Der Reiter steht in der Adresse, damit "Zurück zum Prozess" aus dem Editor wieder auf der
+    // Prozessbeschreibung landet und nicht auf der Übersicht.
+    const [params, setParams] = useSearchParams();
+    const requested = params.get('tab') ?? 'overview';
+    const tab = requested === 'approval' && !showApproval ? 'overview' : requested;
 
     return (
-        <Tabs defaultValue="overview">
+        <Tabs value={tab} onValueChange={(next) => setParams(next === 'overview' ? {} : { tab: next }, { replace: true })}>
             <TabsList>
                 <TabsTrigger value="overview">Übersicht</TabsTrigger>
+                <TabsTrigger value="description">Prozessbeschreibung</TabsTrigger>
                 <TabsTrigger value="documents">Dokumente</TabsTrigger>
                 {showApproval ? <TabsTrigger value="approval">Genehmigung &amp; Versionen</TabsTrigger> : null}
             </TabsList>
             <TabsContent value="overview">
                 <OverviewTab process={process} />
+            </TabsContent>
+            <TabsContent value="description">
+                <DescriptionTab process={process} />
             </TabsContent>
             <TabsContent value="documents">
                 <Card className="glass-card border-border/40 space-y-4 rounded-2xl p-6">

@@ -83,7 +83,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     const current = items.find((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
 
     return (
-        <SidebarProvider>
+        // h-svh macht <main> zum Scroll-Container. Mit nur min-h-svh wächst <main> mit dem Inhalt,
+        // scrollt nie selbst — und alles, was darin sticky ist (Editor-Werkzeugleiste), klebt nicht.
+        <SidebarProvider className="h-svh">
             <Sidebar collapsible="offcanvas" className="border-border/40 bg-sidebar/70 backdrop-blur-xl">
                 <SidebarHeader className="border-sidebar-border border-b p-4">
                     <Link to="/processes" className="flex items-center">
@@ -117,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <SidebarTrigger />
                     <span className="text-sm font-medium">{current?.label ?? 'Prozessdokumentation'}</span>
                 </header>
-                <main className="flex-1 overflow-auto px-4 py-6 md:px-6 md:py-10">{children}</main>
+                <main className="min-h-0 flex-1 overflow-auto px-4 py-6 md:px-6 md:py-10">{children}</main>
             </SidebarInset>
         </SidebarProvider>
     );
