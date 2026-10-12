@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNumberOverview, type NumberRow } from './numberOverview.js';
+import { buildNumberOverview, filterNumberOverview, type NumberRow } from './numberOverview.js';
 
 const AREAS = [
     { id: 'om', title: 'Ordermanagement', shortCode: 'OM' },
@@ -59,5 +59,44 @@ describe('buildNumberOverview', () => {
             area.processes.flatMap((p) => [p.id, ...p.children.map((c) => c.id)]),
         );
         expect(shown.sort()).toEqual(['aa', 'hr1', 'va']);
+    });
+});
+
+describe('filterNumberOverview', () => {
+    const overview = buildNumberOverview(AREAS, [
+        row('va', { title: 'Auftragsabwicklung', identifier: 'VA PE 2 OM.001', documentNumber: 1 }),
+        row('aa1', { title: 'Rechnung', identifier: 'AA PE 2 OM.001_01', parentProcessId: 'va', subNumber: 1 }),
+        row('aa2', { title: 'Mahnung', identifier: 'AA PE 2 OM.001_02', parentProcessId: 'va', subNumber: 2 }),
+        row('va2', { title: 'Reklamation', identifier: 'VA PE 2 OM.002', documentNumber: 2 }),
+        row('hr', { title: 'Urlaub', areaId: 'hr', documentNumber: 1 }),
+    ]);
+    const ids = (query: string) =>
+        filterNumberOverview(overview, query).flatMap((area) =>
+            area.processes.flatMap((p) => [p.id, ...p.children.map((c) => c.id)]),
+        );
+
+    it('zeigt ohne Suchbegriff alles', () => {
+        expect(ids('  ')).toEqual(['va', 'aa1', 'aa2', 'va2', 'hr']);
+    });
+
+    it('behält bei einem Treffer auf die VA alle Unterdokumente', () => {
+        expect(ids('auftrag')).toEqual(['va', 'aa1', 'aa2']);
+    });
+
+    it('behält bei einem Treffer auf ein Unterdokument dessen VA als Rahmen', () => {
+        expect(ids('mahnung')).toEqual(['va', 'aa2']);
+    });
+
+    it('findet über das Kennzeichen, unabhängig von Groß- und Kleinschreibung', () => {
+        expect(ids('om.001_01')).toEqual(['va', 'aa1']);
+        expect(ids('OM.002')).toEqual(['va2']);
+    });
+
+    it('zeigt bei einem Treffer auf den Bereich den ganzen Bereich', () => {
+        expect(ids('human')).toEqual(['hr']);
+    });
+
+    it('liefert ohne Treffer nichts', () => {
+        expect(ids('gibt es nicht')).toEqual([]);
     });
 });

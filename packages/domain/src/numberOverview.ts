@@ -60,3 +60,29 @@ export function buildNumberOverview(
         }))
         .filter((area) => area.processes.length > 0);
 }
+
+const matches = (process: NumberedProcess, needle: string): boolean =>
+    [process.title, process.identifier ?? ''].some((text) => text.toLowerCase().includes(needle));
+
+/**
+ * Suche in der Nummernübersicht. Trifft die VA, bleibt sie mit allen Unterdokumenten stehen — man
+ * sucht sie meist, um ihre Familie zu sehen. Trifft nur ein Unterdokument, bleibt seine VA als
+ * Rahmen stehen, sonst stünde OM.001_02 ohne die Nummer, die es trägt. Trifft der Bereich (Titel
+ * oder Kürzel), bleibt er ganz.
+ */
+export function filterNumberOverview(overview: readonly NumberArea[], query: string): NumberArea[] {
+    const needle = query.trim().toLowerCase();
+    if (needle === '') return [...overview];
+
+    return overview
+        .map((area) => {
+            if ([area.title, area.shortCode].some((text) => text.toLowerCase().includes(needle))) return area;
+            const processes = area.processes.flatMap((process) => {
+                if (matches(process, needle)) return [process];
+                const children = process.children.filter((child) => matches(child, needle));
+                return children.length === 0 ? [] : [{ ...process, children }];
+            });
+            return { ...area, processes };
+        })
+        .filter((area) => area.processes.length > 0);
+}

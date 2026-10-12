@@ -1,10 +1,12 @@
 import {
     DOCUMENT_NUMBER_DIGITS,
+    filterNumberOverview,
     PROCESS_STATUS_LABELS,
     type NumberArea,
     type NumberedProcess,
 } from '@app/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { masterDataRepository, processRepository } from '@/data';
@@ -122,11 +124,9 @@ function AreaTable({ area, isPending, onSave }: { area: NumberArea } & Pick<RowP
     );
 }
 
-export function NumberSettings() {
+function useChangeNumber() {
     const queryClient = useQueryClient();
-    const { data, isPending } = useQuery({ queryKey: ['numbers'], queryFn: () => masterDataRepository.numbers() });
-
-    const change = useMutation({
+    return useMutation({
         mutationFn: ({ id, input }: { id: string; input: ChangeNumberInput }) => processRepository.changeNumber(id, input),
         onSuccess: async () => {
             toast.success('Nummer gespeichert.');
@@ -140,8 +140,17 @@ export function NumberSettings() {
             await queryClient.invalidateQueries({ queryKey: ['numbers'] });
         },
     });
+}
+
+export function NumberSettings() {
+    const { data, isPending } = useQuery({ queryKey: ['numbers'], queryFn: () => masterDataRepository.numbers() });
+    const [search, setSearch] = useState('');
+
+    const change = useChangeNumber();
 
     if (isPending) return <Skeleton className="h-48 w-full rounded-2xl" />;
+
+    const visible = filterNumberOverview(data ?? [], search);
 
     return (
         <div className="space-y-4">
@@ -150,10 +159,22 @@ export function NumberSettings() {
                 behalten. Eine geänderte Nummer einer Verfahrensanweisung gilt auch für ihre Unterdokumente. Frühere,
                 freigegebene Ausgaben behalten ihre damalige Nummer.
             </p>
+            <div className="relative">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Suchen nach Titel, Kennzeichen oder Bereich …"
+                    aria-label="Nummernübersicht durchsuchen"
+                    className="pl-9"
+                />
+            </div>
             {(data ?? []).length === 0 ? (
                 <EmptyState title="Noch keine Prozesse" description="Sobald Prozesse angelegt sind, stehen sie hier." />
+            ) : visible.length === 0 ? (
+                <EmptyState title="Keine Treffer" description={`Nichts gefunden für „${search.trim()}".`} />
             ) : (
-                (data ?? []).map((area) => (
+                visible.map((area) => (
                     <AreaTable
                         key={area.id}
                         area={area}
