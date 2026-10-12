@@ -37,10 +37,6 @@ export class AzurePeopleRepository implements PeopleRepository {
         return apiDelete(`/tasks/${id}`);
     }
 
-    async updateArea(id: string, processOwnerId: string | null): Promise<void> {
-        await apiSend<void>('PATCH', `/areas/${id}`, { processOwnerId });
-    }
-
     async updateUser(id: string, input: UserRoleInput): Promise<void> {
         await apiSend<void>('PATCH', `/users/${id}`, input);
     }

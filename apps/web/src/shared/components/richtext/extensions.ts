@@ -7,7 +7,7 @@ import { SizedImage } from './SizedImage';
 import { PanelExtension } from './PanelExtension';
 import { SlashCommand } from './SlashCommand';
 
-export function buildExtensions(options: { editable: boolean }) {
+export function buildExtensions(options: { editable: boolean; placeholder?: string }) {
   const base = [
     StarterKit.configure({ link: false, underline: false }),
     Underline,
@@ -25,7 +25,7 @@ export function buildExtensions(options: { editable: boolean }) {
   return [
     ...base,
     Placeholder.configure({
-      placeholder: 'Beschreibung erfassen … "/" öffnet die Befehlsliste.',
+      placeholder: options.placeholder ?? 'Beschreibung erfassen … "/" öffnet die Befehlsliste.',
     }),
     SlashCommand,
   ];

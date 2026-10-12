@@ -11,7 +11,7 @@ import {
     processVersions,
 } from '../db/schema/index.js';
 import { badRequest, notFound } from '../http/errors.js';
-import { assertAllowed } from './context.js';
+import { assertAllowed, type Tx } from './context.js';
 
 export const createProcessSchema = z
     .object({
@@ -29,22 +29,30 @@ export const createProcessSchema = z
 export type CreateProcessInput = z.infer<typeof createProcessSchema>;
 
 // §6: ein Elternteil gibt es nur für eine AA, und er muss eine VA sein. Eine AA darf allein stehen.
-async function assertParent(input: CreateProcessInput): Promise<string | null> {
-    if (!input.parentProcessId) return null;
-    if (input.specificationType !== 'AA') {
-        throw badRequest('Eine übergeordnete Verfahrensanweisung gibt es nur für eine Arbeitsanweisung.');
-    }
-
-    const [parent] = await db
-        .select({ specificationType: processes.specificationType })
+// Seit der Testauswertung vom 09.10. trägt sie die Nummer ihrer VA (OM.001_01) — deshalb liegt sie
+// im selben Bereich, sonst stünde ein fremdes Bereichskürzel in ihrem Kennzeichen.
+export async function assertParentProcess(reader: typeof db | Tx, parentProcessId: string, areaId: string): Promise<void> {
+    const [parent] = await reader
+        .select({ specificationType: processes.specificationType, areaId: processes.areaId })
         .from(processes)
-        .where(and(eq(processes.id, input.parentProcessId), eq(processes.isActive, true)))
+        .where(and(eq(processes.id, parentProcessId), eq(processes.isActive, true)))
         .limit(1);
 
     if (!parent) throw notFound('Übergeordneter Prozess nicht gefunden.');
     if (parent.specificationType !== 'VA') {
         throw badRequest('Übergeordnet kann nur eine Verfahrensanweisung sein.');
     }
+    if (parent.areaId !== areaId) {
+        throw badRequest('Eine Arbeitsanweisung liegt im Bereich ihrer Verfahrensanweisung — sie trägt deren Nummer.');
+    }
+}
+
+async function assertParent(input: CreateProcessInput): Promise<string | null> {
+    if (!input.parentProcessId) return null;
+    if (input.specificationType !== 'AA') {
+        throw badRequest('Eine übergeordnete Verfahrensanweisung gibt es nur für eine Arbeitsanweisung.');
+    }
+    await assertParentProcess(db, input.parentProcessId, input.areaId);
     return input.parentProcessId;
 }
 

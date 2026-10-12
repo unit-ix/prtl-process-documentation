@@ -3,7 +3,9 @@
 // ist ein eigener Endpoint mit eigener Prüfung (§0.5 Regel 4: niemals ein generisches PATCH, das
 // einen Status setzen kann).
 import { notFound } from '../http/errors.js';
+import { renumberProcess, renumberSchema } from '../workflow/renumber.js';
 import { listAreas } from './areas.js';
+import { listNumbers } from './numbers.js';
 import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
 import {
@@ -31,7 +33,9 @@ import {
     updateInstruction,
 } from './instructionWrites.js';
 import {
+    areaCreateSchema,
     areaUpdateSchema,
+    createArea,
     deleteQualification,
     deleteTask,
     qualificationSchema,
@@ -65,8 +69,18 @@ const assignAuthorSchema = z.object({ authorId: z.string().uuid() }).strict();
 const commentSchema = z.object({ comment: z.string().trim().min(1).max(2000) }).strict();
 
 export const ROUTES: readonly Route[] = [
-    { method: 'GET', path: '/areas', handle: () => ok(listAreas()) },
+    {
+        method: 'GET',
+        path: '/areas',
+        handle: ({ query }) => ok(listAreas({ includeInactive: query.includeInactive === 'true' })),
+    },
+    {
+        method: 'POST',
+        path: '/areas',
+        handle: async ({ user, body }) => ({ status: 201, body: await createArea(user, parseBody(areaCreateSchema, body)) }),
+    },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
+    { method: 'GET', path: '/numbers', handle: ({ user }) => ok(listNumbers(user)) },
     { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
     { method: 'GET', path: '/processes/:id', handle: ({ user, params }) => ok(getProcessDetail(user, params.id)) },
     {
@@ -255,6 +269,11 @@ export const ROUTES: readonly Route[] = [
         path: '/processes/:id/assign-author',
         handle: ({ user, params, body }) =>
             ok(assignAuthor(user, params.id, parseBody(assignAuthorSchema, body).authorId)),
+    },
+    {
+        method: 'PATCH',
+        path: '/processes/:id/number',
+        handle: ({ user, params, body }) => ok(renumberProcess(user, params.id, parseBody(renumberSchema, body))),
     },
     { method: 'POST', path: '/processes/:id/submit', handle: ({ user, params }) => ok(submitForReview(user, params.id)) },
     {

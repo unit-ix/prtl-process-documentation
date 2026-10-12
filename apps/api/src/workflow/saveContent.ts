@@ -8,6 +8,7 @@ import { db } from '../db/client.js';
 import { processAdditionalFields, processes, processLinks, processVersions } from '../db/schema/index.js';
 import { ApiError, badRequest, notFound } from '../http/errors.js';
 import { assertAllowed, lockTarget, type Tx } from './context.js';
+import { assertParentProcess } from './create.js';
 
 const richDocument = z.record(z.string(), z.unknown());
 
@@ -25,9 +26,9 @@ export const saveContentSchema = z
         parentProcessId: z.string().uuid().nullish(),
         purpose: z.string().nullish(),
         scopeDetail: z.string().nullish(),
-        terms: z.string().nullish(),
+        termsDoc: richDocument.nullish(),
         descriptionDoc: richDocument.nullish(),
-        responsibilities: z.string().nullish(),
+        responsibilitiesDoc: richDocument.nullish(),
         workSequence: z.string().nullish(),
         method: z.string().nullish(),
         processParameters: z.string().nullish(),
@@ -75,8 +76,6 @@ const SHELL_KEYS = [
 const VERSION_KEYS = [
     'purpose',
     'scopeDetail',
-    'terms',
-    'responsibilities',
     'workSequence',
     'method',
     'processParameters',
@@ -91,6 +90,17 @@ const pick = (input: SaveContentInput, keys: readonly string[]): Record<string, 
             .filter((key) => key in input)
             .map((key) => [key, (input as Record<string, unknown>)[key] ?? null]),
     );
+
+type RichKey = 'descriptionDoc' | 'termsDoc' | 'responsibilitiesDoc';
+
+// Rich-Text-Felder schreiben immer zwei Spalten: das Dokument und seinen Klartext. Vollständigkeit,
+// Suche und Assistent lesen nur den Klartext — deshalb nimmt die API ihn nie vom Client an.
+function richField(input: SaveContentInput, docKey: RichKey, textKey: string): Record<string, unknown> {
+    if (!(docKey in input)) return {};
+    const doc = (input[docKey] ?? null) as RichDocument | null;
+    const text = richTextToPlainText(doc);
+    return { [docKey]: doc, [textKey]: text === '' ? null : text };
+}
 
 export const conflict = (detail: string): ApiError => new ApiError(409, 'conflict', detail);
 
@@ -205,24 +215,34 @@ async function replaceLinks(tx: Tx, versionId: string, links: SaveContentInput['
     );
 }
 
+// Nach der ersten Freigabe hängt die Nummer an der VA (OM.001_01) — ein Wechsel würde das
+// Kennzeichen stillschweigend falsch machen. Korrigiert wird dann über die Nummernübersicht.
+async function assertParentChange(tx: Tx, process: EditableTarget['process'], next: unknown): Promise<void> {
+    if (next === undefined || next === process.parentProcessId) return;
+    if (process.identifier !== null) {
+        throw conflict('Die Nummer ist schon vergeben. Die übergeordnete Verfahrensanweisung lässt sich nicht mehr wechseln.');
+    }
+    if (next === null) return;
+    if (next === process.id) throw badRequest('Ein Prozess kann nicht sich selbst übergeordnet sein.');
+    await assertParentProcess(tx, next as string, process.areaId);
+}
+
 export async function saveContent(user: SessionUser, processId: string, input: SaveContentInput) {
     return db.transaction(async (tx) => {
         const target = await lockTarget(tx, processId);
         assertEditable(user, target, input.rowVersion);
 
-        const descriptionPatch =
-            'descriptionDoc' in input
-                ? {
-                      descriptionDoc: (input.descriptionDoc ?? null) as RichDocument | null,
-                      descriptionText: richTextToPlainText(input.descriptionDoc as RichDocument | null),
-                  }
-                : {};
+        const richPatch = {
+            ...richField(input, 'descriptionDoc', 'descriptionText'),
+            ...richField(input, 'termsDoc', 'terms'),
+            ...richField(input, 'responsibilitiesDoc', 'responsibilities'),
+        };
 
         const [version] = await tx
             .update(processVersions)
             .set({
                 ...pick(input, VERSION_KEYS),
-                ...descriptionPatch,
+                ...richPatch,
                 rowVersion: target.version.rowVersion + 1,
                 updatedAt: new Date(),
             })
@@ -231,7 +251,7 @@ export async function saveContent(user: SessionUser, processId: string, input: S
 
         const shellPatch = pick(input, SHELL_KEYS);
         if (Object.keys(shellPatch).length > 0) {
-            if (shellPatch.parentProcessId === processId) throw badRequest('Ein Prozess kann nicht sich selbst übergeordnet sein.');
+            await assertParentChange(tx, target.process, shellPatch.parentProcessId);
             await tx.update(processes).set(shellPatch).where(eq(processes.id, processId));
         }
 

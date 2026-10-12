@@ -5,14 +5,15 @@ import {
     canApproveFormal,
     keepOrBuildIdentifier,
     keepOrMintDocumentNumber,
+    keepOrMintSubNumber,
     nextEdition,
     type CategoryNumber,
     type SessionUser,
 } from '@app/domain';
 import { and, desc, eq, isNotNull, max } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { areas, processAdditionalFields, processes, processLinks, processVersions } from '../db/schema/index.js';
-import { notFound } from '../http/errors.js';
+import { areas, processAdditionalFields, processes, processLinks, processVersions, type ProcessRow } from '../db/schema/index.js';
+import { ApiError, notFound } from '../http/errors.js';
 import { assertAllowed, assertTransition, lockTarget, mailOf, type Tx } from './context.js';
 import { writeEvent } from './events.js';
 import { toAdditionalFieldView, toLinkView, toVersionView } from '../router/processMappers.js';
@@ -23,9 +24,11 @@ const CONTENT_COLUMNS = [
     'purpose',
     'scopeDetail',
     'terms',
+    'termsDoc',
     'descriptionDoc',
     'descriptionText',
     'responsibilities',
+    'responsibilitiesDoc',
     'workSequence',
     'method',
     'processParameters',
@@ -74,12 +77,52 @@ async function versionChildren(tx: Tx, versionId: string) {
 
 interface Minted {
     readonly edition: number;
-    readonly documentNumber: number;
+    /** Leer für ein Unterdokument — die Nummer gehört seiner VA. */
+    readonly documentNumber: number | null;
+    readonly subNumber: number | null;
     readonly identifier: string;
 }
 
-async function mint(tx: Tx, process: { id: string; areaId: string; documentNumber: number | null; identifier: string | null; specificationType: string; scope: string | null }, area: { shortCode: string; categoryNumber: number }): Promise<Minted> {
-    const edition = await nextEditionFor(tx, process.id);
+type MintSource = Pick<
+    ProcessRow,
+    'id' | 'areaId' | 'documentNumber' | 'subNumber' | 'identifier' | 'specificationType' | 'scope' | 'parentProcessId'
+>;
+type AreaParts = { shortCode: string; categoryNumber: number };
+
+const NO_PARENT_NUMBER =
+    'Die übergeordnete Verfahrensanweisung hat noch keine Nummer. Erst sie freigeben oder die Nummer in der Nummernübersicht vergeben.';
+
+// Ein Unterdokument trägt die Nummer seiner VA und zählt darunter hoch (OM.001_01). Die VA-Zeile
+// wird gesperrt, damit zwei gleichzeitig freigegebene Geschwister nicht dieselbe Unternummer ziehen.
+async function mintUnderParent(tx: Tx, process: MintSource, parentId: string, area: AreaParts) {
+    const [parent] = await tx
+        .select({ documentNumber: processes.documentNumber })
+        .from(processes)
+        .where(eq(processes.id, parentId))
+        .limit(1)
+        .for('update');
+    if (!parent) throw notFound('Übergeordneter Prozess nicht gefunden.');
+    if (parent.documentNumber === null) throw new ApiError(409, 'conflict', NO_PARENT_NUMBER);
+
+    const [row] = await tx
+        .select({ value: max(processes.subNumber) })
+        .from(processes)
+        .where(eq(processes.parentProcessId, parentId));
+    const subNumber = keepOrMintSubNumber(process.subNumber, row?.value ?? null);
+    const identifier = keepOrBuildIdentifier(process.identifier, {
+        specificationType: process.specificationType as never,
+        scope: process.scope as never,
+        categoryNumber: area.categoryNumber as CategoryNumber,
+        areaShortCode: area.shortCode,
+        documentNumber: parent.documentNumber,
+        subNumber,
+    });
+    return { documentNumber: null, subNumber, identifier };
+}
+
+async function mintNumber(tx: Tx, process: MintSource, area: AreaParts) {
+    if (process.parentProcessId !== null) return mintUnderParent(tx, process, process.parentProcessId, area);
+
     const documentNumber = await nextDocumentNumber(tx, process.areaId, process.documentNumber);
     const identifier = keepOrBuildIdentifier(process.identifier, {
         specificationType: process.specificationType as never,
@@ -88,7 +131,12 @@ async function mint(tx: Tx, process: { id: string; areaId: string; documentNumbe
         areaShortCode: area.shortCode,
         documentNumber,
     });
-    return { edition, documentNumber, identifier };
+    return { documentNumber, subNumber: null, identifier };
+}
+
+async function mint(tx: Tx, process: MintSource, area: AreaParts): Promise<Minted> {
+    const edition = await nextEditionFor(tx, process.id);
+    return { edition, ...(await mintNumber(tx, process, area)) };
 }
 
 interface ReleaseWrite {
@@ -124,6 +172,7 @@ async function writeRelease(tx: Tx, write: ReleaseWrite): Promise<void> {
             status: 'approved',
             edition: minted.edition,
             documentNumber: minted.documentNumber,
+            subNumber: minted.subNumber,
             identifier: minted.identifier,
             approvedAt: now,
             approvedByQmId: write.qmId,
@@ -144,7 +193,8 @@ export async function approveFormal(user: SessionUser, processId: string) {
         const [area] = await tx.select().from(areas).where(eq(areas.id, process.areaId)).limit(1);
         if (!area) throw notFound('Bereich nicht gefunden.');
 
-        const { edition, documentNumber, identifier } = await mint(tx, process, area);
+        const minted = await mint(tx, process, area);
+        const { edition, identifier } = minted;
         const [fields, links] = await versionChildren(tx, version.id);
 
         const now = new Date();
@@ -159,7 +209,7 @@ export async function approveFormal(user: SessionUser, processId: string) {
             links: links.map((link) => toLinkView(link, new Map())),
         });
 
-        await writeRelease(tx, { processId, versionId: version.id, qmId: user.id, now, snapshotHtml, version, minted: { edition, documentNumber, identifier } });
+        await writeRelease(tx, { processId, versionId: version.id, qmId: user.id, now, snapshotHtml, version, minted });
 
         await writeEvent(
             tx,

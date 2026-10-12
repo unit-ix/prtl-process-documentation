@@ -1,5 +1,5 @@
 import type { ProcessDetailView } from '@app/domain';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Pencil, Save } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { RichTextEditor } from '@/shared/components/richtext/RichTextEditor';
@@ -70,11 +70,22 @@ export function ProcessDescriptionPage() {
 
     return (
         <div className="space-y-4">
-            <Button asChild variant="ghost" size="sm" className="gap-2">
-                <Link to={`/processes/${id}`}>
-                    <ArrowLeft className="size-4" /> Zurück zum Prozess
-                </Link>
-            </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <Button asChild variant="ghost" size="sm" className="gap-2">
+                    <Link to={`/processes/${id}?tab=description`}>
+                        <ArrowLeft className="size-4" /> Zurück zum Prozess
+                    </Link>
+                </Button>
+                {/* Zweck, Geltungsbereich, Begriffe … stehen nicht hier, sondern in den Kopfdaten —
+                    in der Testauswertung vom 09.10. wurde genau dieser Weg nicht gefunden. */}
+                {data?.permissions.canEditContent ? (
+                    <Button asChild variant="outline" size="sm" className="gap-2">
+                        <Link to={`/processes/${id}/edit`}>
+                            <Pencil className="size-4" /> Kopfdaten bearbeiten
+                        </Link>
+                    </Button>
+                ) : null}
+            </div>
 
             <AsyncBoundary isLoading={isPending} error={error} onRetry={() => void refetch()}>
                 {data ? <Editor process={data} /> : null}

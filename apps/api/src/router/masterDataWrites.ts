@@ -1,27 +1,80 @@
 // §9.7 — Einstellungen. Beides nur für Administration und QM; `displayName`, `mail` und die
 // Entra-Id kommen aus der Provisionierung und sind hier nicht änderbar.
 import { canSeeQualifications, canSeeSettings, type SessionUser } from '@app/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
-import { areas, qualifications, users, userTasks } from '../db/schema/index.js';
-import { badRequest, forbidden, notFound } from '../http/errors.js';
+import { areas, processes, qualifications, users, userTasks } from '../db/schema/index.js';
+import { ApiError, badRequest, forbidden, notFound } from '../http/errors.js';
 
 const assertSettings = (user: SessionUser): void => {
     if (!canSeeSettings(user)) throw forbidden('Einstellungen sind Administration und QM vorbehalten.');
 };
 
-export const areaUpdateSchema = z.object({ processOwnerId: z.string().uuid().nullable() }).strict();
+const areaFields = {
+    title: z.string().trim().min(1).max(200),
+    // Steht im Kennzeichen (VA PE 2 OM.001): Großbuchstaben und Ziffern, kurz.
+    shortCode: z
+        .string()
+        .trim()
+        .toUpperCase()
+        .regex(/^[A-Z0-9]{1,8}$/, 'Kürzel: 1 bis 8 Großbuchstaben oder Ziffern.'),
+    categoryNumber: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+};
 
+export const areaCreateSchema = z.object(areaFields).strict();
+
+export const areaUpdateSchema = areaCreateSchema
+    .partial()
+    .extend({ processOwnerId: z.string().uuid().nullable().optional(), isActive: z.boolean().optional() })
+    .strict();
+
+const areaConflict = (detail: string): ApiError => new ApiError(409, 'conflict', detail);
+
+async function assertShortCodeFree(shortCode: string, exceptId: string | null): Promise<void> {
+    const [taken] = await db
+        .select({ id: areas.id, title: areas.title })
+        .from(areas)
+        .where(and(eq(areas.shortCode, shortCode), eq(areas.isActive, true)))
+        .limit(1);
+    if (taken && taken.id !== exceptId) throw areaConflict(`Das Kürzel ${shortCode} hat schon der Bereich „${taken.title}".`);
+}
+
+export async function createArea(user: SessionUser, input: z.infer<typeof areaCreateSchema>): Promise<{ id: string }> {
+    assertSettings(user);
+    await assertShortCodeFree(input.shortCode, null);
+    const [created] = await db.insert(areas).values(input).returning({ id: areas.id });
+    return { id: created.id };
+}
+
+const LOCKED =
+    'Kürzel und Kategorie stehen in den Kennzeichen freigegebener Dokumente dieses Bereichs und lassen sich nicht mehr ändern.';
+
+// Titel und Leitung sind frei. Kürzel und Kategorie nur, solange kein Dokument ein Kennzeichen
+// trägt — sonst stimmte jedes freigegebene Kennzeichen des Bereichs stillschweigend nicht mehr.
 export async function updateArea(user: SessionUser, id: string, input: z.infer<typeof areaUpdateSchema>): Promise<void> {
     assertSettings(user);
+    if (Object.keys(input).length === 0) throw badRequest('Keine Felder zum Ändern.');
 
-    const updated = await db
-        .update(areas)
-        .set({ processOwnerId: input.processOwnerId })
-        .where(and(eq(areas.id, id), eq(areas.isActive, true)))
-        .returning({ id: areas.id });
-    if (updated.length === 0) throw notFound('Bereich nicht gefunden.');
+    const [area] = await db.select().from(areas).where(eq(areas.id, id)).limit(1);
+    if (!area) throw notFound('Bereich nicht gefunden.');
+
+    const recodes =
+        (input.shortCode !== undefined && input.shortCode !== area.shortCode) ||
+        (input.categoryNumber !== undefined && input.categoryNumber !== area.categoryNumber);
+    if (recodes) {
+        const [numbered] = await db
+            .select({ id: processes.id })
+            .from(processes)
+            .where(and(eq(processes.areaId, id), isNotNull(processes.identifier)))
+            .limit(1);
+        if (numbered) throw areaConflict(LOCKED);
+    }
+    if (input.shortCode !== undefined || input.isActive === true) {
+        await assertShortCodeFree(input.shortCode ?? area.shortCode, id);
+    }
+
+    await db.update(areas).set(input).where(eq(areas.id, id));
 }
 
 export const userUpdateSchema = z

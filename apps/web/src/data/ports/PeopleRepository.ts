@@ -30,6 +30,5 @@ export interface PeopleRepository {
     removeQualification(id: string): Promise<void>;
     saveTask(input: TaskInput, id?: string): Promise<{ id: string }>;
     removeTask(id: string): Promise<void>;
-    updateArea(id: string, processOwnerId: string | null): Promise<void>;
     updateUser(id: string, input: UserRoleInput): Promise<void>;
 }

@@ -120,7 +120,15 @@ function EventHistory({ process }: { process: ProcessDetailView }) {
                                     {event.actor?.displayName ?? 'Unbekannt'} · {formatDateTime(event.createdAt)}
                                 </p>
                                 {event.comment ? (
-                                    <blockquote className="border-destructive/40 bg-destructive/5 mt-2 rounded-md border-l-2 p-2 text-sm whitespace-pre-line">
+                                    <blockquote
+                                        className={cn(
+                                            'mt-2 rounded-md border-l-2 p-2 text-sm whitespace-pre-line',
+                                            // Rot nur für Ablehnungen — „Nummer geändert" ist eine Notiz, kein Fehler.
+                                            EVENT_TONE[event.eventKind] === 'danger'
+                                                ? 'border-destructive/40 bg-destructive/5'
+                                                : 'border-border bg-muted/40',
+                                        )}
+                                    >
                                         {event.comment}
                                     </blockquote>
                                 ) : null}

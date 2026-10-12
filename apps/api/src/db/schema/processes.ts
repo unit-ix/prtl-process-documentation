@@ -1,5 +1,5 @@
 import { CONFIDENTIALITIES, PROCESS_STATUSES, SCOPES, SPECIFICATION_TYPES, TEMPLATE_TYPES } from '@app/domain';
-import { boolean, check, integer, pgTable, text, timestamp, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { boolean, check, integer, pgTable, smallint, text, timestamp, unique, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { contentColumns, createdAt, id, isActive, legacyId, oneOf } from './columns.js';
 import { areas, users } from './masterData.js';
 
@@ -11,6 +11,9 @@ export const processes = pgTable(
         shortDescription: text('short_description'),
         identifier: text('identifier'),
         documentNumber: integer('document_number'),
+        // Nur für ein Unterdokument: es trägt die Nummer seiner VA (document_number bleibt leer) und
+        // zählt darunter hoch → OM.001_01.
+        subNumber: smallint('sub_number'),
         edition: integer('edition'),
         specificationType: text('specification_type').notNull(),
         templateType: text('template_type').notNull(),
@@ -33,6 +36,7 @@ export const processes = pgTable(
     },
     (t) => [
         unique('processes_area_document_number_unique').on(t.areaId, t.documentNumber),
+        unique('processes_parent_sub_number_unique').on(t.parentProcessId, t.subNumber),
         check('processes_specification_type_check', oneOf(t.specificationType, SPECIFICATION_TYPES)),
         check('processes_template_type_check', oneOf(t.templateType, TEMPLATE_TYPES)),
         check('processes_scope_check', oneOf(t.scope, SCOPES)),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, richTextToHtml, richTextToPlainText } from './richText.js';
+import { escapeHtml, plainTextToRichDocument, richOrPlain, richTextToHtml, richTextToPlainText } from './richText.js';
 
 const doc = (...content: unknown[]) => ({ type: 'doc', content }) as never;
 const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
@@ -151,5 +151,39 @@ describe('Bilder ohne Upload', () => {
 
     it('nennt den Pfad im Hinweis nicht — er gehört niemandem ausser dem Verfasser', () => {
         expect(richTextToHtml(doc('file:///var/folders/x/Bildschirmfoto.png'))).not.toContain('var/folders');
+    });
+});
+
+describe('plainTextToRichDocument — Altbestand aus den früheren Textfeldern', () => {
+    it('macht aus jeder Zeile einen Absatz und behält Leerzeilen', () => {
+        expect(richTextToHtml(plainTextToRichDocument('MA = Mitarbeiter\n\nQM = Qualität'))).toBe(
+            '<p>MA = Mitarbeiter</p><p></p><p>QM = Qualität</p>',
+        );
+    });
+
+    it('liefert für leeren oder fehlenden Text kein Dokument', () => {
+        expect(plainTextToRichDocument('')).toBeNull();
+        expect(plainTextToRichDocument('   \n ')).toBeNull();
+        expect(plainTextToRichDocument(null)).toBeNull();
+    });
+
+    it('escaped den Text wie jeden anderen Nutzertext', () => {
+        expect(richTextToHtml(plainTextToRichDocument('<b>x</b>'))).toBe('<p>&lt;b&gt;x&lt;/b&gt;</p>');
+    });
+
+    it('übersteht den Weg zurück in den Klartext', () => {
+        expect(richTextToPlainText(plainTextToRichDocument('a\nb'))).toBe('a\nb');
+    });
+});
+
+describe('richOrPlain', () => {
+    it('nimmt das Dokument, wenn es eines gibt', () => {
+        const stored = doc(paragraph('neu'));
+        expect(richOrPlain(stored, 'alt')).toBe(stored);
+    });
+
+    it('fällt sonst auf den Altbestand zurück', () => {
+        expect(richTextToHtml(richOrPlain(null, 'alt'))).toBe('<p>alt</p>');
+        expect(richOrPlain(null, null)).toBeNull();
     });
 });

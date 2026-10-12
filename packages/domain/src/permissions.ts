@@ -54,5 +54,8 @@ export const canSeeApprovalTab = (u: Roles): boolean => u.isAdministrator || u.i
 
 export const canSeeSettings = (u: Roles): boolean => u.isAdministrator || u.isQm;
 
+/** Nummern vergeben und korrigieren: nur Administration (Entscheidung vom 12.10.2026). */
+export const canChangeNumbers = (u: Roles): boolean => u.isAdministrator;
+
 export const hasAnyRole = (u: Pick<User, 'isAuthor' | 'isProcessOwner' | 'isQm' | 'isAdministrator'>): boolean =>
     u.isAuthor || u.isProcessOwner || u.isQm || u.isAdministrator;

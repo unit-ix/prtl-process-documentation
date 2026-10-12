@@ -3,6 +3,7 @@
 // der App bis dahin dreimal gewechselt hat. Alles Nutzereingegebene wird escaped.
 import {
     escapeHtml,
+    richOrPlain,
     richTextToHtml,
     type AreaRef,
     type ProcessAdditionalFieldView,
@@ -36,10 +37,13 @@ function richSection(heading: string, html: string): string {
     return `<h2 style="font-size:15px;margin:24px 0 6px">${escapeHtml(heading)}</h2><div style="font-size:14px;line-height:1.55">${body}</div>`;
 }
 
+const responsibilitiesHtml = (version: ProcessVersionView): string =>
+    richTextToHtml(richOrPlain(version.responsibilitiesDoc, version.responsibilities));
+
 function imsSections(version: ProcessVersionView, description: string): string {
     return [
-        textSection('3 · Begriffe', version.terms),
-        textSection('4 · Zuständigkeiten / Verantwortung', version.responsibilities),
+        richSection('3 · Begriffe', richTextToHtml(richOrPlain(version.termsDoc, version.terms))),
+        richSection('4 · Zuständigkeiten / Verantwortung', responsibilitiesHtml(version)),
         richSection('5 · Prozessbeschreibung', description),
     ].join('');
 }
@@ -48,7 +52,7 @@ function prodSections(version: ProcessVersionView, description: string): string 
     return [
         richSection('3 · Prozessbeschreibung', description),
         textSection('4 · Prozessablauf', version.workSequence),
-        textSection('4.1 · Zuständigkeiten / Verantwortung', version.responsibilities),
+        richSection('4.1 · Zuständigkeiten / Verantwortung', responsibilitiesHtml(version)),
         textSection('5.1 · Verfahren', version.method),
         textSection('5.2 · Prozessparameter', version.processParameters),
         textSection('5.3 · Dokumentationen', version.documentationRef),

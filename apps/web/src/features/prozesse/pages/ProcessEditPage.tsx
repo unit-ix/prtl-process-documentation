@@ -8,7 +8,13 @@ import { Label } from '@/shared/components/ui/label';
 import type { ProcessListItem } from '@app/domain';
 import { AdditionalFieldsEditor } from '../components/AdditionalFieldsEditor';
 import { LinksEditor } from '../components/LinksEditor';
-import { FormField, GENERAL_FIELDS, OVERVIEW_FIELDS, templateFields } from '../components/ProcessFormFields';
+import {
+    FormField,
+    GENERAL_FIELDS,
+    OVERVIEW_FIELDS,
+    RichFormField,
+    templateFields,
+} from '../components/ProcessFormFields';
 import { useReleasedProcesses } from '../hooks/useReleasedProcesses';
 import { useProcessDetail } from '../hooks/useProcessDetail';
 import { useProcessForm } from '../hooks/useProcessForm';
@@ -51,12 +57,12 @@ function EditForm({ process }: { process: ProcessDetailView }) {
             <OverviewSection process={process} form={form} set={set} />
 
             <Section title="Verantwortlichkeiten">
-                <FormField
-                    id="responsibilities"
+                <RichFormField
                     label="Zuständigkeiten / Verantwortung"
-                    form={form}
-                    onChange={set}
-                    rows={5}
+                    value={form.responsibilitiesDoc}
+                    onChange={(doc) => set('responsibilitiesDoc', doc)}
+                    processId={process.id}
+                    placeholder='Wer ist wofür zuständig … "/" öffnet die Befehlsliste.'
                 />
             </Section>
 
@@ -73,6 +79,15 @@ function OverviewSection({ process, form, set }: { process: ProcessDetailView; f
                 {[...OVERVIEW_FIELDS, ...templateFields(process.templateType)].map((field) => (
                     <FormField key={field.id} {...field} form={form} onChange={set} />
                 ))}
+                {process.templateType === 'IMS' ? (
+                    <RichFormField
+                        label="Begriffe"
+                        value={form.termsDoc}
+                        onChange={(doc) => set('termsDoc', doc)}
+                        processId={process.id}
+                        placeholder='Begriffe erfassen, gern als Tabelle: Begriff | Erklärung. "/" öffnet die Befehlsliste.'
+                    />
+                ) : null}
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                         <Label>Prozessbeschreibung</Label>

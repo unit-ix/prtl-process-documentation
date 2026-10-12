@@ -18,9 +18,11 @@ const version = (overrides: Partial<ProcessVersionView> = {}): ProcessVersionVie
     purpose: 'Der Zweck',
     scopeDetail: 'Der Geltungsbereich',
     terms: 'Die Begriffe',
+    termsDoc: null,
     descriptionDoc: null,
     descriptionText: null,
     responsibilities: 'Die Zuständigkeiten',
+    responsibilitiesDoc: null,
     workSequence: 'Der Ablauf',
     method: 'Das Verfahren',
     processParameters: 'Die Parameter',
@@ -85,6 +87,37 @@ describe('renderSnapshot — leere Werte', () => {
     it('behält Zeilenumbrüche', () => {
         const html = renderSnapshot(input({ version: version({ purpose: 'a\nb' }) }));
         expect(html).toContain('a<br />b');
+    });
+});
+
+describe('renderSnapshot — Begriffe und Zuständigkeiten als Rich Text', () => {
+    const table = {
+        type: 'doc',
+        content: [
+            {
+                type: 'table',
+                content: [
+                    {
+                        type: 'tableRow',
+                        content: [
+                            { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'MA' }] }] },
+                            { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mitarbeiter' }] }] },
+                        ],
+                    },
+                ],
+            },
+        ],
+    };
+
+    it('rendert eine Begriffstabelle als Tabelle', () => {
+        const html = renderSnapshot(input({ version: version({ termsDoc: table, terms: 'MA\nMitarbeiter' }) }));
+        expect(html).toContain('<table><tr><td><p>MA</p></td><td><p>Mitarbeiter</p></td></tr></table>');
+    });
+
+    it('zeigt Altbestand ohne Dokument weiter als Text', () => {
+        const html = renderSnapshot(input({ templateType: 'PROD', version: version({ responsibilities: 'QM <prüft>' }) }));
+        expect(html).toContain('4.1 · Zuständigkeiten / Verantwortung');
+        expect(html).toContain('<p>QM &lt;prüft&gt;</p>');
     });
 });
 

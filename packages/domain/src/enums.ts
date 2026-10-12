@@ -49,6 +49,7 @@ export const EVENT_KINDS = [
     'formally_approved',
     'formally_rejected',
     'revision_started',
+    'number_changed',
 ] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
 export const EVENT_LABELS: Record<EventKind, string> = {
@@ -59,6 +60,7 @@ export const EVENT_LABELS: Record<EventKind, string> = {
     formally_approved: 'Formell freigegeben',
     formally_rejected: 'Formell abgelehnt',
     revision_started: 'Überarbeitung gestartet',
+    number_changed: 'Nummer geändert',
 };
 export const EVENT_TONE: Record<EventKind, 'neutral' | 'success' | 'danger'> = {
     assigned: 'neutral',
@@ -68,6 +70,7 @@ export const EVENT_TONE: Record<EventKind, 'neutral' | 'success' | 'danger'> = {
     formally_approved: 'success',
     formally_rejected: 'danger',
     revision_started: 'neutral',
+    number_changed: 'neutral',
 };
 
 export const LINK_TYPES = ['InternerProzess', 'ExternesDokument'] as const;
