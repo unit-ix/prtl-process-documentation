@@ -7,7 +7,7 @@
 
 ## Goal
 
-Nach der Testauswertung vom 09.10. bekommt PRETTL drei Dinge vor dem Go-live: Eine Arbeitsanweisung unter einer Verfahrensanweisung trägt deren Nummer mit Unternummer (`VA PE 1 OM.001` → `AA PE 1 OM.001_01`). Ein Administrator kann Nummern vergeben und korrigieren, damit beim Import aus Word die bisherigen Nummern erhalten bleiben, auch wenn die Dokumente nicht in Reihenfolge kommen. Dafür gibt es eine schlanke Nummernübersicht je Bereich. Außerdem können Bereiche in den Einstellungen angelegt und bearbeitet werden, ohne dass UNIT IX dafür etwas tun muss.
+Nach der Testauswertung vom 09.10. bekommt PRETTL drei Dinge vor dem Go-live: Eine Arbeitsanweisung unter einer Verfahrensanweisung trägt deren Nummer mit Unternummer (`VA PE 1 OM.001` → `AA PE 1 OM.001_01`). Ein Administrator kann Nummern vergeben und korrigieren, damit beim Import aus Word die bisherigen Nummern erhalten bleiben, auch wenn die Dokumente nicht in Reihenfolge kommen. Dafür gibt es eine schlanke Nummernübersicht je Bereich. Außerdem können Bereiche (Abteilungen) in den Einstellungen angelegt, umbenannt und deaktiviert werden, ohne dass UNIT IX dafür etwas tun muss.
 
 ## Constraints
 
@@ -21,6 +21,7 @@ Nach der Testauswertung vom 09.10. bekommt PRETTL drei Dinge vor dem Go-live: Ei
 ## Out of Scope
 
 - Typo-Korrektur in der formellen Prüfung ohne neue Version. Bleibt offen, bis PRETTL es ausdrücklich will
+- Pflegbarer Geltungsbereich (PE/PER/PEL): am 12.10. geklärt, gemeint war nur die Bereichsliste in den Einstellungen
 - Pflegbare Anweisungsart (VA/AA), Vorlage (IMS/PROD), Vertraulichkeit, Prozesskategorie: daran hängt Programmlogik
 - Go-live (leere Prod-DB, Nutzerliste, Rollentest): eigener Schritt nach dem Termin am 16.10.
 - Flowchart-Editor: eigenes Angebot, noch nicht beauftragt
@@ -94,7 +95,7 @@ Verify:
 - [ ] Kürzel und Kategorie sind gesperrt, sobald ein Prozess im Bereich ein Kennzeichen hat. Beides steckt im Kennzeichen, eine Änderung würde freigegebene Nummern stillschweigend falsch machen. Meldung statt Fehler — `masterDataWrites.ts`
 - [ ] Kürzel eindeutig unter den aktiven Bereichen
 - [ ] Deaktivierter Bereich verschwindet aus der Auswahl beim Anlegen, seine Prozesse bleiben sichtbar
-- [ ] Einstellungen → Bereiche: „Bereich anlegen" und ein Bearbeiten-Dialog (Sheet, `p-6`, `space-y-5`) — `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, neu `AreaDialog.tsx`
+- [ ] Einstellungen → Bereiche: „Bereich anlegen" und je Zeile ein Bearbeiten-Dialog für Titel, Kürzel und Kategorie neben der bestehenden Leitungsauswahl (Sheet, `p-6`, `space-y-5`) — `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, neu `AreaDialog.tsx`
 
 Files touched: `apps/api/src/router/masterDataWrites.ts`, `apps/api/src/router/routes.ts`, `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, `apps/web/src/features/einstellungen/components/AreaDialog.tsx`, `apps/web/src/data/ports/MasterDataRepository.ts`, `apps/web/src/data/adapters/azure/AzureMasterDataRepository.ts`
 
@@ -102,23 +103,6 @@ Verify:
 - `pnpm verify` grün
 - Dev: Bereich „Fertigung" mit Kürzel `FT` anlegen → erscheint sofort beim Anlegen eines Prozesses
 - Dev: Kürzel eines Bereichs mit freigegebenem Prozess ändern → Feld gesperrt mit Erklärung
-
-### Phase 6: Geltungsbereich als pflegbare Liste
-
-<!-- HUMAN: Erst nach OK von Oliver/PRETTL umsetzen. Am 09.10. wurde „Geltungsbereich, Anweisungsart und so weiter" genannt, bestätigt ist nur „Bereiche". -->
-
-- [ ] Tabelle `scopes` (Kürzel als Schlüssel, Bezeichnung, aktiv), Seed PE / PER / PEL. Der Check `processes_scope_check` wird durch einen Fremdschlüssel ersetzt — `apps/api/src/db/schema/masterData.ts`, `processes.ts`, `apps/api/drizzle/0007_*.sql`
-- [ ] `Scope` wird in der Domain zu `string`; `SCOPES`/`SCOPE_LABELS` entfallen — `packages/domain/src/enums.ts`, `identifier.ts`, `Process.ts`, `ProcessDetailView.ts`
-- [ ] zod-Prüfung gegen die Tabelle statt gegen das Enum — `apps/api/src/workflow/create.ts`, `saveContent.ts`
-- [ ] Einstellungen → Reiter „Geltungsbereiche" (anlegen, umbenennen, deaktivieren). Das Kürzel ist nach erster Verwendung gesperrt, es steckt im Kennzeichen
-- [ ] Anlegen-Formular lädt die Liste aus der API — `apps/web/src/features/prozesse/components/ProcessCreateForm.tsx`
-
-Files touched: `apps/api/src/db/schema/masterData.ts`, `apps/api/drizzle/0007_*.sql`, `packages/domain/src/enums.ts`, `packages/domain/src/Process.ts`, `packages/domain/src/ProcessDetailView.ts`, `apps/web/src/features/prozesse/components/ProcessCreateForm.tsx`, `apps/web/src/features/einstellungen/components/ScopeSettings.tsx`
-
-Verify:
-- `pnpm verify` grün
-- Migration enthält kein `DROP COLUMN/TABLE`
-- Dev: neuen Geltungsbereich anlegen → im Anlegen-Formular wählbar → Freigabe prägt `VA <neu> …`
 
 ## Execution Log
 
