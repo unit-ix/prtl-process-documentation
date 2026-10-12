@@ -1,6 +1,6 @@
 # Nummerierung für Unterdokumente, Nummernpflege und pflegbare Stammdaten
 
-> Status: draft
+> Status: executing
 > Created: 2026-10-12 | Owner: SamerSol99
 > Autopilot: false (gated — zwei Migrationen und schreibende Admin-Endpunkte)
 > Related: docs/prd.md (§5.1 Identkennzeichen, §9.7 Einstellungen), docs/datamodel.md, Testauswertung PRETTL vom 09.10.2026
@@ -30,11 +30,11 @@ Nach der Testauswertung vom 09.10. bekommt PRETTL drei Dinge vor dem Go-live: Ei
 
 ### Phase 1: Regeln für Unternummer und Nummernänderung in der Domain
 
-- [ ] `buildIdentifier` kennt eine optionale Unternummer: `OM.001_01`; `SUB_NUMBER_DIGITS = 2` — `packages/domain/src/identifier.ts`
-- [ ] `keepOrMintSubNumber(existing, maxAmongSiblings)` analog zu `keepOrMintDocumentNumber` — `packages/domain/src/identifier.ts`
-- [ ] `canChangeNumbers(u) = u.isAdministrator` — `packages/domain/src/permissions.ts`
-- [ ] Ereignisart `number_changed` („Nummer geändert", Ton neutral) — `packages/domain/src/enums.ts`
-- [ ] Tests beidseitig: Kennzeichen mit und ohne Unternummer, Unternummer 9 → `_09` und 10 → `_10`, Admin darf, QM und Prozessverantwortlicher dürfen nicht — `identifier.test.ts`, `permissions.test.ts`
+- [x] (2026-10-12 14:22Z) `buildIdentifier` kennt eine optionale Unternummer: `OM.001_01`; `SUB_NUMBER_DIGITS = 2` — `packages/domain/src/identifier.ts`
+- [x] (2026-10-12 14:22Z) `keepOrMintSubNumber(existing, maxAmongSiblings)` analog zu `keepOrMintDocumentNumber` — `packages/domain/src/identifier.ts`
+- [x] (2026-10-12 14:22Z) `canChangeNumbers(u) = u.isAdministrator` — `packages/domain/src/permissions.ts`
+- [x] (2026-10-12 14:22Z) Ereignisart `number_changed` („Nummer geändert", Ton neutral) — `packages/domain/src/enums.ts`
+- [x] (2026-10-12 14:22Z) Tests beidseitig: Kennzeichen mit und ohne Unternummer, Unternummer 9 → `_09` und 10 → `_10`, Admin darf, QM und Prozessverantwortlicher dürfen nicht — `identifier.test.ts`, `permissions.test.ts`
 
 Files touched: `packages/domain/src/identifier.ts`, `packages/domain/src/identifier.test.ts`, `packages/domain/src/permissions.ts`, `packages/domain/src/permissions.test.ts`, `packages/domain/src/enums.ts`
 
@@ -105,8 +105,7 @@ Verify:
 - Dev: Kürzel eines Bereichs mit freigegebenem Prozess ändern → Feld gesperrt mit Erklärung
 
 ## Execution Log
-
-- (noch leer — wird mit erstem `/execute`-Aufruf befüllt)
+- 2026-10-12 14:22Z — Phase 1 — Regeln in der Domain, verify grün
 
 ## Decisions Made During Execution
 

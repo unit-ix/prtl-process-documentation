@@ -3,6 +3,7 @@ import {
     canApproveContent,
     canApproveFormal,
     canAssignAuthor,
+    canChangeNumbers,
     canCreateProcess,
     canDeleteProcess,
     canEditContent,
@@ -178,5 +179,17 @@ describe('Sicht-Prädikate', () => {
     it('hasAnyRole: vier Flags aus heisst kein Zugriff', () => {
         expect(hasAnyRole(stranger)).toBe(false);
         for (const role of [admin, qm, pvOfArea, author]) expect(hasAnyRole(role)).toBe(true);
+    });
+});
+
+describe('canChangeNumbers', () => {
+    it('erlaubt nur der Administration', () => {
+        expect(canChangeNumbers(admin)).toBe(true);
+    });
+
+    it('verweigert QM, Prozessverantwortlichem und Verfasser', () => {
+        expect(canChangeNumbers(qm)).toBe(false);
+        expect(canChangeNumbers(pvOfArea)).toBe(false);
+        expect(canChangeNumbers(author)).toBe(false);
     });
 });

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildIdentifier,
+    formatNumber,
     keepOrBuildIdentifier,
     keepOrMintDocumentNumber,
+    keepOrMintSubNumber,
     nextEdition,
     type IdentifierParts,
 } from './identifier.js';
@@ -38,6 +40,34 @@ describe('buildIdentifier', () => {
         expect(buildIdentifier({ ...parts, specificationType: 'AA', categoryNumber: 3, scope: 'PEL' })).toBe(
             'AA PEL 3 IMS.001',
         );
+    });
+});
+
+describe('Unterdokument — Nummer der VA plus Unternummer', () => {
+    it('hängt die Unternummer zweistellig mit Unterstrich an', () => {
+        expect(buildIdentifier({ ...parts, specificationType: 'AA', subNumber: 1 })).toBe('AA PE 1 IMS.001_01');
+    });
+
+    it('füllt bis 9 auf und schneidet ab 100 nichts ab', () => {
+        expect(formatNumber('OM', 1, 9)).toBe('OM.001_09');
+        expect(formatNumber('OM', 1, 10)).toBe('OM.001_10');
+        expect(formatNumber('OM', 1, 100)).toBe('OM.001_100');
+    });
+
+    it('schreibt ohne Unternummer kein Suffix', () => {
+        expect(formatNumber('OM', 4)).toBe('OM.004');
+        expect(formatNumber('OM', 4, null)).toBe('OM.004');
+    });
+});
+
+describe('keepOrMintSubNumber', () => {
+    it('zieht die nächste Unternummer unter der VA', () => {
+        expect(keepOrMintSubNumber(null, null)).toBe(1);
+        expect(keepOrMintSubNumber(null, 2)).toBe(3);
+    });
+
+    it('behält eine vergebene Unternummer', () => {
+        expect(keepOrMintSubNumber(5, 9)).toBe(5);
     });
 });
 
