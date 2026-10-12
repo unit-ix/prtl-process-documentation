@@ -1,6 +1,6 @@
 # Nummerierung für Unterdokumente, Nummernpflege und pflegbare Stammdaten
 
-> Status: executing
+> Status: done
 > Created: 2026-10-12 | Owner: SamerSol99
 > Autopilot: false (gated — zwei Migrationen und schreibende Admin-Endpunkte)
 > Related: docs/prd.md (§5.1 Identkennzeichen, §9.7 Einstellungen), docs/datamodel.md, Testauswertung PRETTL vom 09.10.2026
@@ -91,11 +91,11 @@ Verify:
 
 ### Phase 5: Bereiche anlegen und bearbeiten
 
-- [ ] `POST /areas` (Titel, Kürzel, Prozesskategorie), `PATCH /areas/:id` erweitert um Titel, Kürzel, Kategorie, aktiv. Berechtigung wie bisher `canSeeSettings` — `apps/api/src/router/masterDataWrites.ts`, `routes.ts`
-- [ ] Kürzel und Kategorie sind gesperrt, sobald ein Prozess im Bereich ein Kennzeichen hat. Beides steckt im Kennzeichen, eine Änderung würde freigegebene Nummern stillschweigend falsch machen. Meldung statt Fehler — `masterDataWrites.ts`
-- [ ] Kürzel eindeutig unter den aktiven Bereichen
-- [ ] Deaktivierter Bereich verschwindet aus der Auswahl beim Anlegen, seine Prozesse bleiben sichtbar
-- [ ] Einstellungen → Bereiche: „Bereich anlegen" und je Zeile ein Bearbeiten-Dialog für Titel, Kürzel und Kategorie neben der bestehenden Leitungsauswahl (Sheet, `p-6`, `space-y-5`) — `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, neu `AreaDialog.tsx`
+- [x] (2026-10-12 15:28Z) `POST /areas` (Titel, Kürzel, Prozesskategorie), `PATCH /areas/:id` erweitert um Titel, Kürzel, Kategorie, aktiv. Berechtigung wie bisher `canSeeSettings` — `apps/api/src/router/masterDataWrites.ts`, `routes.ts`
+- [x] (2026-10-12 15:28Z) Kürzel und Kategorie sind gesperrt, sobald ein Prozess im Bereich ein Kennzeichen hat. Beides steckt im Kennzeichen, eine Änderung würde freigegebene Nummern stillschweigend falsch machen. Meldung statt Fehler — `masterDataWrites.ts`
+- [x] (2026-10-12 15:28Z) Kürzel eindeutig unter den aktiven Bereichen
+- [x] (2026-10-12 15:28Z) Deaktivierter Bereich verschwindet aus der Auswahl beim Anlegen, seine Prozesse bleiben sichtbar
+- [x] (2026-10-12 15:28Z) Einstellungen → Bereiche: „Bereich anlegen" und je Zeile ein Bearbeiten-Dialog für Titel, Kürzel und Kategorie neben der bestehenden Leitungsauswahl (Sheet, `p-6`, `space-y-5`) — `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, neu `AreaDialog.tsx`
 
 Files touched: `apps/api/src/router/masterDataWrites.ts`, `apps/api/src/router/routes.ts`, `apps/web/src/features/einstellungen/components/AreaSettings.tsx`, `apps/web/src/features/einstellungen/components/AreaDialog.tsx`, `apps/web/src/data/ports/MasterDataRepository.ts`, `apps/web/src/data/adapters/azure/AzureMasterDataRepository.ts`
 
@@ -109,6 +109,7 @@ Verify:
 - 2026-10-12 14:24Z — Phase 2 — Unternummer bei Freigabe, Migration 0006, verify grün
 - 2026-10-12 14:26Z — Phase 3 — PATCH /processes/:id/number, verify grün
 - 2026-10-12 14:28Z — Phase 4 — GET /numbers und Reiter Nummern, verify grün
+- 2026-10-12 15:28Z — Phase 5 — Bereiche anlegen, bearbeiten, deaktivieren; verify grün, Lese-Check gegen app_dev
 
 ## Decisions Made During Execution
 
@@ -117,3 +118,5 @@ Verify:
 - 2026-10-12 — Phase 3: `events.ts` blieb unverändert, `writeEvent` kann Ereignisse ohne Empfänger schon. Dafür zeigt der Prüfverlauf (`ApprovalTab.tsx`) Kommentare nur bei Ablehnungen rot, sonst neutral.
 - 2026-10-12 — Phase 3: Eine vor der Freigabe reservierte VA-Nummer reicht, damit ein Unterdokument schon freigegeben werden kann. Das ist der Importfall, VA und AA kommen nicht in Reihenfolge. Ändert sich die VA-Nummer, ziehen alle geprägten Unterdokumente mit, jedes mit eigenem Verlaufseintrag.
 - 2026-10-12 — Phase 4: Gruppieren und Sortieren steht als reine Funktion `buildNumberOverview` in `packages/domain/src/numberOverview.ts`, mit Test. Ein falsch zugeordnetes Unterdokument fiele sonst unsichtbar aus der Liste. Der Typ `NumberArea` wird von API und Web geteilt.
+- 2026-10-12 — Phase 5: Die Eindeutigkeit des Kürzels prüft die API, kein neuer Unique-Index. Damit braucht die Phase keine Migration, und Bereiche legt nur die Administration selten an. `GET /areas?includeInactive=true` liefert den Einstellungen auch deaktivierte Bereiche, damit sie sich wieder einschalten lassen. Alle übrigen Auswahllisten sehen weiter nur aktive.
+- 2026-10-12 — Phase 5: Das Schreiben eines Bereichs liegt jetzt ganz in `MasterDataRepository` (`createArea`, `updateArea`). `PeopleRepository.updateArea` entfällt.

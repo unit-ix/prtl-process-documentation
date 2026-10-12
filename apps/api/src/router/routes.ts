@@ -33,7 +33,9 @@ import {
     updateInstruction,
 } from './instructionWrites.js';
 import {
+    areaCreateSchema,
     areaUpdateSchema,
+    createArea,
     deleteQualification,
     deleteTask,
     qualificationSchema,
@@ -67,7 +69,16 @@ const assignAuthorSchema = z.object({ authorId: z.string().uuid() }).strict();
 const commentSchema = z.object({ comment: z.string().trim().min(1).max(2000) }).strict();
 
 export const ROUTES: readonly Route[] = [
-    { method: 'GET', path: '/areas', handle: () => ok(listAreas()) },
+    {
+        method: 'GET',
+        path: '/areas',
+        handle: ({ query }) => ok(listAreas({ includeInactive: query.includeInactive === 'true' })),
+    },
+    {
+        method: 'POST',
+        path: '/areas',
+        handle: async ({ user, body }) => ({ status: 201, body: await createArea(user, parseBody(areaCreateSchema, body)) }),
+    },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
     { method: 'GET', path: '/numbers', handle: ({ user }) => ok(listNumbers(user)) },
     { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
