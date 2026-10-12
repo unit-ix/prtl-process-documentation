@@ -154,7 +154,10 @@ export async function renumberProcess(user: SessionUser, processId: string, inpu
         if (before[field] === value) return { identifier: process.identifier };
 
         await assertFree(tx, process, area, requested);
-        const after: Numbering = { ...before, [field]: value };
+        // Ein Unterdokument gibt eine eigene Nummer aus der Zeit vor der Unternummer frei, sonst
+        // hielte es im Bereich einen Platz besetzt, den die nächste VA bekommen soll.
+        const after: Numbering =
+            field === 'subNumber' ? { documentNumber: null, subNumber: value } : { ...before, documentNumber: value };
         const change: Change = { user, process, versionId: version.id, area, before, after };
         const identifier = await writeChange(tx, change);
         if (field === 'documentNumber') await followChildren(tx, change, value);
