@@ -1,4 +1,4 @@
-import type { AreaRef } from '@app/domain';
+import type { AreaRef, NumberArea } from '@app/domain';
 
 export interface AreaListItem extends AreaRef {
     processOwner: { id: string; displayName: string } | null;
@@ -18,4 +18,6 @@ export interface UserListItem {
 export interface MasterDataRepository {
     areas(): Promise<AreaListItem[]>;
     users(): Promise<UserListItem[]>;
+    /** Nur Administration: je Bereich die VA mit ihren Unterdokumenten und Nummern. */
+    numbers(): Promise<NumberArea[]>;
 }

@@ -78,9 +78,9 @@ Verify:
 
 ### Phase 4: Nummernübersicht in den Einstellungen
 
-- [ ] `GET /numbers` (nur Admin): je Bereich die Prozesse mit Nummer, Unternummer, Titel, Status, übergeordneter VA — `apps/api/src/router/numbers.ts`, `routes.ts`
-- [ ] Reiter „Nummern" in den Einstellungen, nur für Admins sichtbar: je Bereich eine Tabelle, VA-Zeilen mit ihren AA eingerückt darunter, Nummer direkt in der Zeile änderbar, „noch nicht vergeben" für Entwürfe — `apps/web/src/features/einstellungen/components/NumberSettings.tsx`, `pages/SettingsPage.tsx`
-- [ ] Konflikt aus Phase 3 als Toast mit der Meldung der API
+- [x] (2026-10-12 14:28Z) `GET /numbers` (nur Admin): je Bereich die Prozesse mit Nummer, Unternummer, Titel, Status, übergeordneter VA — `apps/api/src/router/numbers.ts`, `routes.ts`
+- [x] (2026-10-12 14:28Z) Reiter „Nummern" in den Einstellungen, nur für Admins sichtbar: je Bereich eine Tabelle, VA-Zeilen mit ihren AA eingerückt darunter, Nummer direkt in der Zeile änderbar, „noch nicht vergeben" für Entwürfe — `apps/web/src/features/einstellungen/components/NumberSettings.tsx`, `pages/SettingsPage.tsx`
+- [x] (2026-10-12 14:28Z) Konflikt aus Phase 3 als Toast mit der Meldung der API
 
 Files touched: `apps/api/src/router/numbers.ts`, `apps/web/src/features/einstellungen/components/NumberSettings.tsx`, `apps/web/src/features/einstellungen/pages/SettingsPage.tsx`, `apps/web/src/data/ports/MasterDataRepository.ts`, `apps/web/src/data/adapters/azure/AzureMasterDataRepository.ts`
 
@@ -108,6 +108,7 @@ Verify:
 - 2026-10-12 14:22Z — Phase 1 — Regeln in der Domain, verify grün
 - 2026-10-12 14:24Z — Phase 2 — Unternummer bei Freigabe, Migration 0006, verify grün
 - 2026-10-12 14:26Z — Phase 3 — PATCH /processes/:id/number, verify grün
+- 2026-10-12 14:28Z — Phase 4 — GET /numbers und Reiter Nummern, verify grün
 
 ## Decisions Made During Execution
 
@@ -115,3 +116,4 @@ Verify:
 - 2026-10-12 — Phase 2: Ein Wechsel der übergeordneten VA wird nach der ersten Freigabe abgelehnt (409), sonst stimmte das Kennzeichen nicht mehr. Vorher prüft `saveContent` dieselben Regeln wie das Anlegen (VA, gleicher Bereich).
 - 2026-10-12 — Phase 3: `events.ts` blieb unverändert, `writeEvent` kann Ereignisse ohne Empfänger schon. Dafür zeigt der Prüfverlauf (`ApprovalTab.tsx`) Kommentare nur bei Ablehnungen rot, sonst neutral.
 - 2026-10-12 — Phase 3: Eine vor der Freigabe reservierte VA-Nummer reicht, damit ein Unterdokument schon freigegeben werden kann. Das ist der Importfall, VA und AA kommen nicht in Reihenfolge. Ändert sich die VA-Nummer, ziehen alle geprägten Unterdokumente mit, jedes mit eigenem Verlaufseintrag.
+- 2026-10-12 — Phase 4: Gruppieren und Sortieren steht als reine Funktion `buildNumberOverview` in `packages/domain/src/numberOverview.ts`, mit Test. Ein falsch zugeordnetes Unterdokument fiele sonst unsichtbar aus der Liste. Der Typ `NumberArea` wird von API und Web geteilt.

@@ -5,6 +5,7 @@
 import { notFound } from '../http/errors.js';
 import { renumberProcess, renumberSchema } from '../workflow/renumber.js';
 import { listAreas } from './areas.js';
+import { listNumbers } from './numbers.js';
 import { getProcessDetail, getSnapshot } from './processDetail.js';
 import { listProcesses } from './processes.js';
 import {
@@ -68,6 +69,7 @@ const commentSchema = z.object({ comment: z.string().trim().min(1).max(2000) }).
 export const ROUTES: readonly Route[] = [
     { method: 'GET', path: '/areas', handle: () => ok(listAreas()) },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
+    { method: 'GET', path: '/numbers', handle: ({ user }) => ok(listNumbers(user)) },
     { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
     { method: 'GET', path: '/processes/:id', handle: ({ user, params }) => ok(getProcessDetail(user, params.id)) },
     {

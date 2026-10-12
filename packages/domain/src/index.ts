@@ -30,3 +30,4 @@ export type { InstructionDocument } from './InstructionDocument.js';
 export type { Qualification } from './Qualification.js';
 export type { UserTask } from './UserTask.js';
 export type { QualificationDocument } from './QualificationDocument.js';
+export * from './numberOverview.js';
