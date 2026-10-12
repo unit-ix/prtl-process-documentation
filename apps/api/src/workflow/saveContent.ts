@@ -8,6 +8,7 @@ import { db } from '../db/client.js';
 import { processAdditionalFields, processes, processLinks, processVersions } from '../db/schema/index.js';
 import { ApiError, badRequest, notFound } from '../http/errors.js';
 import { assertAllowed, lockTarget, type Tx } from './context.js';
+import { assertParentProcess } from './create.js';
 
 const richDocument = z.record(z.string(), z.unknown());
 
@@ -214,6 +215,18 @@ async function replaceLinks(tx: Tx, versionId: string, links: SaveContentInput['
     );
 }
 
+// Nach der ersten Freigabe hängt die Nummer an der VA (OM.001_01) — ein Wechsel würde das
+// Kennzeichen stillschweigend falsch machen. Korrigiert wird dann über die Nummernübersicht.
+async function assertParentChange(tx: Tx, process: EditableTarget['process'], next: unknown): Promise<void> {
+    if (next === undefined || next === process.parentProcessId) return;
+    if (process.identifier !== null) {
+        throw conflict('Die Nummer ist schon vergeben. Die übergeordnete Verfahrensanweisung lässt sich nicht mehr wechseln.');
+    }
+    if (next === null) return;
+    if (next === process.id) throw badRequest('Ein Prozess kann nicht sich selbst übergeordnet sein.');
+    await assertParentProcess(tx, next as string, process.areaId);
+}
+
 export async function saveContent(user: SessionUser, processId: string, input: SaveContentInput) {
     return db.transaction(async (tx) => {
         const target = await lockTarget(tx, processId);
@@ -238,7 +251,7 @@ export async function saveContent(user: SessionUser, processId: string, input: S
 
         const shellPatch = pick(input, SHELL_KEYS);
         if (Object.keys(shellPatch).length > 0) {
-            if (shellPatch.parentProcessId === processId) throw badRequest('Ein Prozess kann nicht sich selbst übergeordnet sein.');
+            await assertParentChange(tx, target.process, shellPatch.parentProcessId);
             await tx.update(processes).set(shellPatch).where(eq(processes.id, processId));
         }
 

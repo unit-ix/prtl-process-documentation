@@ -43,6 +43,13 @@
       "when": 1791801114872,
       "tag": "0005_rich_terms_responsibilities",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791815014269,
+      "tag": "0006_sub_numbers",
+      "breakpoints": true
     }
   ]
 }

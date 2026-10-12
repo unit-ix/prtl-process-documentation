@@ -44,11 +44,11 @@ Verify:
 
 ### Phase 2: Unterdokument bekommt bei Freigabe die Nummer der übergeordneten VA
 
-- [ ] Migration: `processes.sub_number smallint`, `unique(parent_process_id, sub_number)`, Check-Constraint der Ereignisarten um `number_changed` erweitert — `apps/api/src/db/schema/processes.ts`, `processContent.ts`, `apps/api/drizzle/0006_*.sql`
-- [ ] `mint()`: hat der Prozess eine übergeordnete VA, nimmt er deren `documentNumber` und Bereichskürzel plus die nächste freie Unternummer unter dieser VA. Das Unterdokument selbst bekommt keine `documentNumber`, so bleibt `unique(area_id, document_number)` gültig — `apps/api/src/workflow/release.ts`
-- [ ] Hat die übergeordnete VA noch keine Nummer: Freigabe abbrechen mit „Die übergeordnete Verfahrensanweisung hat noch keine Nummer. Erst sie freigeben oder die Nummer in der Nummernübersicht vergeben." — `release.ts`
-- [ ] Ein Unterdokument liegt im Bereich seiner VA: beim Anlegen und beim Ändern der übergeordneten VA prüfen — `apps/api/src/workflow/create.ts`, `apps/api/src/workflow/saveContent.ts`
-- [ ] `subNumber` in Detail- und Listenansicht mitliefern — `apps/api/src/router/processMappers.ts`, `packages/domain/src/Process.ts`
+- [x] (2026-10-12 14:24Z) Migration: `processes.sub_number smallint`, `unique(parent_process_id, sub_number)`, Check-Constraint der Ereignisarten um `number_changed` erweitert — `apps/api/src/db/schema/processes.ts`, `processContent.ts`, `apps/api/drizzle/0006_*.sql`
+- [x] (2026-10-12 14:24Z) `mint()`: hat der Prozess eine übergeordnete VA, nimmt er deren `documentNumber` und Bereichskürzel plus die nächste freie Unternummer unter dieser VA. Das Unterdokument selbst bekommt keine `documentNumber`, so bleibt `unique(area_id, document_number)` gültig — `apps/api/src/workflow/release.ts`
+- [x] (2026-10-12 14:24Z) Hat die übergeordnete VA noch keine Nummer: Freigabe abbrechen mit „Die übergeordnete Verfahrensanweisung hat noch keine Nummer. Erst sie freigeben oder die Nummer in der Nummernübersicht vergeben." — `release.ts`
+- [x] (2026-10-12 14:24Z) Ein Unterdokument liegt im Bereich seiner VA: beim Anlegen und beim Ändern der übergeordneten VA prüfen — `apps/api/src/workflow/create.ts`, `apps/api/src/workflow/saveContent.ts`
+- [!] `subNumber` in Detail- und Listenansicht mitliefern — `apps/api/src/router/processMappers.ts`, `packages/domain/src/Process.ts` — nicht nötig, siehe Decisions
 
 Files touched: `apps/api/src/db/schema/processes.ts`, `apps/api/src/db/schema/processContent.ts`, `apps/api/drizzle/0006_*.sql`, `apps/api/drizzle/meta/*`, `apps/api/src/workflow/release.ts`, `apps/api/src/workflow/create.ts`, `apps/api/src/workflow/saveContent.ts`, `apps/api/src/router/processMappers.ts`, `packages/domain/src/Process.ts`
 
@@ -106,7 +106,9 @@ Verify:
 
 ## Execution Log
 - 2026-10-12 14:22Z — Phase 1 — Regeln in der Domain, verify grün
+- 2026-10-12 14:24Z — Phase 2 — Unternummer bei Freigabe, Migration 0006, verify grün
 
 ## Decisions Made During Execution
 
-- (noch keine)
+- 2026-10-12 — Phase 2: `subNumber` geht nicht in Detail- und Listenansicht. Das Kennzeichen zeigt die Unternummer schon, und die Nummernübersicht (Phase 4) bekommt einen eigenen Endpunkt. `Process.ts` und `processMappers.ts` bleiben unverändert.
+- 2026-10-12 — Phase 2: Ein Wechsel der übergeordneten VA wird nach der ersten Freigabe abgelehnt (409), sonst stimmte das Kennzeichen nicht mehr. Vorher prüft `saveContent` dieselben Regeln wie das Anlegen (VA, gleicher Bereich).
