@@ -31,4 +31,6 @@ export interface PeopleRepository {
     saveTask(input: TaskInput, id?: string): Promise<{ id: string }>;
     removeTask(id: string): Promise<void>;
     updateUser(id: string, input: UserRoleInput): Promise<void>;
+    /** Benutzerliste sofort mit der Entra-Gruppe abgleichen, statt auf den nächsten Lauf zu warten. */
+    syncUsers(): Promise<{ toast: string }>;
 }

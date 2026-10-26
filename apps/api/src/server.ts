@@ -10,6 +10,7 @@ import { badRequest, toProblem, unauthorized, unsupportedMediaType } from './htt
 import { renderConfirmPage, renderConfirmResult } from './router/confirmPageHtml.js';
 import { startMailSweep } from './mail/sweep.js';
 import { startRecurrenceSweep } from './recurrence/sweep.js';
+import { startUserSync } from './users/syncUsers.js';
 import { handle } from './router/handle.js';
 import { confirmPage, submitConfirmation } from './router/publicConfirm.js';
 
@@ -120,5 +121,6 @@ app.log.info(`Datenbank-Ziel: ${dbTarget()}`);
 
 startMailSweep();
 startRecurrenceSweep();
+startUserSync();
 
 await app.listen({ port: env.PORT, host: '0.0.0.0' });

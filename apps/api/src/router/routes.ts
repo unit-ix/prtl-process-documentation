@@ -48,6 +48,7 @@ import {
 } from './masterDataWrites.js';
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
+import { syncUsersNow } from '../users/syncUsers.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
 import { setProcessDeactivated } from '../workflow/deactivation.js';
 import { approveFormal } from '../workflow/release.js';
@@ -81,6 +82,7 @@ export const ROUTES: readonly Route[] = [
         handle: async ({ user, body }) => ({ status: 201, body: await createArea(user, parseBody(areaCreateSchema, body)) }),
     },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
+    { method: 'POST', path: '/users/sync', handle: ({ user }) => ok(syncUsersNow(user)) },
     { method: 'GET', path: '/numbers', handle: ({ user }) => ok(listNumbers(user)) },
     { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
     { method: 'GET', path: '/processes/:id', handle: ({ user, params }) => ok(getProcessDetail(user, params.id)) },
