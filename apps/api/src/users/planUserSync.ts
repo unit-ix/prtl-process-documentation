@@ -19,10 +19,18 @@ export interface UserSyncPlan {
 /**
  * Die Entra-Gruppe ist die Quelle: wer drin ist, steht aktiv in der Liste (ohne Rolle = Leser),
  * wer rausfällt, wird deaktiviert. Rollen bleiben dabei stehen und gelten bei Wiederaufnahme wieder.
+ * `ignored` sind Dienstkonten (UNIT IX): in der Gruppe, damit die Anmeldung geht, aber aktiv nur,
+ * wenn wir sie für Support von Hand einschalten.
  */
-export function planUserSync(members: readonly GroupMember[], known: readonly KnownUser[]): UserSyncPlan {
+export function planUserSync(
+    allMembers: readonly GroupMember[],
+    allKnown: readonly KnownUser[],
+    ignored: ReadonlySet<string> = new Set(),
+): UserSyncPlan {
+    const members = allMembers.filter((member) => !ignored.has(member.entraObjectId));
+    const known = allKnown.filter((user) => !ignored.has(user.entraObjectId));
     const memberIds = new Set(members.map((member) => member.entraObjectId));
-    const knownIds = new Set(known.map((user) => user.entraObjectId));
+    const knownIds = new Set(allKnown.map((user) => user.entraObjectId));
 
     return {
         create: members.filter((member) => !knownIds.has(member.entraObjectId)),

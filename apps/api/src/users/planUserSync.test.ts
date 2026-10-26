@@ -36,4 +36,26 @@ describe('planUserSync', () => {
         expect(plan.deactivate).toEqual([]);
         expect(plan.reactivate).toEqual([]);
     });
+
+    describe('ignorierte Dienstkonten', () => {
+        const ignored = new Set(['dienst']);
+
+        it('werden nicht angelegt', () => {
+            expect(planUserSync([member('a'), member('dienst')], [known('a')], ignored).create).toEqual([]);
+        });
+
+        it('werden nicht wieder eingeschaltet', () => {
+            expect(planUserSync([member('dienst')], [known('dienst', false)], ignored).reactivate).toEqual([]);
+        });
+
+        it('werden nicht abgeschaltet', () => {
+            expect(planUserSync([member('a')], [known('a'), known('dienst')], ignored).deactivate).toEqual([]);
+        });
+
+        it('lassen die übrigen Mitglieder unberührt', () => {
+            const plan = planUserSync([member('neu'), member('dienst')], [known('weg')], ignored);
+            expect(plan.create.map((m) => m.entraObjectId)).toEqual(['neu']);
+            expect(plan.deactivate).toEqual(['id-weg']);
+        });
+    });
 });

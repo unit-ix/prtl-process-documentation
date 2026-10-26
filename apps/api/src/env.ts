@@ -20,6 +20,11 @@ const serverSchema = z.object({
 
     // GRP_PRETTL_Prozessdokumentation_Nutzer — wer drin ist, steht in der Benutzerliste.
     ENTRA_USER_GROUP_ID: z.string().uuid().optional(),
+    // Kommagetrennte Objekt-IDs, die der Abgleich nie anfasst — aktiv/inaktiv bleibt Handarbeit.
+    ENTRA_SYNC_IGNORE_IDS: z
+        .string()
+        .default('')
+        .transform((raw) => new Set(raw.split(',').map((id) => id.trim()).filter(Boolean))),
 
     ALLOWED_ORIGIN: z.string().default(''),
 
