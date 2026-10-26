@@ -24,7 +24,7 @@ async function applyUserSync(groupId: string): Promise<SyncResult> {
     const known = await db
         .select({ id: users.id, entraObjectId: users.entraObjectId, isActive: users.isActive })
         .from(users);
-    const plan = planUserSync(members, known);
+    const plan = planUserSync(members, known, serverEnv().ENTRA_SYNC_IGNORE_IDS);
 
     await db.transaction(async (tx) => {
         if (plan.create.length > 0) {
