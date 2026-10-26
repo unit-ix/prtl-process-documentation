@@ -40,4 +40,8 @@ export class AzurePeopleRepository implements PeopleRepository {
     async updateUser(id: string, input: UserRoleInput): Promise<void> {
         await apiSend<void>('PATCH', `/users/${id}`, input);
     }
+
+    syncUsers(): Promise<{ toast: string }> {
+        return apiSend<{ toast: string }>('POST', '/users/sync', {});
+    }
 }

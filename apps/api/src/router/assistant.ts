@@ -10,7 +10,7 @@ import {
     type AssistantHit,
     type SessionUser,
 } from '@app/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
 import { areas, processes } from '../db/schema/index.js';
@@ -46,6 +46,7 @@ async function buildIndex(user: SessionUser): Promise<AssistantDocument[]> {
                 eq(processes.isActive, true),
                 // Nur die freigegebene Spiegelung der Hülle — nie ein Entwurf.
                 eq(processes.status, 'approved'),
+                isNull(processes.deactivatedAt),
                 ...(scope ? [scope] : []),
             ),
         );

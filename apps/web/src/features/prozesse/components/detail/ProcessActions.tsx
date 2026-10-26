@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/
 import { Info } from 'lucide-react';
 import { processRepository } from '@/data';
 import { AssignAuthorDialog } from './AssignAuthorDialog';
+import { DeactivateButton } from './DeactivateButton';
 import type { RejectKind } from './RejectDialog';
 
 interface ProcessActionsProps {
@@ -88,6 +89,10 @@ export function ProcessActions({ process, isPending, run, onReject }: ProcessAct
                 <Button variant="outline" className="gap-2" disabled={isPending} onClick={() => run((id) => processRepository.reopen(id, null))}>
                     <RotateCcw className="size-4" /> Überarbeiten
                 </Button>
+            ) : null}
+
+            {permissions.canDeactivate ? (
+                <DeactivateButton deactivated={process.deactivatedAt !== null} isPending={isPending} run={run} />
             ) : null}
         </div>
     );

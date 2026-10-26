@@ -3,17 +3,20 @@ import {
     canApproveContent,
     canApproveFormal,
     canAssignAuthor,
+    canBeAssignedAsAuthor,
     canChangeNumbers,
     canCreateProcess,
+    canDeactivateProcess,
     canDeleteProcess,
     canEditContent,
     canManageInstructions,
     canReopen,
     canSeeApprovalTab,
+    canSeeInstructionList,
+    canSeeQualificationMatrix,
     canSeeQualifications,
     canSeeSettings,
     canSubmit,
-    hasAnyRole,
     leadsArea,
     type SessionUser,
 } from './permissions.js';
@@ -175,11 +178,6 @@ describe('Sicht-Prädikate', () => {
         expect(canSeeSettings(pvOfArea)).toBe(false);
         expect(canSeeSettings(author)).toBe(false);
     });
-
-    it('hasAnyRole: vier Flags aus heisst kein Zugriff', () => {
-        expect(hasAnyRole(stranger)).toBe(false);
-        for (const role of [admin, qm, pvOfArea, author]) expect(hasAnyRole(role)).toBe(true);
-    });
 });
 
 describe('canChangeNumbers', () => {
@@ -191,5 +189,40 @@ describe('canChangeNumbers', () => {
         expect(canChangeNumbers(qm)).toBe(false);
         expect(canChangeNumbers(pvOfArea)).toBe(false);
         expect(canChangeNumbers(author)).toBe(false);
+    });
+});
+
+describe('canBeAssignedAsAuthor', () => {
+    it('lässt nur die Rolle Verfasser zu', () => {
+        expect(canBeAssignedAsAuthor(author)).toBe(true);
+        expect(canBeAssignedAsAuthor(user({ isAuthor: true, isQm: true }))).toBe(true);
+    });
+
+    it('schliesst andere Rollen und Personen ohne Rolle aus', () => {
+        for (const other of [admin, qm, pvOfArea, stranger]) expect(canBeAssignedAsAuthor(other)).toBe(false);
+    });
+});
+
+describe('Listen hinter dem Menü', () => {
+    it('Unterweisungen: QM, Administration und Prozessverantwortliche', () => {
+        for (const role of [admin, qm, pvOfArea]) expect(canSeeInstructionList(role)).toBe(true);
+    });
+
+    it('Unterweisungen: nicht für Verfasser und Leser', () => {
+        expect(canSeeInstructionList(author)).toBe(false);
+        expect(canSeeInstructionList(stranger)).toBe(false);
+    });
+
+    it('Qualifikationsmatrix: nur Administration und QM', () => {
+        expect(canSeeQualificationMatrix(admin)).toBe(true);
+        expect(canSeeQualificationMatrix(qm)).toBe(true);
+        for (const role of [pvOfArea, author, stranger]) expect(canSeeQualificationMatrix(role)).toBe(false);
+    });
+});
+
+describe('canDeactivateProcess', () => {
+    it('erlaubt nur der Administration', () => {
+        expect(canDeactivateProcess(admin)).toBe(true);
+        for (const role of [qm, pvOfArea, author, stranger]) expect(canDeactivateProcess(role)).toBe(false);
     });
 });

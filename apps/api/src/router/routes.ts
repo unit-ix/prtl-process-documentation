@@ -48,7 +48,9 @@ import {
 } from './masterDataWrites.js';
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
+import { syncUsersNow } from '../users/syncUsers.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
+import { setProcessDeactivated } from '../workflow/deactivation.js';
 import { approveFormal } from '../workflow/release.js';
 import { reopenForRevision, reopenSchema } from '../workflow/revision.js';
 import { saveContent, saveContentSchema } from '../workflow/saveContent.js';
@@ -80,6 +82,7 @@ export const ROUTES: readonly Route[] = [
         handle: async ({ user, body }) => ({ status: 201, body: await createArea(user, parseBody(areaCreateSchema, body)) }),
     },
     { method: 'GET', path: '/users', handle: () => ok(listUsers()) },
+    { method: 'POST', path: '/users/sync', handle: ({ user }) => ok(syncUsersNow(user)) },
     { method: 'GET', path: '/numbers', handle: ({ user }) => ok(listNumbers(user)) },
     { method: 'GET', path: '/processes', handle: ({ user, query }) => ok(listProcesses(user, query)) },
     { method: 'GET', path: '/processes/:id', handle: ({ user, params }) => ok(getProcessDetail(user, params.id)) },
@@ -96,7 +99,7 @@ export const ROUTES: readonly Route[] = [
         path: '/assistant/ask',
         handle: ({ user, body }) => ok(ask(user, parseBody(askSchema, body))),
     },
-    { method: 'GET', path: '/employees', handle: () => ok(listEmployees()) },
+    { method: 'GET', path: '/employees', handle: ({ user }) => ok(listEmployees(user)) },
     { method: 'GET', path: '/employees/:id', handle: ({ user, params }) => ok(getEmployee(user, params.id)) },
     {
         method: 'PATCH',
@@ -153,7 +156,7 @@ export const ROUTES: readonly Route[] = [
             return { status: 204, body: null };
         },
     },
-    { method: 'GET', path: '/instructions', handle: () => ok(listInstructions()) },
+    { method: 'GET', path: '/instructions', handle: ({ user }) => ok(listInstructions(user)) },
     { method: 'GET', path: '/instructions/:id', handle: ({ user, params }) => ok(getInstruction(user, params.id)) },
     {
         method: 'POST',
@@ -264,6 +267,8 @@ export const ROUTES: readonly Route[] = [
             return { status: 204, body: null };
         },
     },
+    { method: 'POST', path: '/processes/:id/deactivate', handle: ({ user, params }) => ok(setProcessDeactivated(user, params.id, true)) },
+    { method: 'POST', path: '/processes/:id/reactivate', handle: ({ user, params }) => ok(setProcessDeactivated(user, params.id, false)) },
     {
         method: 'POST',
         path: '/processes/:id/assign-author',

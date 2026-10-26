@@ -11,7 +11,7 @@ import { ApprovalTab } from '../components/detail/ApprovalTab';
 import { CompletenessCard } from '../components/detail/CompletenessCard';
 import { DescriptionTab, OverviewTab } from '../components/detail/OverviewTab';
 import { ProcessActions } from '../components/detail/ProcessActions';
-import { RejectionBanner, ReleaseBanner } from '../components/detail/ProcessBanners';
+import { DeactivatedBanner, NoAreaLeadBanner, RejectionBanner, ReleaseBanner } from '../components/detail/ProcessBanners';
 import { ProcessDetailHeader } from '../components/detail/ProcessDetailHeader';
 import { RejectDialog, type RejectKind } from '../components/detail/RejectDialog';
 import { SnapshotDialog } from '../components/detail/SnapshotDialog';
@@ -93,6 +93,8 @@ function DetailBody({ process }: { process: ProcessDetailView }) {
                 }
             />
 
+            <DeactivatedBanner process={process} />
+            <NoAreaLeadBanner process={process} />
             <RejectionBanner process={process} />
             <ReleaseBanner process={process} />
 

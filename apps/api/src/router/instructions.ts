@@ -1,5 +1,6 @@
 import {
     canManageInstructions,
+    canSeeInstructionList,
     countParticipants,
     instructionStatus,
     nextRound,
@@ -18,7 +19,7 @@ import {
     processes,
     users,
 } from '../db/schema/index.js';
-import { notFound } from '../http/errors.js';
+import { forbidden, notFound } from '../http/errors.js';
 
 export const today = (): string => new Date().toISOString().slice(0, 10);
 
@@ -100,7 +101,8 @@ function toListItem(
     };
 }
 
-export async function listInstructions(): Promise<{ items: InstructionListItem[] }> {
+export async function listInstructions(user: SessionUser): Promise<{ items: InstructionListItem[] }> {
+    if (!canSeeInstructionList(user)) throw forbidden('Die Unterweisungsliste ist Administration, QM und Prozessverantwortlichen vorbehalten.');
     const rows = await db
         .select({ instruction: instructions, process: processes })
         .from(instructions)

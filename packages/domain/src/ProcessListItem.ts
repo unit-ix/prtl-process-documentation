@@ -12,6 +12,8 @@ export interface ProcessListItem {
     status: ProcessStatus;
     edition: number | null;
     hasActiveDraft: boolean;
+    /** Gesetzt = inaktiv: nur die Administration sieht den Prozess noch. */
+    deactivatedAt: string | null;
     parentProcessId: string | null;
     area: { id: string; title: string; shortCode: string; categoryNumber: number };
     author: { id: string; displayName: string } | null;

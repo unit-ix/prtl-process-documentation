@@ -22,6 +22,9 @@ export const canCreateProcess = (u: Roles): boolean => u.isAdministrator || u.is
 export const canAssignAuthor = (u: Roles, p: ProcessScoped): boolean =>
     p.status === 'backlog' && (u.isAdministrator || (u.isProcessOwner && leadsArea(u, p.area.id)));
 
+/** Zur Auswahl als Verfasser steht nur, wer die Rolle hat — sonst bleibt der Prozess hängen (Rollentest 16.10.2026). */
+export const canBeAssignedAsAuthor = (u: Pick<User, 'isAuthor'>): boolean => u.isAuthor;
+
 export const canEditContent = (u: Roles, p: ProcessScoped, v: VersionScoped): boolean =>
     (v.status === 'backlog' || v.status === 'in_capture') &&
     (u.isAdministrator || isAuthorOf(u, p) || leadsArea(u, p.area.id));
@@ -45,7 +48,14 @@ export const canReopen = (u: Roles, p: ProcessScoped, v: VersionScoped): boolean
 
 export const canDeleteProcess = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
 
+/** Inaktiv setzen und wieder einschalten: nur Administration (Termin 16.10.2026). */
+export const canDeactivateProcess = (u: Roles): boolean => u.isAdministrator;
+
 export const canManageInstructions = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
+
+export const canSeeInstructionList = (u: Roles): boolean => u.isQm || canManageInstructions(u);
+
+export const canSeeQualificationMatrix = (u: Roles): boolean => u.isAdministrator || u.isQm;
 
 export const canSeeQualifications = (u: Roles, employee: Pick<User, 'area'>): boolean =>
     u.isAdministrator || (employee.area !== null && leadsArea(u, employee.area.id));
@@ -56,6 +66,3 @@ export const canSeeSettings = (u: Roles): boolean => u.isAdministrator || u.isQm
 
 /** Nummern vergeben und korrigieren: nur Administration (Entscheidung vom 12.10.2026). */
 export const canChangeNumbers = (u: Roles): boolean => u.isAdministrator;
-
-export const hasAnyRole = (u: Pick<User, 'isAuthor' | 'isProcessOwner' | 'isQm' | 'isAdministrator'>): boolean =>
-    u.isAuthor || u.isProcessOwner || u.isQm || u.isAdministrator;

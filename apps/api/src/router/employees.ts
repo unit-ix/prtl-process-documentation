@@ -1,4 +1,5 @@
 import {
+    canSeeQualificationMatrix,
     canSeeQualifications,
     isExpired,
     type EmployeeDetailView,
@@ -19,10 +20,11 @@ import {
     users,
     userTasks,
 } from '../db/schema/index.js';
-import { notFound } from '../http/errors.js';
+import { forbidden, notFound } from '../http/errors.js';
 import { today } from './instructions.js';
 
-export async function listEmployees(): Promise<{ items: EmployeeListItem[] }> {
+export async function listEmployees(user: SessionUser): Promise<{ items: EmployeeListItem[] }> {
+    if (!canSeeQualificationMatrix(user)) throw forbidden('Die Qualifikationsmatrix ist Administration und QM vorbehalten.');
     const rows = await db
         .select({
             id: users.id,

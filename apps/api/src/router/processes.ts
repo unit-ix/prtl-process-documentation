@@ -83,6 +83,7 @@ type Row = {
     versionStatus: string | null;
     edition: number | null;
     hasActiveDraft: boolean;
+    deactivatedAt: Date | null;
     parentProcessId: string | null;
     authorId: string | null;
     areaId: string;
@@ -102,6 +103,7 @@ const toListItem = (row: Row): ProcessListItem => ({
     status: (row.versionStatus ?? row.shellStatus) as ProcessListItem['status'],
     edition: row.edition,
     hasActiveDraft: row.hasActiveDraft,
+    deactivatedAt: row.deactivatedAt?.toISOString() ?? null,
     parentProcessId: row.parentProcessId,
     area: {
         id: row.areaId,
@@ -145,6 +147,7 @@ export async function listProcesses(
             versionStatus: processVersions.status,
             edition: processes.edition,
             hasActiveDraft: processes.hasActiveDraft,
+            deactivatedAt: processes.deactivatedAt,
             parentProcessId: processes.parentProcessId,
             authorId: processes.authorId,
             areaId: areas.id,

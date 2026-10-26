@@ -4,6 +4,7 @@ import {
     canApproveContent,
     canApproveFormal,
     canAssignAuthor,
+    canBeAssignedAsAuthor,
     canSubmit,
     isComplete,
     type SessionUser,
@@ -100,11 +101,12 @@ export async function assignAuthor(
         );
 
         const [author] = await tx
-            .select({ id: users.id, mail: users.mail })
+            .select({ id: users.id, mail: users.mail, isAuthor: users.isAuthor })
             .from(users)
             .where(and(eq(users.id, authorId), eq(users.isActive, true)))
             .limit(1);
         if (!author) throw notFound('Verfasser nicht gefunden.');
+        if (!canBeAssignedAsAuthor(author)) throw badRequest('Diese Person hat nicht die Rolle Verfasser.');
 
         return {
             versionPatch: { authorId },

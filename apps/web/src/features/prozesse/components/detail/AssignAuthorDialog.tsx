@@ -1,3 +1,4 @@
+import { canBeAssignedAsAuthor } from '@app/domain';
 import { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { processRepository } from '@/data';
@@ -25,12 +26,40 @@ interface AssignAuthorDialogProps {
     run: (action: (id: string) => Promise<{ toast: string }>) => void;
 }
 
-// Canvas zieht die Auswahl aus `Filter(tblUser, blnIsAuthor)` — hier stehen alle aktiven Nutzer:
-// die Rolle wird mit der Zuweisung vergeben, nicht vorausgesetzt (§7.1, Defekt 6).
+// Nur Personen mit der Rolle Verfasser: wer sie nicht hat, kommt nicht in die App oder sieht den
+// Prozess nicht, und der Prozess bleibt in der Erfassung hängen (Rollentest 16.10.2026).
+function AuthorSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+    const { data: users } = useUsers();
+    const authors = (users ?? []).filter(canBeAssignedAsAuthor);
+    const noAuthors = users !== undefined && authors.length === 0;
+
+    return (
+        <>
+            <Select value={value} onValueChange={onChange} disabled={noAuthors}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Verfasser wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                    {authors.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                            {user.displayName}
+                            {user.mail ? ` · ${user.mail}` : ' · keine E-Mail'}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            {noAuthors ? (
+                <p className="text-muted-foreground text-sm">
+                    Niemand hat die Rolle Verfasser. Die Administration vergibt sie unter Einstellungen → Benutzer.
+                </p>
+            ) : null}
+        </>
+    );
+}
+
 export function AssignAuthorDialog({ isPending, run }: AssignAuthorDialogProps) {
     const [open, setOpen] = useState(false);
     const [authorId, setAuthorId] = useState('');
-    const { data: users } = useUsers();
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -47,19 +76,7 @@ export function AssignAuthorDialog({ isPending, run }: AssignAuthorDialogProps) 
                     </DialogDescription>
                 </DialogHeader>
 
-                <Select value={authorId} onValueChange={setAuthorId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Mitarbeiter wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {(users ?? []).map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                                {user.displayName}
-                                {user.mail ? ` · ${user.mail}` : ' · keine E-Mail'}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <AuthorSelect value={authorId} onChange={setAuthorId} />
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>

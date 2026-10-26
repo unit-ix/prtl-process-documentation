@@ -14,6 +14,7 @@ import {
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { ShieldCheck } from 'lucide-react';
 import { SettingsHint } from './SettingsHint';
+import { UserSyncButton } from './UserSyncButton';
 
 const NONE = 'none';
 
@@ -119,10 +120,14 @@ export function UserSettings({ onSwitch }: { onSwitch: () => void }) {
                 otherTab="Bereiche"
                 onSwitch={onSwitch}
             />
-            <p className="text-muted-foreground text-sm">
-                Rollen steuern, welche Aufgaben im Freigabe- und Unterweisungsprozess jemand übernehmen darf. Name,
-                E-Mail und Konto kommen aus der Provisionierung.
-            </p>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <p className="text-muted-foreground max-w-2xl text-sm">
+                    Wer in der Entra-Gruppe der Anwendung ist, steht hier automatisch und ist ohne Rolle Leser: er
+                    sieht die freigegebenen Prozesse. Rollen steuern, welche Aufgaben im Freigabe- und
+                    Unterweisungsprozess jemand zusätzlich übernehmen darf.
+                </p>
+                <UserSyncButton />
+            </div>
             <ul className="divide-border/40 divide-y">
                 {(users ?? []).map((user) => (
                     <UserRow
