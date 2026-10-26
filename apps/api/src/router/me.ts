@@ -1,4 +1,4 @@
-import { hasAnyRole, type SessionUser } from '@app/domain';
+import type { SessionUser } from '@app/domain';
 import { and, eq } from 'drizzle-orm';
 import type { Claims } from '../auth/verify.js';
 import { db } from '../db/client.js';
@@ -37,5 +37,7 @@ export async function me(claims: Claims): Promise<MeResponse> {
         led.map((area) => area.id),
     );
 
-    return { user, hasAccess: hasAnyRole(user) };
+    // Wer aktiv in der Benutzerliste steht, ist mindestens Leser: freigegebene Prozesse sieht jeder
+    // (readScope). Die Liste selbst füllt der Abgleich mit der Entra-Gruppe (Termin 16.10.2026).
+    return { user, hasAccess: true };
 }

@@ -7,11 +7,11 @@ export function NoAccess({ displayName }: { displayName?: string }) {
                 <div className="bg-accent text-accent-foreground mx-auto flex size-12 items-center justify-center rounded-2xl">
                     <ShieldAlert className="size-6" />
                 </div>
-                <h1 className="mt-5 text-lg font-semibold">Keine Berechtigungen vorhanden</h1>
+                <h1 className="mt-5 text-lg font-semibold">Kein Zugang</h1>
                 <p className="text-muted-foreground mt-2 text-sm">
-                    {displayName ? `${displayName}, für Ihr Konto` : 'Für Ihr Konto'} ist in der Prozessdokumentation
-                    noch keine Rolle hinterlegt. Bitte wenden Sie sich an das Qualitätsmanagement oder die
-                    Administration.
+                    {displayName ? `${displayName}, Ihr Konto` : 'Ihr Konto'} ist für die Prozessdokumentation nicht
+                    freigeschaltet. Zugang erhält, wer in der Benutzergruppe der Anwendung ist. Bitte wenden Sie sich
+                    an die IT oder die Administration.
                 </p>
             </div>
         </div>

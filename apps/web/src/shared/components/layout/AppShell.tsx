@@ -1,4 +1,4 @@
-import { canManageInstructions, canSeeSettings, type SessionUser } from '@app/domain';
+import { canSeeInstructionList, canSeeQualificationMatrix, canSeeSettings, type SessionUser } from '@app/domain';
 import { FileStack, GraduationCap, Grid3x3, Settings, Sparkles } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -32,13 +32,13 @@ const NAV_ITEMS: readonly NavItem[] = [
         to: '/instructions',
         label: 'Unterweisungen',
         icon: GraduationCap,
-        isVisible: (u) => u.isQm || canManageInstructions(u),
+        isVisible: canSeeInstructionList,
     },
     {
         to: '/qualifications',
         label: 'Qualifikationsmatrix',
         icon: Grid3x3,
-        isVisible: (u) => u.isAdministrator || u.isQm,
+        isVisible: canSeeQualificationMatrix,
     },
     { to: '/assistant', label: 'Chatbot-Assistent', icon: Sparkles, isVisible: () => true },
     { to: '/settings', label: 'Einstellungen', icon: Settings, isVisible: canSeeSettings },
@@ -70,7 +70,7 @@ function CurrentUser({ user }: { user: SessionUser }) {
             </div>
             <div className="min-w-0 leading-tight">
                 <p className="truncate text-sm font-medium">{user.displayName}</p>
-                <p className="text-muted-foreground truncate text-xs">{roles || 'Keine Rolle'}</p>
+                <p className="text-muted-foreground truncate text-xs">{roles || 'Leser'}</p>
             </div>
         </div>
     );

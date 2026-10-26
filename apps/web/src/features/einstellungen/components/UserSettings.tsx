@@ -120,8 +120,9 @@ export function UserSettings({ onSwitch }: { onSwitch: () => void }) {
                 onSwitch={onSwitch}
             />
             <p className="text-muted-foreground text-sm">
-                Rollen steuern, welche Aufgaben im Freigabe- und Unterweisungsprozess jemand übernehmen darf. Name,
-                E-Mail und Konto kommen aus der Provisionierung.
+                Wer in der Entra-Gruppe der Anwendung ist, steht hier automatisch und ist ohne Rolle Leser: er sieht
+                die freigegebenen Prozesse. Rollen steuern, welche Aufgaben im Freigabe- und Unterweisungsprozess
+                jemand zusätzlich übernehmen darf.
             </p>
             <ul className="divide-border/40 divide-y">
                 {(users ?? []).map((user) => (

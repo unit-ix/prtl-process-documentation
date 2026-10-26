@@ -50,6 +50,10 @@ export const canDeleteProcess = (u: Roles): boolean => u.isAdministrator || u.is
 
 export const canManageInstructions = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
 
+export const canSeeInstructionList = (u: Roles): boolean => u.isQm || canManageInstructions(u);
+
+export const canSeeQualificationMatrix = (u: Roles): boolean => u.isAdministrator || u.isQm;
+
 export const canSeeQualifications = (u: Roles, employee: Pick<User, 'area'>): boolean =>
     u.isAdministrator || (employee.area !== null && leadsArea(u, employee.area.id));
 
@@ -59,6 +63,3 @@ export const canSeeSettings = (u: Roles): boolean => u.isAdministrator || u.isQm
 
 /** Nummern vergeben und korrigieren: nur Administration (Entscheidung vom 12.10.2026). */
 export const canChangeNumbers = (u: Roles): boolean => u.isAdministrator;
-
-export const hasAnyRole = (u: Pick<User, 'isAuthor' | 'isProcessOwner' | 'isQm' | 'isAdministrator'>): boolean =>
-    u.isAuthor || u.isProcessOwner || u.isQm || u.isAdministrator;

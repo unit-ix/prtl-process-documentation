@@ -96,7 +96,7 @@ export const ROUTES: readonly Route[] = [
         path: '/assistant/ask',
         handle: ({ user, body }) => ok(ask(user, parseBody(askSchema, body))),
     },
-    { method: 'GET', path: '/employees', handle: () => ok(listEmployees()) },
+    { method: 'GET', path: '/employees', handle: ({ user }) => ok(listEmployees(user)) },
     { method: 'GET', path: '/employees/:id', handle: ({ user, params }) => ok(getEmployee(user, params.id)) },
     {
         method: 'PATCH',
@@ -153,7 +153,7 @@ export const ROUTES: readonly Route[] = [
             return { status: 204, body: null };
         },
     },
-    { method: 'GET', path: '/instructions', handle: () => ok(listInstructions()) },
+    { method: 'GET', path: '/instructions', handle: ({ user }) => ok(listInstructions(user)) },
     { method: 'GET', path: '/instructions/:id', handle: ({ user, params }) => ok(getInstruction(user, params.id)) },
     {
         method: 'POST',
