@@ -1,5 +1,6 @@
 import { EVENT_LABELS, type ProcessDetailView } from '@app/domain';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { useAreas } from '../../hooks/useMasterData';
 import { formatDate } from '../../mappings/processMappings';
 
 const REJECTIONS = new Set(['content_rejected', 'formally_rejected']);
@@ -44,6 +45,29 @@ export function ReleaseBanner({ process }: { process: ProcessDetailView }) {
             <CheckCircle2 className="size-4" />
             Freigegeben am {formatDate(process.version.approvedAt)}
             {process.version.approvedByQm ? ` von ${process.version.approvedByQm.displayName}` : ''}
+        </div>
+    );
+}
+
+const HEADING_TO_REVIEW = new Set(['backlog', 'in_capture', 'content_review']);
+
+// Ohne Leitung bekommt beim Einreichen niemand eine Mail und niemand außer der Administration darf
+// inhaltlich prüfen — der Prozess bliebe unbemerkt liegen (Rollentest 16.10.2026). Ein deaktivierter
+// Bereich fehlt in der Liste; dann lieber schweigen als falsch warnen.
+export function NoAreaLeadBanner({ process }: { process: ProcessDetailView }) {
+    const { data: areas } = useAreas();
+    const area = areas?.find((candidate) => candidate.id === process.area.id);
+    if (!HEADING_TO_REVIEW.has(process.version.status) || !area || area.processOwner !== null) return null;
+
+    return (
+        <div className="border-warning/30 bg-warning/5 rounded-2xl border p-4 text-sm">
+            <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="text-warning size-4" /> Für den Bereich „{area.title}" ist keine Leitung eingetragen
+            </div>
+            <p className="text-muted-foreground mt-1">
+                Nach dem Einreichen wird niemand benachrichtigt, und die inhaltliche Prüfung bleibt liegen. Die Leitung
+                trägt die Administration unter Einstellungen → Bereiche ein.
+            </p>
         </div>
     );
 }

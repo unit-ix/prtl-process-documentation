@@ -3,6 +3,7 @@ import {
     canApproveContent,
     canApproveFormal,
     canAssignAuthor,
+    canBeAssignedAsAuthor,
     canChangeNumbers,
     canCreateProcess,
     canDeleteProcess,
@@ -191,5 +192,16 @@ describe('canChangeNumbers', () => {
         expect(canChangeNumbers(qm)).toBe(false);
         expect(canChangeNumbers(pvOfArea)).toBe(false);
         expect(canChangeNumbers(author)).toBe(false);
+    });
+});
+
+describe('canBeAssignedAsAuthor', () => {
+    it('lässt nur die Rolle Verfasser zu', () => {
+        expect(canBeAssignedAsAuthor(author)).toBe(true);
+        expect(canBeAssignedAsAuthor(user({ isAuthor: true, isQm: true }))).toBe(true);
+    });
+
+    it('schliesst andere Rollen und Personen ohne Rolle aus', () => {
+        for (const other of [admin, qm, pvOfArea, stranger]) expect(canBeAssignedAsAuthor(other)).toBe(false);
     });
 });
