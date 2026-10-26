@@ -2,6 +2,7 @@ import {
     canApproveContent,
     canApproveFormal,
     canAssignAuthor,
+    canDeactivateProcess,
     canDeleteProcess,
     canEditContent,
     canReopen,
@@ -82,6 +83,7 @@ function permissionsFor(
         canReopen: canReopen(user, process, version),
         canAssignAuthor: canAssignAuthor(user, process),
         canDelete: canDeleteProcess(user),
+        canDeactivate: canDeactivateProcess(user),
         canSeeApprovalTab: canSeeApprovalTab(user),
     };
 }
@@ -101,6 +103,7 @@ type ShellFields = Pick<
     | 'confidentiality'
     | 'hasActiveDraft'
     | 'approvedAt'
+    | 'deactivatedAt'
     | 'createdAt'
 >;
 
@@ -118,6 +121,7 @@ const shellFields = (process: ProcessRow): ShellFields => ({
     confidentiality: process.confidentiality as ShellFields['confidentiality'],
     hasActiveDraft: process.hasActiveDraft,
     approvedAt: process.approvedAt?.toISOString() ?? null,
+    deactivatedAt: process.deactivatedAt?.toISOString() ?? null,
     createdAt: process.createdAt.toISOString(),
 });
 

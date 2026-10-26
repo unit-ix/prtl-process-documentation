@@ -71,6 +71,7 @@ export interface ProcessPermissions {
     canReopen: boolean;
     canAssignAuthor: boolean;
     canDelete: boolean;
+    canDeactivate: boolean;
     canSeeApprovalTab: boolean;
 }
 
@@ -88,6 +89,7 @@ export interface ProcessDetailView {
     confidentiality: Confidentiality | null;
     hasActiveDraft: boolean;
     approvedAt: string | null;
+    deactivatedAt: string | null;
     createdAt: string;
     area: AreaRef;
     parentProcess: ProcessRef | null;

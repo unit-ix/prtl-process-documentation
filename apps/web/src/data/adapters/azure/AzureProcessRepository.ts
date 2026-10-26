@@ -70,6 +70,10 @@ export class AzureProcessRepository implements ProcessRepository {
         return apiSend<{ identifier: string | null }>('PATCH', `/processes/${id}/number`, input);
     }
 
+    setDeactivated(id: string, deactivated: boolean): Promise<{ toast: string }> {
+        return apiSend<{ toast: string }>('POST', `/processes/${id}/${deactivated ? 'deactivate' : 'reactivate'}`, {});
+    }
+
     private transition<TResult extends TransitionResult>(
         id: string,
         name: string,

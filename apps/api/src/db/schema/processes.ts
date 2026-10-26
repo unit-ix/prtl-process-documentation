@@ -29,6 +29,9 @@ export const processes = pgTable(
         currentVersionId: uuid('current_version_id').references((): AnyPgColumn => processVersions.id),
         parentProcessId: uuid('parent_process_id').references((): AnyPgColumn => processes.id),
         approvedAt: timestamp('approved_at', { withTimezone: true }),
+        // Inaktiv ≠ gelöscht: is_active=false ist der Soft-Delete und für alle weg. Ein deaktivierter
+        // Prozess bleibt für die Administration sichtbar und lässt sich wieder einschalten.
+        deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
         createdAt: createdAt(),
         isActive: isActive(),
         legacyId: legacyId(),

@@ -49,6 +49,7 @@ import {
 import { parseBody } from './parseBody.js';
 import { listUsers } from './users.js';
 import { createProcess, createProcessSchema, deleteProcess } from '../workflow/create.js';
+import { setProcessDeactivated } from '../workflow/deactivation.js';
 import { approveFormal } from '../workflow/release.js';
 import { reopenForRevision, reopenSchema } from '../workflow/revision.js';
 import { saveContent, saveContentSchema } from '../workflow/saveContent.js';
@@ -264,6 +265,8 @@ export const ROUTES: readonly Route[] = [
             return { status: 204, body: null };
         },
     },
+    { method: 'POST', path: '/processes/:id/deactivate', handle: ({ user, params }) => ok(setProcessDeactivated(user, params.id, true)) },
+    { method: 'POST', path: '/processes/:id/reactivate', handle: ({ user, params }) => ok(setProcessDeactivated(user, params.id, false)) },
     {
         method: 'POST',
         path: '/processes/:id/assign-author',

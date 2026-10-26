@@ -56,4 +56,6 @@ export interface ProcessRepository {
     snapshot(id: string, versionId: string): Promise<string>;
     /** Nur Administration: Nummer setzen oder korrigieren — eine VA nimmt ihre Unterdokumente mit. */
     changeNumber(id: string, input: ChangeNumberInput): Promise<{ identifier: string | null }>;
+    /** Nur Administration: inaktiv = für alle anderen ausgeblendet, kein Löschen. */
+    setDeactivated(id: string, deactivated: boolean): Promise<{ toast: string }>;
 }

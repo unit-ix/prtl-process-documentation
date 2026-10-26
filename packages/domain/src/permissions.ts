@@ -48,6 +48,9 @@ export const canReopen = (u: Roles, p: ProcessScoped, v: VersionScoped): boolean
 
 export const canDeleteProcess = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
 
+/** Inaktiv setzen und wieder einschalten: nur Administration (Termin 16.10.2026). */
+export const canDeactivateProcess = (u: Roles): boolean => u.isAdministrator;
+
 export const canManageInstructions = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
 
 export const canSeeInstructionList = (u: Roles): boolean => u.isQm || canManageInstructions(u);

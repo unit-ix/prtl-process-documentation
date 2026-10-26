@@ -49,7 +49,7 @@ export function ProcessRow({ item, isChild = false, expander }: ProcessRowProps)
                 <span className="text-muted-foreground font-mono text-xs">{item.templateType}</span>
             </TableCell>
             <TableCell>
-                <ProcessStatusBadge status={item.status} />
+                <ProcessStatusBadge status={item.status} deactivated={item.deactivatedAt !== null} />
             </TableCell>
             <TableCell className="text-muted-foreground w-10">
                 <ChevronRight className="size-4" />

@@ -6,6 +6,7 @@ import {
     canBeAssignedAsAuthor,
     canChangeNumbers,
     canCreateProcess,
+    canDeactivateProcess,
     canDeleteProcess,
     canEditContent,
     canManageInstructions,
@@ -216,5 +217,12 @@ describe('Listen hinter dem Menü', () => {
         expect(canSeeQualificationMatrix(admin)).toBe(true);
         expect(canSeeQualificationMatrix(qm)).toBe(true);
         for (const role of [pvOfArea, author, stranger]) expect(canSeeQualificationMatrix(role)).toBe(false);
+    });
+});
+
+describe('canDeactivateProcess', () => {
+    it('erlaubt nur der Administration', () => {
+        expect(canDeactivateProcess(admin)).toBe(true);
+        for (const role of [qm, pvOfArea, author, stranger]) expect(canDeactivateProcess(role)).toBe(false);
     });
 });

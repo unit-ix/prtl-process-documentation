@@ -36,7 +36,7 @@ function TypeBadges({ process }: { process: ProcessDetailView }) {
     ];
     return (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-            <ProcessStatusBadge status={process.version.status} />
+            <ProcessStatusBadge status={process.version.status} deactivated={process.deactivatedAt !== null} />
             {codes
                 .filter((code): code is string => code !== null)
                 .map((code) => (

@@ -1,12 +1,16 @@
 // Lese-Scope der Prozessliste, §2.4. Die Rollen sind unabhängige Booleans, ein Nutzer kann mehrere
 // tragen — deshalb die Vereinigung der zutreffenden Klauseln und nicht ein Zweig pro Rolle.
 import type { SessionUser } from '@app/domain';
-import { and, eq, inArray, or, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { processes } from '../db/schema/index.js';
 
+// Inaktive Prozesse sieht nur die Administration (Termin 16.10.2026) — auch QM nicht.
 export function readScope(user: SessionUser): SQL | undefined {
-    if (user.isAdministrator || user.isQm) return undefined;
+    if (user.isAdministrator) return undefined;
+
+    const notDeactivated = isNull(processes.deactivatedAt);
+    if (user.isQm) return notDeactivated;
 
     const clauses: SQL[] = [eq(processes.status, 'approved')];
     if (user.isProcessOwner && user.ledAreaIds.length > 0) {
@@ -14,7 +18,7 @@ export function readScope(user: SessionUser): SQL | undefined {
     }
     if (user.isAuthor) clauses.push(eq(processes.authorId, user.id));
 
-    return clauses.length === 1 ? clauses[0] : or(...clauses);
+    return and(notDeactivated, clauses.length === 1 ? clauses[0] : or(...clauses));
 }
 
 /** Darf dieser Nutzer diesen Prozess überhaupt sehen? Dieselbe Klausel wie in der Liste. */

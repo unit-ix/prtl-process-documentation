@@ -1,5 +1,5 @@
 import { EVENT_LABELS, type ProcessDetailView } from '@app/domain';
-import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, EyeOff, Info } from 'lucide-react';
 import { useAreas } from '../../hooks/useMasterData';
 import { formatDate } from '../../mappings/processMappings';
 
@@ -68,6 +68,17 @@ export function NoAreaLeadBanner({ process }: { process: ProcessDetailView }) {
                 Nach dem Einreichen wird niemand benachrichtigt, und die inhaltliche Prüfung bleibt liegen. Die Leitung
                 trägt die Administration unter Einstellungen → Bereiche ein.
             </p>
+        </div>
+    );
+}
+
+export function DeactivatedBanner({ process }: { process: ProcessDetailView }) {
+    if (process.deactivatedAt === null) return null;
+
+    return (
+        <div className="border-border/60 bg-muted text-muted-foreground flex items-center gap-2 rounded-2xl border p-4 text-sm">
+            <EyeOff className="size-4" />
+            Inaktiv seit {formatDate(process.deactivatedAt)}. Nur die Administration sieht diesen Prozess.
         </div>
     );
 }
