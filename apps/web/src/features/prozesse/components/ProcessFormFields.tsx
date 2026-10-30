@@ -5,7 +5,7 @@ import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import type { ProcessFormState } from '../hooks/useProcessForm';
 
-type TextKey = keyof Omit<ProcessFormState, 'additionalFields' | 'links' | 'termsDoc' | 'responsibilitiesDoc'>;
+type TextKey = keyof Omit<ProcessFormState, 'additionalFields' | 'links' | 'termsDoc' | 'responsibilitiesDoc' | 'descriptionDoc'>;
 
 interface FieldProps {
     id: TextKey;

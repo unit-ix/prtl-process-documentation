@@ -4,6 +4,7 @@ export * from './versionChoice.js';
 export * from './completeness.js';
 export * from './identifier.js';
 export * from './richText.js';
+export * from './contentTemplates.js';
 export * from './instructionStatus.js';
 export * from './recurrence.js';
 export * from './assistantSearch.js';

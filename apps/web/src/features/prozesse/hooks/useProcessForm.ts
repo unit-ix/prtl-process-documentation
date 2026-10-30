@@ -1,4 +1,10 @@
-import { richOrPlain, type ProcessDetailView, type RichDocument } from '@app/domain';
+import {
+    RESPONSIBILITIES_TEMPLATE,
+    TERMS_TEMPLATE,
+    richOrPlain,
+    type ProcessDetailView,
+    type RichDocument,
+} from '@app/domain';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +40,8 @@ export interface ProcessFormState {
     maintenanceRef: string;
     additionalFields: FormField[];
     links: FormLink[];
+    /** Nur gesetzt, wenn Felder aus einem anderen Prozess übernommen wurden — sonst pflegt der Editor sie. */
+    descriptionDoc?: RichDocument | null;
 }
 
 const text = (value: string | null): string => value ?? '';
@@ -44,8 +52,9 @@ export const toFormState = (process: ProcessDetailView): ProcessFormState => ({
     shortDescription: text(process.shortDescription),
     purpose: text(process.version.purpose),
     scopeDetail: text(process.version.scopeDetail),
-    termsDoc: richOrPlain(process.version.termsDoc, process.version.terms),
-    responsibilitiesDoc: richOrPlain(process.version.responsibilitiesDoc, process.version.responsibilities),
+    termsDoc: richOrPlain(process.version.termsDoc, process.version.terms) ?? TERMS_TEMPLATE,
+    responsibilitiesDoc:
+        richOrPlain(process.version.responsibilitiesDoc, process.version.responsibilities) ?? RESPONSIBILITIES_TEMPLATE,
     workSequence: text(process.version.workSequence),
     method: text(process.version.method),
     processParameters: text(process.version.processParameters),
@@ -65,8 +74,31 @@ export const toFormState = (process: ProcessDetailView): ProcessFormState => ({
     })),
 });
 
+/**
+ * Vorlage (Termin 30.10.): alle Inhaltsfelder eines anderen Prozesses übernehmen. Titel und
+ * Kurzbeschreibung bleiben, sie benennen diesen Prozess. Felder, die die eigene Vorlage (IMS oder
+ * nicht) gar nicht zeigt, bleiben ebenfalls — sonst würde Unsichtbares mitgespeichert.
+ */
+export const copyContent = (form: ProcessFormState, source: ProcessDetailView, isIms: boolean): ProcessFormState => {
+    const copied = toFormState(source);
+    const templateKeys = ['workSequence', 'method', 'processParameters', 'documentationRef', 'deviationHandling', 'maintenanceRef'] as const;
+    const kept: Partial<ProcessFormState> = isIms
+        ? Object.fromEntries(templateKeys.map((key) => [key, form[key]]))
+        : { termsDoc: form.termsDoc };
+
+    return {
+        ...copied,
+        ...kept,
+        title: form.title,
+        shortDescription: form.shortDescription,
+        additionalFields: copied.additionalFields.map(({ title, value }) => ({ title, value })),
+        descriptionDoc: source.version.descriptionDoc,
+    };
+};
+
 const toPayload = (form: ProcessFormState, rowVersion: number) => ({
     rowVersion,
+    ...(form.descriptionDoc === undefined ? {} : { descriptionDoc: form.descriptionDoc }),
     title: form.title.trim(),
     shortDescription: orNull(form.shortDescription),
     purpose: orNull(form.purpose),
@@ -113,6 +145,14 @@ export function useProcessForm(process: ProcessDetailView) {
         setDirty(true);
     };
 
+    // Die Rich-Text-Editoren lesen ihren Wert nur beim Start; nach einer Übernahme starten sie neu.
+    const [generation, setGeneration] = useState(0);
+    const copyFrom = (source: ProcessDetailView) => {
+        setForm((current) => copyContent(current, source, process.templateType === 'IMS'));
+        setGeneration((current) => current + 1);
+        setDirty(true);
+    };
+
     const save = useMutation({
         mutationFn: () => processRepository.save(process.id, toPayload(form, process.version.rowVersion)),
         onSuccess: async () => {
@@ -125,5 +165,5 @@ export function useProcessForm(process: ProcessDetailView) {
         onError: (error: Error) => toast.error(error.message),
     });
 
-    return { form, set, setFields, setLinks, save, isDirty };
+    return { form, set, setFields, setLinks, copyFrom, generation, save, isDirty };
 }

@@ -1,3 +1,4 @@
+import type { ProcessRef } from '@app/domain';
 import { Eye, EyeOff } from 'lucide-react';
 import { processRepository } from '@/data';
 import {
@@ -15,11 +16,31 @@ import { Button } from '@/shared/components/ui/button';
 
 interface DeactivateButtonProps {
     deactivated: boolean;
+    linkedFrom: readonly ProcessRef[];
     isPending: boolean;
     run: (action: (id: string) => Promise<{ toast: string }>) => void;
 }
 
-export function DeactivateButton({ deactivated, isPending, run }: DeactivateButtonProps) {
+function LinkedFromList({ linkedFrom }: { linkedFrom: readonly ProcessRef[] }) {
+    if (linkedFrom.length === 0) return null;
+
+    return (
+        <div className="space-y-1 text-sm">
+            <p className="font-medium">Diese Prozesse verweisen noch darauf:</p>
+            <ul className="text-muted-foreground list-disc space-y-0.5 pl-5">
+                {linkedFrom.map((ref) => (
+                    <li key={ref.id}>
+                        {ref.identifier ? `${ref.identifier} · ` : ''}
+                        {ref.title}
+                    </li>
+                ))}
+            </ul>
+            <p className="text-muted-foreground">Dort wird der Verweis als „nicht mehr verfügbar“ angezeigt.</p>
+        </div>
+    );
+}
+
+export function DeactivateButton({ deactivated, linkedFrom, isPending, run }: DeactivateButtonProps) {
     if (deactivated) {
         return (
             <Button
@@ -48,6 +69,7 @@ export function DeactivateButton({ deactivated, isPending, run }: DeactivateButt
                         nichts, er lässt sich jederzeit wieder aktivieren.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                <LinkedFromList linkedFrom={linkedFrom} />
                 <AlertDialogFooter>
                     <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction onClick={() => run((id) => processRepository.setDeactivated(id, true))}>

@@ -7,6 +7,7 @@ import { Card } from '@/shared/components/ui/card';
 import { Label } from '@/shared/components/ui/label';
 import type { ProcessListItem } from '@app/domain';
 import { AdditionalFieldsEditor } from '../components/AdditionalFieldsEditor';
+import { CopyFromProcessDialog } from '../components/CopyFromProcessDialog';
 import { LinksEditor } from '../components/LinksEditor';
 import {
     FormField,
@@ -30,8 +31,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function EditForm({ process }: { process: ProcessDetailView }) {
-    const { form, set, setFields, setLinks, save, isDirty } = useProcessForm(process);
-    const { data: released } = useReleasedProcesses();
+    const { form, set, setFields, setLinks, copyFrom, generation, save, isDirty } = useProcessForm(process);
 
     return (
         <div className="space-y-4">
@@ -43,11 +43,33 @@ function EditForm({ process }: { process: ProcessDetailView }) {
                         <span className="truncate">{process.title}</span>
                     </p>
                 </div>
-                <Button className="gap-2" disabled={!isDirty || save.isPending} onClick={() => save.mutate()}>
-                    <Save className="size-4" /> Speichern
-                </Button>
+                <div className="flex gap-2">
+                    <CopyFromProcessDialog processId={process.id} onCopy={copyFrom} />
+                    <Button className="gap-2" disabled={!isDirty || save.isPending} onClick={() => save.mutate()}>
+                        <Save className="size-4" /> Speichern
+                    </Button>
+                </div>
             </div>
 
+            <FormSections key={generation} process={process} api={{ form, set, setFields, setLinks }} />
+        </div>
+    );
+}
+
+type FormApi = ReturnType<typeof useProcessForm>;
+
+function FormSections({
+    process,
+    api,
+}: {
+    process: ProcessDetailView;
+    api: Pick<FormApi, 'form' | 'set' | 'setFields' | 'setLinks'>;
+}) {
+    const { form, set, setFields, setLinks } = api;
+    const { data: released } = useReleasedProcesses();
+
+    return (
+        <div className="space-y-4">
             <Section title="Allgemein">
                 {GENERAL_FIELDS.map((field) => (
                     <FormField key={field.id} {...field} form={form} onChange={set} />
@@ -70,8 +92,6 @@ function EditForm({ process }: { process: ProcessDetailView }) {
         </div>
     );
 }
-
-type FormApi = ReturnType<typeof useProcessForm>;
 
 function OverviewSection({ process, form, set }: { process: ProcessDetailView; form: FormApi['form']; set: FormApi['set'] }) {
     return (

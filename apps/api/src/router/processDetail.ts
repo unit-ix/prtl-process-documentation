@@ -17,6 +17,7 @@ import {
 } from '@app/domain';
 import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { db } from '../db/client.js';
+import { loadLinkedFrom } from './processBacklinks.js';
 import {
     areas,
     processAdditionalFields,
@@ -177,11 +178,21 @@ async function loadRelated(processId: string, versionId: string) {
         linkedIds.length === 0
             ? []
             : await db
-                  .select({ id: processes.id, title: processes.title, identifier: processes.identifier })
+                  .select({
+                      id: processes.id,
+                      title: processes.title,
+                      identifier: processes.identifier,
+                      isActive: processes.isActive,
+                      deactivatedAt: processes.deactivatedAt,
+                  })
                   .from(processes)
                   .where(inArray(processes.id, linkedIds));
 
-    return { fields, links, events, linked: new Map(linked.map((row) => [row.id, row])) };
+    const refs = linked.map(({ isActive, deactivatedAt, ...ref }) => ({
+        ...ref,
+        isAvailable: isActive && deactivatedAt === null,
+    }));
+    return { fields, links, events, linked: new Map(refs.map((ref) => [ref.id, ref])) };
 }
 
 export async function getProcessDetail(user: SessionUser, processId: string): Promise<ProcessDetailView> {
@@ -226,6 +237,7 @@ export async function getProcessDetail(user: SessionUser, processId: string): Pr
         hasHiddenDraft: choice.hasHiddenDraft,
         additionalFields: fields.map(toAdditionalFieldView),
         links: links.map((link) => toLinkView(link, linked)),
+        linkedFrom: canDeactivateProcess(user) ? await loadLinkedFrom(processId) : [],
         events: events.map((event) => toEventView(event, userLookup)),
         releasedVersions: versions.filter((row) => row.edition !== null).map((row) => toReleasedVersionRef(row, userLookup)),
         completeness: completeness(versionView, process.templateType as ProcessDetailView['templateType']),

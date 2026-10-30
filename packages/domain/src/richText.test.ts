@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, plainTextToRichDocument, richOrPlain, richTextToHtml, richTextToPlainText } from './richText.js';
+import { RESPONSIBILITIES_TEMPLATE, TERMS_TEMPLATE } from './contentTemplates.js';
+import {
+    escapeHtml,
+    plainTextToRichDocument,
+    richOrPlain,
+    richTextHasContent,
+    richTextToHtml,
+    richTextToPlainText,
+} from './richText.js';
 
 const doc = (...content: unknown[]) => ({ type: 'doc', content }) as never;
 const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
@@ -105,6 +113,15 @@ describe('richTextToHtml — muss durchlassen', () => {
             expect(richTextToHtml(doc(node))).toContain(`href="${href}"`);
         }
     });
+
+    it('öffnet Links in einem neuen Reiter, Sprünge im Dokument nicht', () => {
+        const link = (href: string) => ({
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'l', marks: [{ type: 'link', attrs: { href } }] }],
+        });
+        expect(richTextToHtml(doc(link('https://prettl.com')))).toContain('target="_blank"');
+        expect(richTextToHtml(doc(link('#abschnitt')))).not.toContain('target=');
+    });
 });
 
 describe('richTextToPlainText', () => {
@@ -185,5 +202,26 @@ describe('richOrPlain', () => {
     it('fällt sonst auf den Altbestand zurück', () => {
         expect(richTextToHtml(richOrPlain(null, 'alt'))).toBe('<p>alt</p>');
         expect(richOrPlain(null, null)).toBeNull();
+    });
+});
+
+describe('richTextHasContent', () => {
+    it('zählt eine unberührte Tabellenvorlage nicht als ausgefüllt', () => {
+        expect(richTextHasContent(TERMS_TEMPLATE)).toBe(false);
+        expect(richTextHasContent(RESPONSIBILITIES_TEMPLATE)).toBe(false);
+    });
+
+    it('zählt eine Vorlage, sobald eine Zeile Text hat', () => {
+        const filled = JSON.parse(JSON.stringify(TERMS_TEMPLATE)) as { content: { content: { content: unknown[] }[] }[] };
+        filled.content[0].content[1].content[0] = {
+            type: 'tableCell',
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'VA' }] }],
+        };
+        expect(richTextHasContent(filled)).toBe(true);
+    });
+
+    it('leer ist leer', () => {
+        expect(richTextHasContent(null)).toBe(false);
+        expect(richTextHasContent(doc(paragraph('a')))).toBe(true);
     });
 });
