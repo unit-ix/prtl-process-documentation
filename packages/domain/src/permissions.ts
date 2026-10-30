@@ -51,6 +51,20 @@ export const canDeleteProcess = (u: Roles): boolean => u.isAdministrator || u.is
 /** Inaktiv setzen und wieder einschalten: nur Administration (Termin 16.10.2026). */
 export const canDeactivateProcess = (u: Roles): boolean => u.isAdministrator;
 
+/**
+ * Löschen: im Backlog und in Erfassung wie bisher (Administration oder Leitung des Bereichs). Ist
+ * der Prozess inaktiv, darf ihn die Administration in jedem Status löschen — auch freigegeben
+ * (Wunsch 30.10.2026). Erst ausblenden, dann löschen: zwei bewusste Schritte.
+ */
+export const mayDeleteProcess = (
+    u: Roles,
+    p: Pick<Process, 'status'> & { area: { id: string }; deactivatedAt: string | null },
+): boolean =>
+    p.deactivatedAt !== null
+        ? canDeactivateProcess(u)
+        : (p.status === 'backlog' || p.status === 'in_capture') &&
+          (u.isAdministrator || (u.isProcessOwner && leadsArea(u, p.area.id)));
+
 export const canManageInstructions = (u: Roles): boolean => u.isAdministrator || u.isProcessOwner;
 
 export const canSeeInstructionList = (u: Roles): boolean => u.isQm || canManageInstructions(u);
