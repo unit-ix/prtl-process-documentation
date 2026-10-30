@@ -92,12 +92,7 @@ export function ProcessActions({ process, isPending, run, onReject }: ProcessAct
             ) : null}
 
             {permissions.canDeactivate ? (
-                <DeactivateButton
-                    deactivated={process.deactivatedAt !== null}
-                    linkedFrom={process.linkedFrom}
-                    isPending={isPending}
-                    run={run}
-                />
+                <DeactivateButton process={process} isPending={isPending} run={run} />
             ) : null}
         </div>
     );

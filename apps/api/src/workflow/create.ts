@@ -1,4 +1,4 @@
-import { canCreateProcess, type SessionUser } from '@app/domain';
+import { canCreateProcess, mayDeleteProcess, type ProcessStatus, type SessionUser } from '@app/domain';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
@@ -95,19 +95,22 @@ export async function createProcess(user: SessionUser, input: CreateProcessInput
     });
 }
 
-// T8 — Soft-Delete mit Kaskade. Canvas verwaist die Kinder (§12, Defekt 21).
+// T8 — Soft-Delete mit Kaskade. Canvas verwaist die Kinder (§12, Defekt 21). Ein inaktiver
+// Prozess darf auch nach der Freigabe weg, aber nur durch die Administration (Wunsch 30.10.) —
+// danach sieht ihn auch die Administration nicht mehr. Unterweisungen dazu bleiben als Nachweis.
 export async function deleteProcess(user: SessionUser, processId: string): Promise<void> {
     const [process] = await db
-        .select({ status: processes.status, areaId: processes.areaId })
+        .select({ status: processes.status, areaId: processes.areaId, deactivatedAt: processes.deactivatedAt })
         .from(processes)
         .where(and(eq(processes.id, processId), eq(processes.isActive, true)))
         .limit(1);
     if (!process) throw notFound('Prozess nicht gefunden.');
 
-    assertAllowed(user.isAdministrator || (user.isProcessOwner && user.ledAreaIds.includes(process.areaId)));
-    if (process.status !== 'backlog' && process.status !== 'in_capture') {
-        throw badRequest('Nur Prozesse im Backlog oder in Erfassung können gelöscht werden.');
+    const shape = { status: process.status as ProcessStatus, area: { id: process.areaId }, deactivatedAt: process.deactivatedAt?.toISOString() ?? null };
+    if (process.deactivatedAt === null && process.status !== 'backlog' && process.status !== 'in_capture') {
+        throw badRequest('Nur Prozesse im Backlog oder in Erfassung oder inaktive Prozesse können gelöscht werden.');
     }
+    assertAllowed(mayDeleteProcess(user, shape));
 
     await db.transaction(async (tx) => {
         const versions = await tx

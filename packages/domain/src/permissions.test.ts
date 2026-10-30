@@ -18,6 +18,7 @@ import {
     canSeeSettings,
     canSubmit,
     leadsArea,
+    mayDeleteProcess,
     type SessionUser,
 } from './permissions.js';
 import type { ProcessStatus } from './enums.js';
@@ -224,5 +225,31 @@ describe('canDeactivateProcess', () => {
     it('erlaubt nur der Administration', () => {
         expect(canDeactivateProcess(admin)).toBe(true);
         for (const role of [qm, pvOfArea, author, stranger]) expect(canDeactivateProcess(role)).toBe(false);
+    });
+});
+
+describe('mayDeleteProcess', () => {
+    const active = (status: ProcessStatus) => ({ status, area: { id: AREA }, deactivatedAt: null });
+    const inactive = (status: ProcessStatus) => ({ ...active(status), deactivatedAt: '2026-10-30T12:00:00Z' });
+
+    it('erlaubt im Backlog und in Erfassung Admin und Leitung des Bereichs', () => {
+        for (const status of ['backlog', 'in_capture'] as const) {
+            expect(mayDeleteProcess(admin, active(status))).toBe(true);
+            expect(mayDeleteProcess(pvOfArea, active(status))).toBe(true);
+            for (const role of [pvOfOtherArea, qm, author, stranger]) expect(mayDeleteProcess(role, active(status))).toBe(false);
+        }
+    });
+
+    it('verbietet aktive Prozesse ab der Prüfung, auch der Administration', () => {
+        for (const status of ['content_review', 'formal_review', 'approved'] as const) {
+            expect(mayDeleteProcess(admin, active(status))).toBe(false);
+        }
+    });
+
+    it('erlaubt inaktive Prozesse in jedem Status, aber nur der Administration', () => {
+        for (const status of ['backlog', 'in_capture', 'content_review', 'formal_review', 'approved'] as const) {
+            expect(mayDeleteProcess(admin, inactive(status))).toBe(true);
+            for (const role of [pvOfArea, qm, author, stranger]) expect(mayDeleteProcess(role, inactive(status))).toBe(false);
+        }
     });
 });

@@ -1,4 +1,4 @@
-import type { ProcessRef } from '@app/domain';
+import type { ProcessDetailView, ProcessRef } from '@app/domain';
 import { Eye, EyeOff } from 'lucide-react';
 import { processRepository } from '@/data';
 import {
@@ -13,15 +13,15 @@ import {
     AlertDialogTrigger,
 } from '@/shared/components/ui/alert-dialog';
 import { Button } from '@/shared/components/ui/button';
+import { DeleteProcessButton } from './DeleteProcessButton';
 
 interface DeactivateButtonProps {
-    deactivated: boolean;
-    linkedFrom: readonly ProcessRef[];
+    process: Pick<ProcessDetailView, 'id' | 'deactivatedAt' | 'linkedFrom'>;
     isPending: boolean;
     run: (action: (id: string) => Promise<{ toast: string }>) => void;
 }
 
-function LinkedFromList({ linkedFrom }: { linkedFrom: readonly ProcessRef[] }) {
+export function LinkedFromList({ linkedFrom }: { linkedFrom: readonly ProcessRef[] }) {
     if (linkedFrom.length === 0) return null;
 
     return (
@@ -40,17 +40,20 @@ function LinkedFromList({ linkedFrom }: { linkedFrom: readonly ProcessRef[] }) {
     );
 }
 
-export function DeactivateButton({ deactivated, linkedFrom, isPending, run }: DeactivateButtonProps) {
-    if (deactivated) {
+export function DeactivateButton({ process, isPending, run }: DeactivateButtonProps) {
+    if (process.deactivatedAt !== null) {
         return (
-            <Button
-                variant="outline"
-                className="gap-2"
-                disabled={isPending}
-                onClick={() => run((id) => processRepository.setDeactivated(id, false))}
-            >
-                <Eye className="size-4" /> Wieder aktivieren
-            </Button>
+            <>
+                <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={isPending}
+                    onClick={() => run((id) => processRepository.setDeactivated(id, false))}
+                >
+                    <Eye className="size-4" /> Wieder aktivieren
+                </Button>
+                <DeleteProcessButton processId={process.id} linkedFrom={process.linkedFrom} />
+            </>
         );
     }
 
@@ -69,7 +72,7 @@ export function DeactivateButton({ deactivated, linkedFrom, isPending, run }: De
                         nichts, er lässt sich jederzeit wieder aktivieren.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <LinkedFromList linkedFrom={linkedFrom} />
+                <LinkedFromList linkedFrom={process.linkedFrom} />
                 <AlertDialogFooter>
                     <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction onClick={() => run((id) => processRepository.setDeactivated(id, true))}>
