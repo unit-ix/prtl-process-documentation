@@ -154,7 +154,7 @@ describe('renderSnapshot — Anhänge', () => {
                         linkType: 'InternerProzess',
                         title: null,
                         url: null,
-                        linkedProcess: { id: 'p2', title: 'Wareneingang', identifier: 'VA PE 2 QS.003' },
+                        linkedProcess: { id: 'p2', title: 'Wareneingang', identifier: 'VA PE 2 QS.003', isAvailable: true },
                     },
                 ],
             }),

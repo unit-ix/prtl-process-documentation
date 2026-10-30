@@ -45,7 +45,11 @@ function applyMarks(text: string, marks: Node['marks']): string {
     return (marks ?? []).reduce((inner, mark) => {
         if (mark.type === 'link') {
             const href = safeUrl(mark.attrs?.href);
-            return href === null ? inner : `<a href="${escapeHtml(href)}" rel="noopener noreferrer">${inner}</a>`;
+            if (href === null) return inner;
+            // Ein Link im Text öffnet einen neuen Reiter (Termin 30.10.), sonst ist der Prozess weg.
+            // Ein Sprung innerhalb des Dokuments (#…) bleibt, wo er ist.
+            const target = href.startsWith('#') ? '' : ' target="_blank"';
+            return `<a href="${escapeHtml(href)}"${target} rel="noopener noreferrer">${inner}</a>`;
         }
         const tag = MARK_TAGS[mark.type];
         return tag === undefined ? inner : `<${tag}>${inner}</${tag}>`;
@@ -138,6 +142,19 @@ function toText(node: Node): string {
     const inner = (node.content ?? []).map(toText).join('');
     return BLOCK_SEPARATORS.has(node.type ?? '') ? `${inner}\n` : inner;
 }
+
+function hasBodyText(node: Node): boolean {
+    if (node.type === 'tableHeader') return false;
+    if (node.type === 'text') return (node.text ?? '').trim() !== '';
+    if (node.type === 'image') return true;
+    return (node.content ?? []).some(hasBodyText);
+}
+
+/**
+ * Steht ausser Tabellenköpfen etwas im Dokument? Eine Vorlage aus Kopfzeile und leerer Zeile ist
+ * noch kein ausgefülltes Feld — die Vollständigkeit darf sie nicht als erledigt zählen.
+ */
+export const richTextHasContent = (doc: RichDocument | null | undefined): boolean => !!doc && hasBodyText(doc as Node);
 
 /** Klartext-Projektion (§8.1) — Grundlage für Vollständigkeit, Suche und den Assistenten-Index. */
 export function richTextToPlainText(doc: RichDocument | null | undefined): string {

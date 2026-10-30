@@ -1,10 +1,11 @@
-import { richOrPlain, type ProcessDetailView, type RichDocument } from '@app/domain';
+import { richOrPlain, type ProcessDetailView, type ProcessLinkView, type RichDocument } from '@app/domain';
 import { Pencil } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Card } from '@/shared/components/ui/card';
 import { RichTextView } from '@/shared/components/richtext/RichTextView';
+import { backState } from '@/shared/hooks/useBackTo';
 
 type Section =
     | { readonly label: string; readonly value: string | null }
@@ -54,7 +55,7 @@ function Field(section: Section) {
     );
 }
 
-function EditLink({ to }: { to: string }) {
+export function EditLink({ to }: { to: string }) {
     return (
         <Button asChild variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
             <Link to={to}>
@@ -101,42 +102,65 @@ function PeopleCard({ process }: { process: ProcessDetailView }) {
     );
 }
 
+function LinkedProcessItem({ link, from }: { link: ProcessLinkView; from: ProcessDetailView }) {
+    const target = link.linkedProcess;
+    const suffix = target?.identifier ? <span className="text-muted-foreground"> · {target.identifier}</span> : null;
+
+    if (target === null || !target.isAvailable) {
+        return (
+            <li className="text-muted-foreground">
+                {target?.title ?? link.title}
+                {suffix}
+                {target === null ? null : <span className="italic"> (nicht mehr verfügbar)</span>}
+            </li>
+        );
+    }
+
+    return (
+        <li>
+            <Link
+                to={`/processes/${target.id}`}
+                state={backState(`/processes/${from.id}`, `Zurück zu ${from.identifier ?? from.title}`)}
+                className="text-primary underline underline-offset-2"
+            >
+                {target.title}
+            </Link>
+            {suffix}
+        </li>
+    );
+}
+
 function LinkCard({ process }: { process: ProcessDetailView }) {
     const internal = process.links.filter((link) => link.linkType === 'InternerProzess');
     const external = process.links.filter((link) => link.linkType === 'ExternesDokument');
 
     return (
-            <Card className="glass-card border-border/40 space-y-5 rounded-2xl p-6">
-                <h2 className="text-sm font-semibold">Mitgeltende Unterlagen</h2>
-                <LinkList
-                    title="Verknüpfte Prozesse"
-                    empty="Noch keine verknüpfte Prozesse."
-                    items={internal.map((link) => (
-                        <li key={link.id}>
-                            {link.linkedProcess?.title ?? link.title}
-                            {link.linkedProcess?.identifier ? (
-                                <span className="text-muted-foreground"> · {link.linkedProcess.identifier}</span>
-                            ) : null}
-                        </li>
-                    ))}
-                />
-                <LinkList
-                    title="Externe Dokumente"
-                    empty="Noch keine Link hochgeladen."
-                    items={external.map((link) => (
-                        <li key={link.id}>
-                            <a
-                                href={link.url ?? '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary underline underline-offset-2"
-                            >
-                                {link.title ?? link.url}
-                            </a>
-                        </li>
-                    ))}
-                />
-            </Card>
+        <Card className="glass-card border-border/40 space-y-5 rounded-2xl p-6">
+            <h2 className="text-sm font-semibold">Mitgeltende Unterlagen</h2>
+            <LinkList
+                title="Verknüpfte Prozesse"
+                empty="Noch keine verknüpfte Prozesse."
+                items={internal.map((link) => (
+                    <LinkedProcessItem key={link.id} link={link} from={process} />
+                ))}
+            />
+            <LinkList
+                title="Externe Dokumente"
+                empty="Noch keine Link hochgeladen."
+                items={external.map((link) => (
+                    <li key={link.id}>
+                        <a
+                            href={link.url ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline underline-offset-2"
+                        >
+                            {link.title ?? link.url}
+                        </a>
+                    </li>
+                ))}
+            />
+        </Card>
     );
 }
 
@@ -156,19 +180,5 @@ export function OverviewTab({ process }: { process: ProcessDetailView }) {
                 </Card>
             )}
         </div>
-    );
-}
-
-export function DescriptionTab({ process }: { process: ProcessDetailView }) {
-    return (
-        <Card className="glass-card border-border/40 space-y-5 rounded-2xl p-6">
-            <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold">Prozessbeschreibung</h2>
-                {process.permissions.canEditContent ? (
-                    <EditLink to={`/processes/${process.id}/description`} />
-                ) : null}
-            </div>
-            <RichTextView doc={process.version.descriptionDoc} />
-        </Card>
     );
 }

@@ -58,7 +58,12 @@ export interface ProcessLinkView {
     linkType: LinkType;
     title: string | null;
     url: string | null;
-    linkedProcess: ProcessRef | null;
+    linkedProcess: LinkedProcessRef | null;
+}
+
+/** false = gelöscht oder deaktiviert: der Name bleibt stehen, aber es gibt nichts mehr zu öffnen. */
+export interface LinkedProcessRef extends ProcessRef {
+    isAvailable: boolean;
 }
 
 export interface ProcessPermissions {
@@ -101,6 +106,8 @@ export interface ProcessDetailView {
     hasHiddenDraft: boolean;
     additionalFields: ProcessAdditionalFieldView[];
     links: ProcessLinkView[];
+    /** Wer auf diesen Prozess verweist — nur für die Administration befüllt (Rückfrage vor dem Deaktivieren). */
+    linkedFrom: ProcessRef[];
     events: ProcessEventView[];
     releasedVersions: ReleasedVersionRef[];
     completeness: Completeness;

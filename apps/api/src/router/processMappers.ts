@@ -1,4 +1,5 @@
 import type {
+    LinkedProcessRef,
     ProcessAdditionalFieldView,
     ProcessEventView,
     ProcessLinkView,
@@ -74,7 +75,7 @@ export const toAdditionalFieldView = (row: ProcessAdditionalFieldRow): ProcessAd
 
 export const toLinkView = (
     row: ProcessLinkRow,
-    processes: ReadonlyMap<string, { id: string; title: string; identifier: string | null }>,
+    processes: ReadonlyMap<string, LinkedProcessRef>,
 ): ProcessLinkView => ({
     id: row.id,
     linkType: row.linkType as ProcessLinkView['linkType'],

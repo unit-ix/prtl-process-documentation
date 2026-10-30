@@ -1,6 +1,7 @@
 import type { InstructionDetailView } from '@app/domain';
 import { ArrowLeft, BadgeCheck, CalendarDays, FileText, Layers, Repeat, RotateCw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { backState } from '@/shared/hooks/useBackTo';
 import { Card } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
 import { cn } from '@/shared/lib/utils';
@@ -45,6 +46,7 @@ function TitleBlock({ instruction }: { instruction: InstructionDetailView }) {
                     ) : null}
                     <Link
                         to={`/processes/${instruction.process.id}`}
+                        state={backState(`/instructions/${instruction.id}`, 'Zurück zur Unterweisung')}
                         className="text-primary inline-flex items-center gap-2 text-sm hover:underline"
                     >
                         <FileText className="size-4" />

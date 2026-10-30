@@ -1,7 +1,7 @@
 // §9.4 Speichern und §8.3 Autosave. Zwei Eigenschaften hängen daran: Inhalte gehen IMMER in die
 // Version, nie in die Hülle (die schreibt allein die Freigabe), und ein zweiter Bearbeiter bekommt
 // eine klare Meldung statt eines stillen Überschreibens.
-import { canEditContent, richTextToPlainText, type RichDocument, type SessionUser } from '@app/domain';
+import { canEditContent, richTextHasContent, richTextToPlainText, type RichDocument, type SessionUser } from '@app/domain';
 import { and, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client.js';
@@ -98,7 +98,7 @@ type RichKey = 'descriptionDoc' | 'termsDoc' | 'responsibilitiesDoc';
 function richField(input: SaveContentInput, docKey: RichKey, textKey: string): Record<string, unknown> {
     if (!(docKey in input)) return {};
     const doc = (input[docKey] ?? null) as RichDocument | null;
-    const text = richTextToPlainText(doc);
+    const text = richTextHasContent(doc) ? richTextToPlainText(doc) : '';
     return { [docKey]: doc, [textKey]: text === '' ? null : text };
 }
 

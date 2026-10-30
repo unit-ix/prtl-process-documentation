@@ -1,15 +1,17 @@
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { processRepository } from '@/data';
 import { FileList } from '@/shared/components/files/FileList';
+import { useBackTo } from '@/shared/hooks/useBackTo';
 import { AsyncBoundary } from '@/shared/components/state/AsyncBoundary';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { ApprovalTab } from '../components/detail/ApprovalTab';
 import { CompletenessCard } from '../components/detail/CompletenessCard';
-import { DescriptionTab, OverviewTab } from '../components/detail/OverviewTab';
+import { DescriptionTab } from '../components/detail/DescriptionTab';
+import { OverviewTab } from '../components/detail/OverviewTab';
 import { ProcessActions } from '../components/detail/ProcessActions';
 import { DeactivatedBanner, NoAreaLeadBanner, RejectionBanner, ReleaseBanner } from '../components/detail/ProcessBanners';
 import { ProcessDetailHeader } from '../components/detail/ProcessDetailHeader';
@@ -29,11 +31,13 @@ function DetailTabs({
     // Der Reiter steht in der Adresse, damit "Zurück zum Prozess" aus dem Editor wieder auf der
     // Prozessbeschreibung landet und nicht auf der Übersicht.
     const [params, setParams] = useSearchParams();
+    // Der Reiterwechsel ersetzt den Eintrag; ohne den alten Zustand wäre der Weg zurück verloren.
+    const { state } = useLocation();
     const requested = params.get('tab') ?? 'overview';
     const tab = requested === 'approval' && !showApproval ? 'overview' : requested;
 
     return (
-        <Tabs value={tab} onValueChange={(next) => setParams(next === 'overview' ? {} : { tab: next }, { replace: true })}>
+        <Tabs value={tab} onValueChange={(next) => setParams(next === 'overview' ? {} : { tab: next }, { replace: true, state })}>
             <TabsList>
                 <TabsTrigger value="overview">Übersicht</TabsTrigger>
                 <TabsTrigger value="description">Prozessbeschreibung</TabsTrigger>
@@ -116,12 +120,13 @@ function DetailBody({ process }: { process: ProcessDetailView }) {
 export function ProcessDetailPage() {
     const { id = '' } = useParams();
     const { data, isPending, error, refetch } = useProcessDetail(id);
+    const back = useBackTo({ to: '/processes', label: 'Zurück zu Prozesse' });
 
     return (
         <div className="space-y-4">
             <Button asChild variant="ghost" size="sm" className="gap-2">
-                <Link to="/processes">
-                    <ArrowLeft className="size-4" /> Zurück zu Prozesse
+                <Link to={back.to}>
+                    <ArrowLeft className="size-4" /> {back.label}
                 </Link>
             </Button>
 
